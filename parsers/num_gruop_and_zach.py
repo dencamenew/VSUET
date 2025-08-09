@@ -10,20 +10,21 @@ import requests
 
 
 
-def check_rait(url):
+def check_rait(url: str) -> dict:
+    time.sleep(0.01)
     resp = requests.get(url)
     resp.raise_for_status()
-    time.sleep(0.01)
-
     soup = BeautifulSoup(resp.text, 'html.parser')
+
 
     date = soup.find('span', {'id': 'ucVedBox_lblDateUpdate'}).text.strip()
     subject = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
 
-    student_data = []
+
     student_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
     check = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text
+
 
     result = {
         "gruop": group_name,
@@ -32,14 +33,16 @@ def check_rait(url):
         "std": []
     }
 
+    all_zach = []
+
     if check == "Зачет" or check == "Экзамен":
         # не кривая ведомость
         if soup.find("input", id="ucVedBox_chkShowPer"):
             for row in student_rows:
                 tds = row.find_all('td')
-                
+                all_zach.append(tds[1].text.strip())
                 std_raiting = {
-                    "num_zach": tds[1].text.strip() if len(tds) > 1 else "-",
+                    "num_zach": tds[1].text.strip(),
                     "raiting": [
                         tds[7].text.strip() if len(tds) > 7 else "-",
                         tds[12].text.strip() if len(tds) > 12 else "-",
@@ -58,20 +61,22 @@ def check_rait(url):
     else:
         for row in student_rows:
             tds = row.find_all('td')
-            result = ""
+            mark = ""
             if len(tds[7].text) > 0:
-                result = tds[7].text
+                mark = tds[7].text
             elif len(tds[4].text) > 0:
-                result = tds[4].text
+                mark = tds[4].text
             else:
-                result = "-"
-            ratings = [
-                tds[2].text.strip() if len(tds) > 1 else "-",
-                result    
-            ]
-            student_data.append(ratings)
-        
-        print(url, student_data)
+                mark = "-"
+
+            all_zach.append(tds[2].text.strip())
+            std_raiting = {
+                "num_zach": tds[2].text.strip(),
+                "raiting": mark
+            }
+            result["std"].append(std_raiting)
+
+    return result, {group_name: all_zach}
             
 
 
@@ -79,6 +84,7 @@ def check_rait(url):
 # настройка драйвера
 chrome_options = Options()
 chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.page_load_strategy = 'eager'
@@ -113,12 +119,13 @@ for faculty in faculties:
     ))
     groups = [opt.text for opt in group_select.options if opt.text and opt.text.strip()]
     
+
     for group in groups:
         group_select = Select(WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbGroups"))
         ))
         group_select.select_by_visible_text(group)
-  
+
         table = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "ctl00_ContentPage_ucListVedBox_Grid"))
         )
@@ -128,7 +135,7 @@ for faculty in faculties:
             links.add(link.get_attribute('href'))
 
         for url in links:
-            check_rait(url)
+            print(check_rait(url))
             
 
         
