@@ -11,7 +11,6 @@ import requests
 
 
 def check_rait(url):
-    
     resp = requests.get(url)
     resp.raise_for_status()
     time.sleep(0.01)
@@ -29,6 +28,7 @@ def check_rait(url):
     result = {
         "gruop": group_name,
         "subject": subject,
+        "last_update": date,
         "std": []
     }
 
@@ -126,8 +126,6 @@ for faculty in faculties:
         links = set()  
         for link in table.find_elements(By.TAG_NAME, "a"):
             links.add(link.get_attribute('href'))
-        
-        print(len(links))
 
         for url in links:
             check_rait(url)
