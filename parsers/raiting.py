@@ -9,6 +9,7 @@ import requests
 
 
 
+"""Функция получает ссылку и по ней парсит html страницу. Из ведомости считываются строки таблицы и обрабатываются."""
 def check_rait(url: str):
     resp = requests.get(url)
     soup = BeautifulSoup(resp.text, 'html.parser')
@@ -20,7 +21,7 @@ def check_rait(url: str):
 
 
     table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
-    ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text
+    ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text.strip()
 
 
     result = {
@@ -55,8 +56,8 @@ def check_rait(url: str):
             for row in table_rows:
                 tds = row.find_all('td')
                 mark = ""
-                if len(tds[4].text) > 0:
-                    mark = tds[4].text
+                if len(tds[4].text.text.strip()) > 0:
+                    mark = tds[4].text.strip()
                 else:
                     mark = "-"
 
@@ -71,10 +72,10 @@ def check_rait(url: str):
         for row in table_rows:
             tds = row.find_all('td')
             mark = ""
-            if len(tds[7].text) > 0:
-                mark = tds[7].text
-            elif len(tds[4].text) > 0:
-                mark = tds[4].text
+            if len(tds[7].text.text.strip()) > 0:
+                mark = tds[7].text.strip()
+            elif len(tds[4].text.text.strip()) > 0:
+                mark = tds[4].text.strip()
             else:
                 mark = "-"
 
@@ -103,6 +104,7 @@ url = "https://rating.vsuet.ru/web/Ved/Default.aspx"
 driver.get(url)
 
 
+# Собираем список с названиями всех селектов факультетов
 WebDriverWait(driver, 20).until(
     EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbFacultets"))
 )
@@ -112,6 +114,8 @@ faculty_select = Select(WebDriverWait(driver, 10).until(
 ))
 faculties = [opt.text for opt in faculty_select.options if opt.text and opt.text.strip()]
 
+
+# Переходим по селектам и собираем список всех групп факультета
 for faculty in faculties:
     faculty_select = Select(WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbFacultets"))
@@ -127,7 +131,7 @@ for faculty in faculties:
     ))
     groups = [opt.text for opt in group_select.options if opt.text and opt.text.strip()]
     
-
+    # Переходим по селектам групп --> собирам список с ссылками на предметы --> вызываем функцию со сбором рейтинга
     for group in groups:
         group_select = Select(WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbGroups"))
