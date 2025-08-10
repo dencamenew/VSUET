@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/main_app/fakePollution" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/tg_app" vcs="Git" />
-  </component>
-</project>
