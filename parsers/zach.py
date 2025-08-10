@@ -11,37 +11,22 @@ import requests
 
 
 def check_zach(url: str):
-    time.sleep(0.01)
     resp = requests.get(url)
-    resp.raise_for_status()
     soup = BeautifulSoup(resp.text, 'html.parser')
 
-
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
-
-
-    student_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
-    ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text
-
+    table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
 
     result = {
         "gruop": group_name,
         "zach": []
     }
-
-    if ved_type == "Зачет" or ved_type == "Экзамен":
-        for row in student_rows:
-            tds = row.find_all('td')
-            result["zach"].append(tds[1].text.strip())
-        
-        return url, result
-        
-    else:
-        for row in student_rows:
-            tds = row.find_all('td')
-            result["zach"].append(tds[2].text.strip())
-            
-        return url, result
+    
+    for row in table_rows:
+        tds = row.find_all('td')
+        result["zach"].append(tds[1].text.strip())
+    
+    return url, result
             
 
 
