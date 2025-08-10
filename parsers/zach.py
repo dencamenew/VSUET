@@ -30,16 +30,12 @@ def check_zach(url: str):
     }
 
     if ved_type == "Зачет" or ved_type == "Экзамен":
-        # не кривая ведомость
-        if soup.find("input", id="ucVedBox_chkShowPer"):
-            for row in student_rows:
-                tds = row.find_all('td')
-                result["zach"].append(tds[1].text.strip())
-            
-            return url, result
-        else:
-            # кривая ведомость
-            return "-", url
+        for row in student_rows:
+            tds = row.find_all('td')
+            result["zach"].append(tds[1].text.strip())
+        
+        return url, result
+        
     else:
         for row in student_rows:
             tds = row.find_all('td')
@@ -53,7 +49,7 @@ def check_zach(url: str):
 # настройка драйвера
 chrome_options = Options()
 chrome_options.add_argument("--disable-gpu")
-# chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.page_load_strategy = 'eager'
