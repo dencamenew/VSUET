@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 from bs4 import BeautifulSoup
 import requests
 
@@ -82,10 +83,10 @@ for faculty in faculties:
         links = [] 
         for link in table.find_elements(By.TAG_NAME, "a"):
             links.append(link.get_attribute('href'))
-            break
 
         if len(links) > 0:
-            print(check_zach(links[0]))   
+            print(check_zach(links[0]))
+            
 
         
 driver.quit()
