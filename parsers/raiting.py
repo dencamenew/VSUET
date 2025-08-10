@@ -3,17 +3,14 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
 from bs4 import BeautifulSoup
 import requests
 
 
 
 
-def check_rait(url: str) -> dict:
-    time.sleep(0.01)
+def check_rait(url: str):
     resp = requests.get(url)
-    resp.raise_for_status()
     soup = BeautifulSoup(resp.text, 'html.parser')
 
 
@@ -22,8 +19,8 @@ def check_rait(url: str) -> dict:
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
 
 
-    student_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
-    check = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text
+    table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
+    ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text
 
 
     result = {
@@ -33,14 +30,12 @@ def check_rait(url: str) -> dict:
         "std": []
     }
 
-    all_zach = []
 
-    if check == "Зачет" or check == "Экзамен":
-        # не кривая ведомость
-        if soup.find("input", id="ucVedBox_chkShowPer"):
-            for row in student_rows:
+    if ved_type == "Зачет" or ved_type == "Экзамен":
+        # тип ведомости по КТ
+        if soup.find("input", id="ucVedBox_chkShowKT"): # проверка по наличию input для отображения по КТ
+            for row in table_rows:
                 tds = row.find_all('td')
-                all_zach.append(tds[1].text.strip())
                 std_raiting = {
                     "num_zach": tds[1].text.strip(),
                     "raiting": [
@@ -53,13 +48,27 @@ def check_rait(url: str) -> dict:
                     ]
                 }
                 result["std"].append(std_raiting)
-                
-            print(result)
+
+            return result
         else:
-            # кривая ведомость
-            print("-", url)
+            # ведомость зачет или экзамен только с оценкой
+            for row in table_rows:
+                tds = row.find_all('td')
+                mark = ""
+                if len(tds[4].text) > 0:
+                    mark = tds[4].text
+                else:
+                    mark = "-"
+
+                std_raiting = {
+                    "num_zach": tds[2].text.strip(),
+                    "raiting": mark
+                }
+                result["std"].append(std_raiting)
+            return result
     else:
-        for row in student_rows:
+        # ведомости с практиками, курсовыми работами и т.д.
+        for row in table_rows:
             tds = row.find_all('td')
             mark = ""
             if len(tds[7].text) > 0:
@@ -69,14 +78,13 @@ def check_rait(url: str) -> dict:
             else:
                 mark = "-"
 
-            all_zach.append(tds[2].text.strip())
             std_raiting = {
                 "num_zach": tds[2].text.strip(),
                 "raiting": mark
             }
             result["std"].append(std_raiting)
 
-    return result, {group_name: all_zach}
+        return result
             
 
 
