@@ -83,10 +83,10 @@ for faculty in faculties:
         links = [] 
         for link in table.find_elements(By.TAG_NAME, "a"):
             links.append(link.get_attribute('href'))
+            break
 
         if len(links) > 0:
-            print(check_zach(links[0]))
-            
+            print(check_zach(links[0]))   
 
         
 driver.quit()
