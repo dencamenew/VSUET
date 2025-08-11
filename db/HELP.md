@@ -35,6 +35,9 @@ POSTGRES_USER: admin
 POSTGRES_PASSWORD: admin
 POSTGRES_DB: db
 ```
+## Init
+
+В папку initdb можно добавть любые sql скрипты, и они выполнятся при сборке контейнера.
 
 ## Хранение данных
 
