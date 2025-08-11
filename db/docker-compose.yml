@@ -1,17 +1,17 @@
 services:
-  db:
-    image: buildo/h2database
-    container_name: h2
+  postgres:
+    image: postgres:latest
+    container_name: postgres_db
     environment:
-      - H2_OPTIONS=-ifNotExists -baseDir /opt/h2-data -init /docker-entrypoint-initdb.d/init.sql
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
     ports:
-      - "9092:9092"  # TCP порт для JDBC
-      - "8082:8082"  # Веб-консоль
+      - "5432:5432"
     volumes:
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
-      - h2-data:/opt/h2-data
-    restart: unless-stopped
-
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d/ 
+    
 
 volumes:
-  h2-data:
+  postgres_data:
