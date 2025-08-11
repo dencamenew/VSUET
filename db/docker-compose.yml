@@ -1,0 +1,15 @@
+services:
+  h2-db:
+    image: oscarfonts/h2
+    container_name: h2-server
+    environment:
+      - H2_OPTIONS=-ifNotExists
+    ports:
+      - "1521:1521"  # JDBC порт
+      - "8082:81"  # Веб-консоль
+    volumes:
+      - h2-data:/opt/h2-data
+    restart: unless-stopped
+
+volumes:
+  h2-data:
