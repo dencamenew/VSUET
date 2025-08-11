@@ -21,9 +21,9 @@ public class GroupEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "number_zach", nullable = false)
-    private String zach;
+    @Column(name = "zach_number", nullable = false)
+    private String zachNumber;
 
     @Column(name = "group_name", nullable = false)
-    private String group;
+    private String groupName;
 }
