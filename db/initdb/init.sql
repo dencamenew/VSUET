@@ -15,5 +15,6 @@ CREATE TABLE IF NOT EXISTS raiting (
     group_name VARCHAR(255) NOT NULL,
     zach_number VARCHAR(255) NOT NULL, 
     sbj VARCHAR(255) NOT NULL,
-    raiting TEXT[] NOT NULL
+    raiting TEXT[] NOT NULL,
+    UNIQUE (group_name, zach_number, sbj)
 );
