@@ -5,6 +5,14 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import psycopg2
 import logging
+from dotenv import load_dotenv
+import os
+
+
+
+# Загрузка переменных окружения
+load_dotenv()
+
 
 # Настройка логирования
 logging.basicConfig(
@@ -13,20 +21,22 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
-    
+
+
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host="localhost",
-        port="5432",
-        database="db",
-        user="admin",
-        password="admin"
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
     )
     cursor = conn.cursor()
     logger.info(f"Успешное подключение к БД.")
 except Exception as e:
     logger.error(f"Ошибка при подключении БД. {e}")
+
 
 # Подключение драйвера
 try:
@@ -40,6 +50,7 @@ try:
     logger.info(f"Успешное подключение драйвера.")
 except Exception as e:
     logger.error(f"Ошибка при подключении драйвера.")
+
 
 # Сам скрипт
 url = "https://rating.vsuet.ru/web/Ved/Default.aspx"
