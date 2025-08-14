@@ -94,13 +94,12 @@ driver.quit()
 
 
 try:
-    # Проверка переменных окружения
     db_config = {
-        'host': os.getenv("DB_HOST", "postgres"),  # Используем имя сервиса как значение по умолчанию
-        'port': os.getenv("DB_PORT", "5432"),
-        'database': os.getenv("DB_NAME", "db"),
-        'user': os.getenv("DB_USER", "admin"),
-        'password': os.getenv("DB_PASSWORD", "admin")
+        'host': os.getenv("DB_HOST"),
+        'port': os.getenv("DB_PORT"),
+        'database': os.getenv("DB_NAME"),
+        'user': os.getenv("DB_USER"),
+        'password': os.getenv("DB_PASSWORD")
     }
     
     logger.info(f"Подключаемся к БД с параметрами: { {k:v for k,v in db_config.items() if k != 'password'} }")
@@ -108,11 +107,9 @@ try:
     with psycopg2.connect(**db_config) as conn:
         with conn.cursor() as cursor:
             
-            # Логируем размер JSON перед вставкой
             json_data = json.dumps(timetable)
             logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
             
-            # Вставляем данные
             cursor.execute("""
                 INSERT INTO timetable (timetable)
                 VALUES (%s::jsonb)
@@ -125,13 +122,11 @@ try:
 
 except psycopg2.Error as e:
     logger.error(f"Ошибка PostgreSQL: {e}")
-    # Дополнительная диагностика
     if 'conn' in locals():
         logger.error(f"Статус соединения: {'OPEN' if not conn.closed else 'CLOSED'}")
 except Exception as e:
     logger.error(f"Общая ошибка: {e}")
 finally:
-    # Сохраняем JSON в файл для диагностики
     with open("timetable_debug.json", "w", encoding="utf-8") as f:
         json.dump(timetable, f, ensure_ascii=False, indent=2)
     logger.info("Резервная копия JSON сохранена в timetable_debug.json")
