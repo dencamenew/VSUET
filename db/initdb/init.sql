@@ -21,5 +21,6 @@ CREATE TABLE IF NOT EXISTS raiting (
 
 CREATE TABLE IF NOT EXISTS timetable (
     id SERIAL PRIMARY KEY,
+    group_name VARCHAR(255) NOT NULL,
     timetable JSONB NOT NULL
 );

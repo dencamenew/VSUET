@@ -48,21 +48,19 @@ check_select = Select(WebDriverWait(driver, 10).until(
 ))
 groups = [opt.text for opt in group_select.options if opt.text and opt.text.strip()]
 print(groups)
-timetable = {"Числитель": {},
-             "Знаменатель": {}}
-print(1)
-for check in ["Числитель", "Знаменатель"]:
-    check_select = Select(WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.ID, "selectvalueweek"))
-        ))
-    check_select.select_by_visible_text(check)
-    print(2)
-    for group in groups:
-        print(group)
-        group_select = Select(WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "selectvaluegroup"))
-        ))
-        group_select.select_by_visible_text(group)
+timetable = {}
+for group in groups:
+    print(group)
+    group_select = Select(WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, "selectvaluegroup"))
+    ))
+    group_select.select_by_visible_text(group)
+    for check in ["Числитель", "Знаменатель"]:
+        check_select = Select(WebDriverWait(driver, 30).until(
+                EC.element_to_be_clickable((By.ID, "selectvalueweek"))
+            ))
+        check_select.select_by_visible_text(check)
+
 
         time.sleep(0.1)
         page_html = driver.page_source
@@ -71,6 +69,9 @@ for check in ["Числитель", "Знаменатель"]:
         table = soup.find_all("table", class_="table table-hover table-bordered table-sm")
         full_info = {}
 
+        if group not in timetable:
+            timetable[group] = {"Числитель": None, 
+                 "Знаменатель": None}
         for info in table:
             weekday = info.find("div", class_="vertical").text.strip()
             stime = info.find_all("th", class_="align-middle")[1].text[:-2].strip('\n')
@@ -81,14 +82,10 @@ for check in ["Числитель", "Знаменатель"]:
             
             full_info[weekday][stime] = subj
 
-        if check == "Числитель":
-            if group not in timetable["Числитель"]:
-                timetable["Числитель"][str(group)] = {}
-            timetable["Числитель"][str(group)] = full_info
-        else:
-            if group not in timetable["Знаменатель"]:
-                timetable["Знаменатель"][str(group)] = {}
-            timetable["Знаменатель"][str(group)] = full_info
+            if check == "Числитель":
+                timetable[str(group)]["Числитель"] = full_info
+            else:
+                timetable[str(group)]["Знаменатель"] = full_info
 
 driver.quit()
 
@@ -106,20 +103,20 @@ try:
     
     with psycopg2.connect(**db_config) as conn:
         with conn.cursor() as cursor:
-        
-            json_data = json.dumps(timetable)
-            logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
-            
+            for group, info in timetable.items():
+                json_data = json.dumps(info)
+                logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
+                
 
-            cursor.execute("""
-                INSERT INTO timetable (timetable)
-                VALUES (%s::jsonb)
-                RETURNING id
-            """, (json_data,))
-            
-            record_id = cursor.fetchone()[0]
-            conn.commit()
-            logger.info(f"Данные успешно сохранены, ID: {record_id}")
+                cursor.execute("""
+                    INSERT INTO timetable (group_name, timetable)
+                    VALUES (%s, %s::jsonb)
+                    RETURNING id
+                """, (group, json_data,))
+                
+                record_id = cursor.fetchone()[0]
+                conn.commit()
+                logger.info(f"Данные успешно сохранены, ID: {record_id}")
 
 except psycopg2.Error as e:
     logger.error(f"Ошибка PostgreSQL: {e}")
@@ -127,5 +124,3 @@ except psycopg2.Error as e:
         logger.error(f"Статус соединения: {'OPEN' if not conn.closed else 'CLOSED'}")
 except Exception as e:
     logger.error(f"Общая ошибка: {e}")
-finally:
-    logger.info("Резервная копия JSON сохранена в timetable_debug.json")
