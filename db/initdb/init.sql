@@ -18,3 +18,8 @@ CREATE TABLE IF NOT EXISTS raiting (
     raiting TEXT[] NOT NULL,
     UNIQUE (group_name, zach_number, sbj)
 );
+
+CREATE TABLE IF NOT EXISTS timetable (
+    id SERIAL PRIMARY KEY,
+    timetable JSONB NOT NULL
+);

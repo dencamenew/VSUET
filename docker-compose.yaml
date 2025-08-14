@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+    volumes:
+      - ./db/initdb:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sbj_urls:
+    build:
+      context: ./parsers/sbj_urls
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  timetable:
+    build:
+      context: ./parsers/timetable
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+   
+  raiting:
+    build:
+      context: ./parsers/raiting
+      dockerfile: Dockerfile
+    depends_on:
+      sbj_urls:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+
+  zach:
+    build:
+      context: ./parsers/zach
+      dockerfile: Dockerfile
+    depends_on:
+      sbj_urls:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+volumes:
+  postgres_data:

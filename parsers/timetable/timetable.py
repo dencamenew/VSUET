@@ -7,6 +7,19 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import json
+import logging
+import psycopg2
+import os 
+
+
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] - [%(levelname)s] --> %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 
 chrome_options = Options()
@@ -77,6 +90,48 @@ for check in ["Числитель", "Знаменатель"]:
                 timetable["Знаменатель"][str(group)] = {}
             timetable["Знаменатель"][str(group)] = full_info
 
-with open("timetable.json", "w", encoding="utf-8") as file:
-    json.dump(timetable, file, ensure_ascii=False, indent=4)
 driver.quit()
+
+
+try:
+    # Проверка переменных окружения
+    db_config = {
+        'host': os.getenv("DB_HOST", "postgres"),  # Используем имя сервиса как значение по умолчанию
+        'port': os.getenv("DB_PORT", "5432"),
+        'database': os.getenv("DB_NAME", "db"),
+        'user': os.getenv("DB_USER", "admin"),
+        'password': os.getenv("DB_PASSWORD", "admin")
+    }
+    
+    logger.info(f"Подключаемся к БД с параметрами: { {k:v for k,v in db_config.items() if k != 'password'} }")
+    
+    with psycopg2.connect(**db_config) as conn:
+        with conn.cursor() as cursor:
+            
+            # Логируем размер JSON перед вставкой
+            json_data = json.dumps(timetable)
+            logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
+            
+            # Вставляем данные
+            cursor.execute("""
+                INSERT INTO timetable (timetable)
+                VALUES (%s::jsonb)
+                RETURNING id
+            """, (json_data,))
+            
+            record_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Данные успешно сохранены, ID: {record_id}")
+
+except psycopg2.Error as e:
+    logger.error(f"Ошибка PostgreSQL: {e}")
+    # Дополнительная диагностика
+    if 'conn' in locals():
+        logger.error(f"Статус соединения: {'OPEN' if not conn.closed else 'CLOSED'}")
+except Exception as e:
+    logger.error(f"Общая ошибка: {e}")
+finally:
+    # Сохраняем JSON в файл для диагностики
+    with open("timetable_debug.json", "w", encoding="utf-8") as f:
+        json.dump(timetable, f, ensure_ascii=False, indent=2)
+    logger.info("Резервная копия JSON сохранена в timetable_debug.json")
