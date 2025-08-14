@@ -106,10 +106,11 @@ try:
     
     with psycopg2.connect(**db_config) as conn:
         with conn.cursor() as cursor:
-            
+        
             json_data = json.dumps(timetable)
             logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
             
+
             cursor.execute("""
                 INSERT INTO timetable (timetable)
                 VALUES (%s::jsonb)
@@ -127,6 +128,4 @@ except psycopg2.Error as e:
 except Exception as e:
     logger.error(f"Общая ошибка: {e}")
 finally:
-    with open("timetable_debug.json", "w", encoding="utf-8") as f:
-        json.dump(timetable, f, ensure_ascii=False, indent=2)
     logger.info("Резервная копия JSON сохранена в timetable_debug.json")
