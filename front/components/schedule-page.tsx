@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, Grid3X3, Calendar, LogOut, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react"
+import { Search, Grid3X3, Calendar, User, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react"
 
 interface SchedulePageProps {
   studentId: string
   onNavigate: (page: "schedule" | "rating") => void
-  onLogout: () => void
+  onShowProfile: () => void // добавил пропс для показа профиля
 }
 
 interface DateItem {
@@ -39,7 +39,7 @@ const mockScheduleData: Record<string, Array<{ time: string; subject: string; ro
   "2024-06-15": [],
 }
 
-export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps) {
+export default function SchedulePage({onNavigate, onShowProfile }: SchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -115,25 +115,25 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
   const schedule = getScheduleForDate()
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">Schedule</h1>
-          <p className="text-gray-400">МПол24-1</p>
+          <p className="text-muted-foreground">МПол24-1</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-gray-800">
+          <Button variant="ghost" size="icon" className="text-primary hover:bg-muted">
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-gray-800">
+          <Button variant="ghost" size="icon" className="text-primary hover:bg-muted">
             <Grid3X3 className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       <div className="px-4 mb-2">
-        <p className="text-center text-gray-500 text-sm font-medium">{getSelectedYear()}</p>
+        <p className="text-center text-muted-foreground text-sm font-medium">{getSelectedYear()}</p>
       </div>
 
       <div className="px-4 mb-6">
@@ -141,7 +141,7 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-gray-800 text-white"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-muted text-foreground"
             onClick={scrollLeft}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -158,10 +158,10 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
                 onClick={() => setSelectedDateKey(dateItem.key)}
                 className={`flex-shrink-0 flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all duration-200 ${
                   dateItem.isToday
-                    ? "bg-white text-black shadow-lg"
+                    ? "bg-primary text-primary-foreground shadow-lg"
                     : selectedDateKey === dateItem.key
-                      ? "bg-gray-700 text-white scale-105"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                      ? "bg-muted text-foreground scale-105"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 <span className="text-lg font-semibold">{dateItem.date}</span>
@@ -173,7 +173,7 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-gray-800 text-white"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-muted text-foreground"
             onClick={scrollRight}
           >
             <ChevronRight className="h-4 w-4" />
@@ -182,25 +182,25 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
       </div>
 
       <div className="px-4 mb-8">
-        <p className="text-gray-400">{getSelectedDateInfo()}</p>
+        <p className="text-muted-foreground">{getSelectedDateInfo()}</p>
       </div>
 
       <div className="flex-1 px-4 pb-20">
         {schedule.length === 0 ? (
           <div className="flex items-center justify-center h-64">
-            <p className="text-gray-400 text-lg">No classes</p>
+            <p className="text-muted-foreground text-lg">No classes</p>
           </div>
         ) : (
           <div className="space-y-4">
             {schedule.map((lesson, index) => (
-              <div key={index} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <div key={index} className="bg-card rounded-xl p-4 border border-border">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-white font-semibold text-lg mb-1">{lesson.subject}</h3>
-                    <p className="text-gray-400 text-sm mb-2">{lesson.teacher}</p>
+                    <h3 className="text-foreground font-semibold text-lg mb-1">{lesson.subject}</h3>
+                    <p className="text-muted-foreground text-sm mb-2">{lesson.teacher}</p>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-blue-400 font-medium">{lesson.time}</span>
-                      <span className="text-gray-500">{lesson.room}</span>
+                      <span className="text-primary font-medium">{lesson.time}</span>
+                      <span className="text-muted-foreground">{lesson.room}</span>
                     </div>
                   </div>
                 </div>
@@ -210,12 +210,12 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
         <div className="flex justify-around items-center py-3">
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-gray-800"
+            className="text-foreground hover:bg-muted"
             onClick={() => onNavigate("schedule")}
           >
             <Calendar className="h-6 w-6" />
@@ -223,13 +223,13 @@ export default function SchedulePage({onNavigate, onLogout }: SchedulePageProps)
           <Button
             variant="ghost"
             size="icon"
-            className="text-gray-400 hover:bg-gray-800"
+            className="text-muted-foreground hover:bg-muted"
             onClick={() => onNavigate("rating")}
           >
             <GraduationCap className="h-6 w-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-800" onClick={onLogout}>
-            <LogOut className="h-6 w-6" />
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
+            <User className="h-6 w-6" />
           </Button>
         </div>
       </div>

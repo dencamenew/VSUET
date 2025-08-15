@@ -27,11 +27,11 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gray-900 border-gray-800">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-card border-border">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-white">Авторизация</CardTitle>
-          <CardDescription className="text-gray-400">Введите номер зачетной книжки для входа</CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Авторизация</CardTitle>
+          <CardDescription className="text-muted-foreground">Введите номер зачетной книжки для входа</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -41,13 +41,13 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
                 placeholder="Номер зачетки"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
             </div>
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               disabled={isLoading || !studentId.trim()}
             >
               {isLoading ? "Вход..." : "Войти"}

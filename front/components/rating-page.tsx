@@ -2,15 +2,15 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Home, Calendar, Grid3X3, LogOut } from "lucide-react"
+import { ArrowLeft, Calendar, GraduationCap, User } from "lucide-react"
 
 interface RatingPageProps {
   studentId: string
   onNavigate: (page: "schedule" | "rating") => void
-  onLogout: () => void
+  onShowProfile: () => void // добавил пропс для показа профиля
 }
 
-export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPageProps) {
+export default function RatingPage({ studentId, onNavigate, onShowProfile }: RatingPageProps) {
   // Mock rating data
   const subjects = [
     { name: "Математика", grade: 4.5, credits: 5 },
@@ -23,7 +23,7 @@ export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPa
   const averageGrade = subjects.reduce((sum, subject) => sum + subject.grade, 0) / subjects.length
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12">
         <div className="flex items-center gap-3">
@@ -31,27 +31,27 @@ export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPa
             variant="ghost"
             size="icon"
             onClick={() => onNavigate("schedule")}
-            className="text-white hover:bg-gray-800"
+            className="text-foreground hover:bg-muted"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Рейтинг</h1>
-            <p className="text-gray-400">Зачетка: {studentId}</p>
+            <p className="text-muted-foreground">Зачетка: {studentId}</p>
           </div>
         </div>
       </div>
 
       {/* Average Grade */}
       <div className="px-4 mb-6">
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-white text-center">Средний балл</CardTitle>
+            <CardTitle className="text-foreground text-center">Средний балл</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center">
               <div className="text-4xl font-bold text-green-500 mb-2">{averageGrade.toFixed(2)}</div>
-              <p className="text-gray-400">из 5.0</p>
+              <p className="text-muted-foreground">из 5.0</p>
             </div>
           </CardContent>
         </Card>
@@ -60,12 +60,12 @@ export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPa
       {/* Subjects List */}
       <div className="px-4 space-y-3 mb-20">
         {subjects.map((subject, index) => (
-          <Card key={index} className="bg-gray-900 border-gray-800">
+          <Card key={index} className="bg-card border-border">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-white font-medium">{subject.name}</h3>
-                  <p className="text-gray-400 text-sm">{subject.credits} кредитов</p>
+                  <h3 className="text-foreground font-medium">{subject.name}</h3>
+                  <p className="text-muted-foreground text-sm">{subject.credits} кредитов</p>
                 </div>
                 <div className="text-right">
                   <div
@@ -87,20 +87,12 @@ export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPa
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
         <div className="flex justify-around items-center py-3">
           <Button
             variant="ghost"
             size="icon"
-            className="text-gray-400 hover:bg-gray-800"
-            onClick={() => onNavigate("schedule")}
-          >
-            <Home className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-400 hover:bg-gray-800"
+            className="text-muted-foreground hover:bg-muted"
             onClick={() => onNavigate("schedule")}
           >
             <Calendar className="h-6 w-6" />
@@ -108,13 +100,13 @@ export default function RatingPage({ studentId, onNavigate, onLogout }: RatingPa
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-gray-800"
+            className="text-foreground hover:bg-muted"
             onClick={() => onNavigate("rating")}
           >
-            <Grid3X3 className="h-6 w-6" />
+            <GraduationCap className="h-6 w-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-800" onClick={onLogout}>
-            <LogOut className="h-6 w-6" />
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
+            <User className="h-6 w-6" />
           </Button>
         </div>
       </div>
