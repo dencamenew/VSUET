@@ -1,27 +1,20 @@
 package ru.practice.teststation.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-
-
+import lombok.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "groups")
+@Table(name = "zach")
 @Getter
 @Setter
-public class GroupEntity {
-
+public class Zach {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "zach_number", nullable = false)
+    @Column(name = "zach_number", unique = true, nullable = false)
     private String zachNumber;
 
     @Column(name = "group_name", nullable = false)
