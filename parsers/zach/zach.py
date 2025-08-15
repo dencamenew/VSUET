@@ -56,7 +56,8 @@ def check_zach(url: str, conn):
                     error_count += 1
                     conn.rollback()  # Откатываем текущую транзакцию
                     break  # Прерываем цикл при ошибке
-
+            
+            conn.commit()
             logger.info(
                 f"Итоги для группы {group_name}: "
                 f"добавлено {inserted_count}, "
