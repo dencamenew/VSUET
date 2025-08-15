@@ -164,7 +164,7 @@ const generateSeptemberSchedule = () => {
 
 const mockScheduleData = generateSeptemberSchedule()
 
-export default function SchedulePage({ studentId, onNavigate, onShowProfile, language }: SchedulePageProps) {
+export default function SchedulePage({onNavigate, onShowProfile, language }: SchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
   const scrollContainerRef = useRef<HTMLDivElement>(null)
