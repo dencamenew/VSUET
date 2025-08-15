@@ -10,6 +10,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<"auth" | "schedule" | "rating">("auth")
   const [showProfile, setShowProfile] = useState(false)
   const [studentId, setStudentId] = useState<string>("")
+  const [language, setLanguage] = useState<"ru" | "en">("ru")
 
   useEffect(() => {
     const savedStudentId = localStorage.getItem("studentId")
@@ -23,6 +24,11 @@ export default function Home() {
       document.documentElement.classList.remove("dark")
     } else {
       document.documentElement.classList.add("dark")
+    }
+
+    const savedLanguage = localStorage.getItem("language") as "ru" | "en"
+    if (savedLanguage) {
+      setLanguage(savedLanguage)
     }
   }, [])
 
@@ -51,19 +57,41 @@ export default function Home() {
     setShowProfile(false)
   }
 
+  const handleLanguageChange = (newLanguage: "ru" | "en") => {
+    setLanguage(newLanguage)
+    localStorage.setItem("language", newLanguage)
+  }
+
   if (currentPage === "auth") {
-    return <AuthPage onLogin={handleLogin} />
+    return <AuthPage onLogin={handleLogin} language={language} />
   }
 
   return (
     <>
       {currentPage === "rating" ? (
-        <RatingPage studentId={studentId} onNavigate={handleNavigate} onShowProfile={handleShowProfile} />
+        <RatingPage
+          studentId={studentId}
+          onNavigate={handleNavigate}
+          onShowProfile={handleShowProfile}
+          language={language}
+        />
       ) : (
-        <SchedulePage studentId={studentId} onNavigate={handleNavigate} onShowProfile={handleShowProfile} />
+        <SchedulePage
+          studentId={studentId}
+          onNavigate={handleNavigate}
+          onShowProfile={handleShowProfile}
+          language={language}
+        />
       )}
 
-      {showProfile && <ProfilePage studentId={studentId} onLogout={handleLogout} onClose={handleCloseProfile} />}
+      {showProfile && (
+        <ProfilePage
+          studentId={studentId}
+          onLogout={handleLogout}
+          onClose={handleCloseProfile}
+          onLanguageChange={handleLanguageChange}
+        />
+      )}
     </>
   )
 }
