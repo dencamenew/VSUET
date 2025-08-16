@@ -4,16 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
-import java.util.Map;
-
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RatingDto {
-    private String subject;
-    private List<String> ratings;
+public class StudentInfoDto {
+    private String zachNumber;
+    private String groupName;
+    private List<RatingDto> ratings;
+    private JsonNode timetable;
 }
+
+
+

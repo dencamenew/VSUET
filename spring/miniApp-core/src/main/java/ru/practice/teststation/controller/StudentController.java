@@ -2,26 +2,23 @@ package ru.practice.teststation.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.practice.teststation.dto.RatingResponse;
-import ru.practice.teststation.dto.TimetableResponse;
-import ru.practice.teststation.service.RatingService;
-import ru.practice.teststation.service.TimetableService;
+import ru.practice.teststation.dto.*;
+import ru.practice.teststation.service.StudentService;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class StudentController {
 
-    private final TimetableService timetableService;
-    private final RatingService ratingService;
+    private final StudentService studentService;
 
     @GetMapping("/timetable/{zachNumber}")
-    public TimetableResponse getTimetable(@PathVariable String zachNumber) {
-        return timetableService.getTimetable(zachNumber);
+    public TimetableResponseDto getTimetable(@PathVariable String zachNumber) {
+        return studentService.getTimetable(zachNumber);
     }
 
     @GetMapping("/rating/{zachNumber}")
-    public RatingResponse getRatings(@PathVariable String zachNumber) {
-        return ratingService.getRatings(zachNumber);
+    public RatingResponseDto getRatings(@PathVariable String zachNumber) {
+        return studentService.getRatings(zachNumber);
     }
 }

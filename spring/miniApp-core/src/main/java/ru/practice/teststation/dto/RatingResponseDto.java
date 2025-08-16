@@ -1,13 +1,13 @@
 package ru.practice.teststation.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 import lombok.Data;
+import java.util.List;
 
 @Data
 @Builder
-public class TimetableResponse {
+public class RatingResponseDto {
     private String zachNumber;
     private String groupName;
-    private JsonNode timetable;
+    private List<RatingDto> ratings;
 }

@@ -21,155 +21,201 @@ interface DateItem {
   key: string
 }
 
-const subjects = [
-  { name: "Математический анализ", teacher: "Иванов И.И.", rooms: ["А-101", "А-102", "А-103"] },
-  { name: "Линейная алгебра", teacher: "Петрова П.П.", rooms: ["А-201", "А-202"] },
-  { name: "Физика", teacher: "Сидоров С.С.", rooms: ["Ф-101", "Ф-102", "Ф-103"] },
-  { name: "Программирование", teacher: "Козлов К.К.", rooms: ["К-301", "К-302", "К-303"] },
-  { name: "Английский язык", teacher: "Smith J.", rooms: ["И-101", "И-102"] },
-  { name: "История России", teacher: "Морозова М.М.", rooms: ["Г-201", "Г-202"] },
-  { name: "Философия", teacher: "Орлова О.О.", rooms: ["Ф-301", "Ф-302"] },
-  { name: "Химия", teacher: "Волков В.В.", rooms: ["Х-101", "Х-102"] },
-  { name: "Биология", teacher: "Зайцева З.З.", rooms: ["Б-103", "Б-104"] },
-  { name: "Экономика", teacher: "Соколов С.А.", rooms: ["Э-201", "Э-202"] },
-  { name: "Информатика", teacher: "Федоров Ф.Ф.", rooms: ["К-101", "К-102"] },
-  { name: "Дискретная математика", teacher: "Николаев Н.Н.", rooms: ["А-301", "А-302"] },
-  { name: "Базы данных", teacher: "Лебедев Л.Л.", rooms: ["К-201", "К-202"] },
-  { name: "Алгоритмы и структуры данных", teacher: "Романова Р.Р.", rooms: ["К-401", "К-402"] },
-  { name: "Веб-разработка", teacher: "Белов Б.Б.", rooms: ["К-501", "К-502"] },
-  { name: "Машинное обучение", teacher: "Кузнецов К.К.", rooms: ["К-601", "К-602"] },
-  { name: "Компьютерная графика", teacher: "Новиков Н.Н.", rooms: ["К-701", "К-702"] },
-  { name: "Сети и телекоммуникации", teacher: "Павлов П.А.", rooms: ["С-101", "С-102"] },
-]
-
-const timeSlots = [
-  { start: "08:20", end: "09:50" },
-  { start: "10:00", end: "11:30" },
-  { start: "11:40", end: "13:10" },
-  { start: "14:00", end: "15:30" },
-  { start: "15:40", end: "17:10" },
-  { start: "17:20", end: "18:50" },
-  { start: "19:00", end: "20:30" },
-  { start: "20:40", end: "22:10" },
-]
-
-const lessonTypes: ("lecture" | "practice" | "lab")[] = ["lecture", "practice", "lab"]
-
-// Функция для генерации случайного расписания на сентябрь
-const generateSeptemberSchedule = () => {
-  const schedule: Record<
-    string,
-    Array<{
-      time: string
-      endTime: string // Добавил поле для времени окончания
-      subject: string
-      room: string
-      teacher: string
-      type: "lecture" | "practice" | "lab"
-    }>
-  > = {}
-
-  for (let day = 1; day <= 30; day++) {
-    const dateKey = `2025-09-${day.toString().padStart(2, "0")}`
-    const dayOfWeek = new Date(2025, 8, day).getDay() // 0 = воскресенье, 6 = суббота
-
-    // Пропускаем выходные (суббота и воскресенье)
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      continue
-    }
-
-    if (day === 1) {
-      schedule[dateKey] = [
-        {
-          time: "09:00",
-          endTime: "10:30",
-          subject: "Торжественная линейка",
-          room: "Актовый зал",
-          teacher: "Администрация",
-          type: "lecture",
-        },
-        {
-          time: "10:40",
-          endTime: "12:10",
-          subject: "Введение в специальность",
-          room: "А-101",
-          teacher: "Иванов И.И.",
-          type: "lecture",
-        },
-        {
-          time: "12:20",
-          endTime: "13:50",
-          subject: "Математический анализ",
-          room: "А-102",
-          teacher: "Петрова П.П.",
-          type: "lecture",
-        },
-        {
-          time: "14:00",
-          endTime: "15:30",
-          subject: "Программирование",
-          room: "К-301",
-          teacher: "Козлов К.К.",
-          type: "practice",
-        },
-        {
-          time: "15:40",
-          endTime: "17:10",
-          subject: "Физика",
-          room: "Ф-101",
-          teacher: "Сидоров С.С.",
-          type: "lab",
-        },
-      ]
-      continue
-    }
-
-    // Случайное количество пар в день (2-5)
-    const lessonsCount = Math.floor(Math.random() * 4) + 2
-    const daySchedule = []
-    const usedTimes = new Set()
-
-    for (let i = 0; i < lessonsCount; i++) {
-      // Выбираем случайное время, которое еще не использовалось
-      let timeSlot
-      do {
-        timeSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)]
-      } while (usedTimes.has(timeSlot.start) && usedTimes.size < timeSlots.length)
-
-      if (usedTimes.size >= timeSlots.length) break
-      usedTimes.add(timeSlot.start)
-
-      // Выбираем случайный предмет
-      const subject = subjects[Math.floor(Math.random() * subjects.length)]
-      const room = subject.rooms[Math.floor(Math.random() * subject.rooms.length)]
-      const type = lessonTypes[Math.floor(Math.random() * lessonTypes.length)]
-
-      daySchedule.push({
-        time: timeSlot.start,
-        endTime: timeSlot.end, // Добавил время окончания
-        subject: subject.name,
-        room: room,
-        teacher: subject.teacher,
-        type: type,
-      })
-    }
-
-    // Сортируем по времени
-    daySchedule.sort((a, b) => a.time.localeCompare(b.time))
-    schedule[dateKey] = daySchedule
-  }
-
-  return schedule
+interface Lesson {
+  time: string
+  endTime: string
+  subject: string
+  room: string
+  teacher: string
+  type: "lecture" | "practice" | "lab" | "other"
 }
 
-const mockScheduleData = generateSeptemberSchedule()
+interface TimetableResponse {
+  zachNumber: string
+  groupName: string
+  timetable: {
+    Числитель: Record<string, Record<string, string>>
+    Знаменатель: Record<string, Record<string, string>>
+  }
+}
 
-export default function SchedulePage({onNavigate, onShowProfile, language }: SchedulePageProps) {
+const lessonTypes: ("lecture" | "practice" | "lab" | "other")[] = ["lecture", "practice", "lab", "other"]
+
+export default function SchedulePage({ studentId, onNavigate, onShowProfile, language }: SchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
+  const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
+  const [groupName, setGroupName] = useState<string>("")
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   const t = translations[language]
+
+  // Функция для парсинга данных с бэкенда
+  const parseTimetableData = (data: TimetableResponse): Record<string, Lesson[]> => {
+    const result: Record<string, Lesson[]> = {}
+    const { timetable } = data
+    
+    // Функция для преобразования дня недели в формат даты
+    const getDateForDay = (dayOfWeek: string, weekType: "Числитель" | "Знаменатель"): Date => {
+      const daysMap: Record<string, number> = {
+        "ПОНЕДЕЛЬНИК": 1,
+        "ВТОРНИК": 2,
+        "СРЕДА": 3,
+        "ЧЕТВЕРГ": 4,
+        "ПЯТНИЦА": 5,
+        "СУББОТА": 6,
+        "ВОСКРЕСЕНЬЕ": 0
+      }
+      
+      const today = new Date()
+      const currentDay = today.getDay()
+      const targetDay = daysMap[dayOfWeek] || 0
+      
+      // Находим ближайший день недели
+      let diff = targetDay - currentDay
+      if (diff < 0) diff += 7
+      
+      const date = new Date(today)
+      date.setDate(today.getDate() + diff)
+      
+      // Учитываем тип недели (числитель/знаменатель)
+      const weekNumber = Math.floor(date.getDate() / 7) + 1
+      if ((weekType === "Числитель" && weekNumber % 2 === 0) || 
+          (weekType === "Знаменатель" && weekNumber % 2 === 1)) {
+        date.setDate(date.getDate() + 7)
+      }
+      
+      return date
+    }
+    
+    // Обрабатываем числитель и знаменатель
+    for (const [weekType, days] of Object.entries(timetable)) {
+      for (const [dayOfWeek, lessons] of Object.entries(days)) {
+        const date = getDateForDay(dayOfWeek, weekType as "Числитель" | "Знаменатель")
+        const dateKey = date.toISOString().split('T')[0]
+        
+        const parsedLessons: Lesson[] = []
+        
+        for (const [timeRange, lessonStr] of Object.entries(lessons)) {
+          const [startTime, endTime] = timeRange.split('-')
+          let type: "lecture" | "practice" | "lab" | "other" = "other"
+          let subject = lessonStr
+          let teacher = ""
+          let room = ""
+          
+          // Парсим строку занятия
+          if (lessonStr.includes("лекция:")) {
+            type = "lecture"
+            const parts = lessonStr.replace("лекция:", "").split('(')
+            subject = parts[0].trim()
+            teacher = parts[0].trim().split(' ').slice(-3).join(' ')
+            room = parts[1]?.replace(')', '').trim() || ""
+          } else if (lessonStr.includes("практические занятия:")) {
+            type = "practice"
+            const parts = lessonStr.replace("практические занятия:", "").split('(')
+            subject = parts[0].trim()
+            teacher = parts[0].trim().split(' ').slice(-3).join(' ')
+            room = parts[1]?.replace(')', '').trim() || ""
+          } else if (lessonStr.includes("лабораторные занятия:")) {
+            type = "lab"
+            const parts = lessonStr.replace("лабораторные занятия:", "").split('(')
+            subject = parts[0].trim()
+            teacher = parts[0].trim().split(' ').slice(-3).join(' ')
+            room = parts[1]?.replace(')', '').trim() || ""
+          } else {
+            // Для других типов занятий
+            const parts = lessonStr.split('(')
+            subject = parts[0].trim()
+            room = parts[1]?.replace(')', '').trim() || ""
+          }
+          
+          parsedLessons.push({
+            time: startTime.replace('.', ':'),
+            endTime: endTime.replace('.', ':'),
+            subject,
+            room,
+            teacher,
+            type
+          })
+        }
+        
+        // Сортируем занятия по времени
+        parsedLessons.sort((a, b) => a.time.localeCompare(b.time))
+        
+        if (!result[dateKey]) {
+          result[dateKey] = []
+        }
+        result[dateKey].push(...parsedLessons)
+      }
+    }
+    
+    return result
+  }
+
+  // Загрузка данных с бэкенда
+  const fetchTimetable = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`http://localhost:8080/api/timetable/${studentId}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data: TimetableResponse = await response.json()
+      setGroupName(data.groupName)
+      const parsedSchedule = parseTimetableData(data)
+      setSchedule(parsedSchedule)
+      
+      // Устанавливаем первую дату с занятиями как выбранную
+      const firstDateWithLessons = Object.keys(parsedSchedule)[0]
+      if (firstDateWithLessons) {
+        setSelectedDateKey(firstDateWithLessons)
+      }
+    } catch (err) {
+      console.error("Failed to fetch timetable:", err)
+      setError("Не удалось загрузить расписание. Пожалуйста, попробуйте позже.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Подключение к WebSocket для обновлений
+  const setupWebSocket = () => {
+    const wsUrl = `ws://localhost:8080/api/timetable/updates/${studentId}`
+    wsRef.current = new WebSocket(wsUrl)
+    
+    wsRef.current.onopen = () => {
+      console.log("WebSocket connected")
+    }
+    
+    wsRef.current.onmessage = (event) => {
+      console.log("Received update:", event.data)
+      fetchTimetable() // При получении сообщения обновляем данные
+    }
+    
+    wsRef.current.onerror = (error) => {
+      console.error("WebSocket error:", error)
+    }
+    
+    wsRef.current.onclose = () => {
+      console.log("WebSocket disconnected, reconnecting...")
+      setTimeout(setupWebSocket, 5000) // Переподключение через 5 секунд
+    }
+  }
+
+  useEffect(() => {
+    fetchTimetable()
+    setupWebSocket()
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [studentId])
 
   const generateAllDates = () => {
     const daysOfWeek =
@@ -210,16 +256,15 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
 
   useEffect(() => {
     const allDates = generateAllDates()
-    const september1st = allDates.find((d) => d.key === "2025-09-01")
-    const defaultDate =
-      september1st ||
-      allDates.find((d) => d.key.startsWith("2025-09-")) ||
-      allDates.find((d) => d.isToday) ||
-      allDates[0]
-
     setDates(allDates)
-    setSelectedDateKey(defaultDate?.key || "")
-  }, [language]) // добавил language в зависимости useEffect
+    
+    // Если нет выбранной даты, выбираем сегодняшнюю или первую с занятиями
+    if (!selectedDateKey) {
+      const today = allDates.find(d => d.isToday)
+      const firstWithLessons = allDates.find(d => schedule[d.key]?.length > 0)
+      setSelectedDateKey(today?.key || firstWithLessons?.key || allDates[0]?.key || "")
+    }
+  }, [language, schedule])
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -233,14 +278,13 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
     }
   }
 
-  const getScheduleForDate = () => {
-    const schedule = mockScheduleData[selectedDateKey] || []
-    return schedule
+  const getScheduleForDate = (): Lesson[] => {
+    return schedule[selectedDateKey] || []
   }
 
   const getSelectedDateInfo = () => {
     const selectedDateObj = dates.find((d) => d.key === selectedDateKey)
-    if (!selectedDateObj) return "Select a date"
+    if (!selectedDateObj) return t.selectDate
 
     return `${selectedDateObj.month} ${selectedDateObj.date} • ${selectedDateObj.day}`
   }
@@ -250,7 +294,7 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
     return selectedDateObj ? selectedDateObj.fullDate.getFullYear() : new Date().getFullYear()
   }
 
-  const getCardStyles = (type: "lecture" | "practice" | "lab") => {
+  const getCardStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
         return "bg-card border border-border border-l-4 border-l-blue-500 shadow-sm hover:shadow-md"
@@ -259,11 +303,11 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
       case "lab":
         return "bg-card border border-border border-l-4 border-l-green-500 shadow-sm hover:shadow-md"
       default:
-        return "bg-card border border-border shadow-sm hover:shadow-md"
+        return "bg-card border border-border border-l-4 border-l-purple-500 shadow-sm hover:shadow-md"
     }
   }
 
-  const getTypeStyles = (type: "lecture" | "practice" | "lab") => {
+  const getTypeStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
@@ -272,11 +316,11 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
       case "lab":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800"
       default:
-        return "bg-muted text-muted-foreground"
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
     }
   }
 
-  const getTypeLabel = (type: "lecture" | "practice" | "lab") => {
+  const getTypeLabel = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
         return t.lecture
@@ -285,11 +329,11 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
       case "lab":
         return t.lab
       default:
-        return type
+        return t.other
     }
   }
 
-  const schedule = getScheduleForDate()
+  const currentSchedule = getScheduleForDate()
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -297,7 +341,7 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
       <div className="flex items-center justify-between p-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">{t.schedule}</h1>
-          <p className="text-muted-foreground">МПол24-1</p>
+          <p className="text-muted-foreground">{groupName || "Загрузка..."}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="ghost" size="icon" className="text-primary hover:bg-muted">
@@ -363,13 +407,21 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
       </div>
 
       <div className="flex-1 px-4 pb-20">
-        {schedule.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground text-lg">Загрузка расписания...</p>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-red-500 text-lg">{error}</p>
+          </div>
+        ) : currentSchedule.length === 0 ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground text-lg">{t.noClasses}</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {schedule.map((lesson, index) => (
+            {currentSchedule.map((lesson, index) => (
               <div key={index} className={`${getCardStyles(lesson.type)} rounded-xl p-4 transition-all duration-200`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -396,14 +448,16 @@ export default function SchedulePage({onNavigate, onShowProfile, language }: Sch
                           {lesson.room}
                         </span>
                       </div>
-                      <div>
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                          {t.teacherLabel}
+                      {lesson.teacher && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                            {t.teacherLabel}
+                          </div>
+                          <span className="text-foreground font-medium bg-accent/50 px-3 py-1.5 rounded-lg text-sm border border-accent/20">
+                            {lesson.teacher}
+                          </span>
                         </div>
-                        <span className="text-foreground font-medium bg-accent/50 px-3 py-1.5 rounded-lg text-sm border border-accent/20">
-                          {lesson.teacher}
-                        </span>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
