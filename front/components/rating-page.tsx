@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, GraduationCap, User } from "lucide-react"
@@ -12,49 +13,111 @@ interface RatingPageProps {
   language: Language
 }
 
+interface RatingResponse {
+  zachNumber: string
+  groupName: string
+  ratings: {
+    subject: string
+    ratings: string[]
+  }[]
+}
+
+interface SubjectRating {
+  name: string
+  ratings: {
+    name: string
+    value: string
+  }[]
+  finalGrade?: string
+  type: "single" | "multiple" | "points"
+}
+
 export default function RatingPage({ studentId, onNavigate, onShowProfile, language }: RatingPageProps) {
+  const [ratingData, setRatingData] = useState<RatingResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const t = translations[language]
 
-  // Mock rating data
-  const subjects = [
-    { name: "Математика", grade: 4.5, credits: 5, type: "grade" as const },
-    { name: "Физика", grade: 4.2, credits: 4, type: "grade" as const },
-    {
-      name: "Программирование",
-      totalPoints: 85,
-      credits: 6,
-      type: "points" as const,
-      checkpoints: [
-        { name: "КТ1", points: 18, maxPoints: 20 },
-        { name: "КТ2", points: 16, maxPoints: 20 },
-        { name: "КТ3", points: 19, maxPoints: 20 },
-        { name: "КТ4", points: 17, maxPoints: 20 },
-        { name: "КТ5", points: 15, maxPoints: 20 },
-      ],
-    },
-    {
-      name: "Английский язык",
-      totalPoints: 72,
-      credits: 3,
-      type: "points" as const,
-      checkpoints: [
-        { name: "КТ1", points: 15, maxPoints: 20 },
-        { name: "КТ2", points: 14, maxPoints: 20 },
-        { name: "КТ3", points: 16, maxPoints: 20 },
-        { name: "КТ4", points: 13, maxPoints: 20 },
-        { name: "КТ5", points: 14, maxPoints: 20 },
-      ],
-    },
-    { name: "История", grade: 4.3, credits: 2, type: "grade" as const },
-  ]
+  useEffect(() => {
+    const fetchRating = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/rating/${studentId}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const data: RatingResponse = await response.json()
+        setRatingData(data)
+      } catch (err) {
+        setError("Не удалось загрузить рейтинг")
+        console.error("Failed to fetch rating:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const gradeSubjects = subjects.filter((s) => s.type === "grade") as Array<{
-    name: string
-    grade: number
-    credits: number
-    type: "grade"
-  }>
-  const averageGrade = gradeSubjects.reduce((sum, subject) => sum + subject.grade, 0) / gradeSubjects.length
+    fetchRating()
+  }, [studentId])
+
+  const capitalizeFirstLetter = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+  }
+
+  const processRatings = (): SubjectRating[] => {
+    if (!ratingData) return []
+
+    return ratingData.ratings.map(subject => {
+      const ratings = subject.ratings
+      const subjectName = capitalizeFirstLetter(subject.subject)
+      
+      if (ratings.length === 1) {
+        // Предметы с одной оценкой
+        return {
+          name: subjectName,
+          ratings: [{ name: "Оценка", value: ratings[0] }],
+          type: "single"
+        }
+      } else if (ratings.length === 6) {
+        // Предметы с 6 оценками (5 КТ + итоговая)
+        const checkpoints = ratings.slice(0, 5).map((r, i) => ({
+          name: `КТ${i+1}`,
+          value: r
+        }))
+        return {
+          name: subjectName,
+          ratings: checkpoints,
+          finalGrade: ratings[5],
+          type: "points"
+        }
+      } else {
+        // Предметы с несколькими оценками (но не 6)
+        return {
+          name: subjectName,
+          ratings: ratings.map((r, i) => ({
+            name: `Оценка ${i+1}`,
+            value: r
+          })),
+          type: "multiple"
+        }
+      }
+    })
+  }
+
+  const getGradeColor = (grade: string) => {
+    if (grade === "Отл" || grade === "5" || (Number(grade) >= 85)) return "text-green-500"
+    if (grade === "Хор" || grade === "4" || (Number(grade) >= 65)) return "text-yellow-500"
+    if (grade === "Удовл" || grade === "3" || (Number(grade) >= 40)) return "text-orange-500"
+    return "text-red-500"
+  }
+
+  const getGradeText = (grade: string) => {
+    if (grade === "Отл") return "5"
+    if (grade === "Хор") return "4"
+    if (grade === "Удовл") return "3"
+    if (grade === "Неуд") return "2"
+    return grade
+  }
+
+  const processedSubjects = processRatings()
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -72,103 +135,74 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
           <div>
             <h1 className="text-2xl font-bold">{t.rating}</h1>
             <p className="text-muted-foreground">
-              {language === "ru" ? "Зачетка:" : "Student ID:"} {studentId}
+              {language === "ru" ? "Зачетка:" : "Student ID:"} {ratingData?.zachNumber || studentId}
+              {ratingData?.groupName && ` (${ratingData.groupName})`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Average Grade */}
-      <div className="px-4 mb-6">
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground text-center">
-              {language === "ru" ? "Средний балл" : "Average Grade"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-500 mb-2">{averageGrade.toFixed(2)}</div>
-              <p className="text-muted-foreground">{language === "ru" ? "из 5.0" : "out of 5.0"}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Subjects List */}
-      <div className="px-4 space-y-4 mb-20">
-        {subjects.map((subject, index) => (
-          <Card key={index} className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              {subject.type === "grade" ? (
-                <div className="flex justify-between items-center">
-                  <div>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground text-lg">Загрузка рейтинга...</p>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-red-500 text-lg">{error}</p>
+        </div>
+      ) : (
+        <>
+          {/* Subjects List */}
+          <div className="px-4 space-y-4 mb-20">
+            {processedSubjects.map((subject, index) => (
+              <Card key={index} className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="mb-3">
                     <h3 className="text-foreground font-medium text-lg">{subject.name}</h3>
                   </div>
-                  <div className="text-right">
-                    <div
-                      className={`text-2xl font-bold ${
-                        subject.grade >= 4.5
-                          ? "text-green-500"
-                          : subject.grade >= 4.0
-                            ? "text-yellow-500"
-                            : "text-red-500"
-                      }`}
-                    >
-                      {subject.grade.toFixed(1)}
-                    </div>
-                    <p className="text-muted-foreground text-xs">{language === "ru" ? "из 5.0" : "out of 5.0"}</p>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-foreground font-medium text-lg">{subject.name}</h3>
-                    </div>
-                    <div className="text-right">
-                      <div
-                        className={`text-2xl font-bold ${
-                          subject.totalPoints >= 85
-                            ? "text-green-500"
-                            : subject.totalPoints >= 70
-                              ? "text-yellow-500"
-                              : "text-red-500"
-                        }`}
-                      >
-                        {subject.totalPoints}
-                      </div>
-                      <p className="text-muted-foreground text-xs">{language === "ru" ? "из 100" : "out of 100"}</p>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground text-sm font-medium">{t.controlPoints}:</p>
-                    <div className="grid grid-cols-5 gap-2">
-                      {subject.checkpoints.map((checkpoint, cpIndex) => (
-                        <div key={cpIndex} className="bg-muted/50 rounded-lg p-2 text-center">
-                          <p className="text-xs text-muted-foreground">{checkpoint.name}</p>
-                          <p
-                            className={`text-sm font-semibold ${
-                              checkpoint.points >= 18
-                                ? "text-green-500"
-                                : checkpoint.points >= 15
-                                  ? "text-yellow-500"
-                                  : "text-red-500"
-                            }`}
-                          >
-                            {checkpoint.points}/{checkpoint.maxPoints}
-                          </p>
-                        </div>
-                      ))}
+                  {subject.type === "single" ? (
+                    <div className="flex justify-between items-center">
+                      <p className="text-muted-foreground text-sm">Оценка:</p>
+                      <div className={`text-xl font-bold ${getGradeColor(subject.ratings[0].value)}`}>
+                        {getGradeText(subject.ratings[0].value)}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  ) : (
+                    <div>
+                      <div className="mb-3">
+                        {subject.type === "points" && (
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-muted-foreground text-sm">Итоговая оценка:</p>
+                            <div className={`text-xl font-bold ${getGradeColor(subject.finalGrade || "")}`}>
+                              {subject.finalGrade ? getGradeText(subject.finalGrade) : "-"}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <p className="text-muted-foreground text-sm font-medium">
+                          {subject.type === "points" ? "Контрольные точки:" : "Оценки:"}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                        {subject.ratings.map((rating, idx) => (
+                          <div key={idx} className="bg-muted/50 rounded-lg p-2 text-center">
+                            <p className="text-xs text-muted-foreground">{rating.name}</p>
+                            <p className={`text-sm font-semibold ${getGradeColor(rating.value)}`}>
+                              {getGradeText(rating.value)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">

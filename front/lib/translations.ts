@@ -43,6 +43,10 @@ export const translations = {
     november: "Ноябрь",
     december: "Декабрь",
 
+    selectDate: "Select date",
+    loading: "Loading...",
+    other: "Other",
+
     // Rating page
     rating: "Рейтинг",
     grades: "Оценки",
@@ -51,6 +55,8 @@ export const translations = {
 
     // Navigation
     back: "Назад",
+
+    loadingSchedule: "Загрузка расписания..."
   },
   en: {
     // Auth page
@@ -67,6 +73,12 @@ export const translations = {
     timeLabel: "TIME",
     roomLabel: "ROOM",
     teacherLabel: "TEACHER",
+
+    selectDate: "Выберите дату",
+    loading: "Загрузка...",
+    other: "Другое",
+
+    loadingSchedule: "Loading schedule...",
 
     // Class types
     lecture: "Lecture",
