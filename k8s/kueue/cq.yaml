@@ -1,0 +1,14 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: "cq"
+spec:
+  resourceGroups:
+  - coveredResources: ["cpu", "memory"]
+    flavors:
+    - name: "default-flavor"
+      resources:
+      - name: "cpu"
+        nominalQuota: 12  # 12 ядер для задач
+      - name: "memory"
+        nominalQuota: 1500Mi  # 1.5 GB RAM для задач

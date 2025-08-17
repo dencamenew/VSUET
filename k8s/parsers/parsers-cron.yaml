@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parsers-
+spec:
+  entrypoint: main-flow
+  ttlStrategy:
+    secondsAfterCompletion: 3600  # Автоматическое удаление через 1 час
+  templates:
+  - name: main-flow
+    steps:
+    - - name: wait-for-db
+        template: db-check
+    - - name: run-sbj-urls
+        template: sbj_urls
+        when: "{{steps.wait-for-db.status}} == Succeeded"
+    - - name: run-dependent-parsers
+        template: dependent-parsers
+        when: "{{steps.run-sbj-urls.status}} == Succeeded"
+
+  - name: db-check
+    container:
+      image: postgres:17
+      env:
+      - name: PGPASSWORD
+        value: "admin"
+      command: ["sh", "-c"]
+      args:
+      - >
+        until pg_isready -h postgres -U admin -d parsers_db -t 1; do
+          echo "Waiting for PostgreSQL...";
+          sleep 2;
+        done;
+
+  - name: sbj_urls
+    container:
+      image: dimavysotskiy/parser-sbj_urls:v1.0
+      env: [...]  # те же env, что и в первом примере
+
+  - name: dependent-parsers
+    steps:
+    - - name: timetable
+        template: timetable
+      - - name: another-parser
+          template: another-parser
+
+  - name: timetable
+    container:
+      image: your-timetable-parser-image
+      [...]
+
+  - name: another-parser
+    container:
+      image: your-another-parser-image
+      [...]
