@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: timetable-updater-job
+  name: zach
 spec:
   template:
     spec:
@@ -21,11 +21,11 @@ spec:
               sleep 2
             done
 
-            # Проверка существования таблицы
+            # Проверка существования таблицы zach
             until PGPASSWORD="$DB_PASSWORD" psql \
               -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-              -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'timetable'" | grep -q 1; do
-              echo "[$(date)] Таблица timetable не найдена"
+              -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'zach'" | grep -q 1; do
+              echo "[$(date)] Таблица zach не найдена"
               sleep 2
             done
 
@@ -35,9 +35,9 @@ spec:
             name: jobs-secrets
 
       containers:
-      - name: timetable
-        image: dimavysotskiy/parser-timetable:1.0
+      - name: zach
+        image: dimavysotskiy/parser-zach:1.0
         envFrom:
         - secretRef:
             name: jobs-secrets
-      restartPolicy: OnFailure
+      restartPolicy: Never

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: timetable-updater-job
+  name: sbj-urls
 spec:
   template:
     spec:
@@ -21,11 +21,11 @@ spec:
               sleep 2
             done
 
-            # Проверка существования таблицы
+            # Проверка существования таблицы sbj_urls
             until PGPASSWORD="$DB_PASSWORD" psql \
               -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-              -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'timetable'" | grep -q 1; do
-              echo "[$(date)] Таблица timetable не найдена"
+              -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'sbj_urls'" | grep -q 1; do
+              echo "[$(date)] Таблица sbj_urls не найдена"
               sleep 2
             done
 
@@ -35,9 +35,9 @@ spec:
             name: jobs-secrets
 
       containers:
-      - name: timetable
-        image: dimavysotskiy/parser-timetable:1.0
+      - name: sbj-urls
+        image: dimavysotskiy/parser-sbj_urls:1.0
         envFrom:
         - secretRef:
             name: jobs-secrets
-      restartPolicy: OnFailure
+      restartPolicy: Never
