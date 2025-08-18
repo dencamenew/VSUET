@@ -1,8 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Moon, Sun, LogOut, X, Globe } from "lucide-react"
+import { User, Moon, Sun, LogOut, X, Globe, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+
+interface TimetableResponse {
+  zachNumber: string
+  groupName: string
+  timetable: {
+    Числитель: Record<string, Record<string, string>>
+    Знаменатель: Record<string, Record<string, string>>
+  }
+}
 
 interface ProfilePageProps {
   studentId: string
@@ -14,8 +23,27 @@ interface ProfilePageProps {
 export default function ProfilePage({ studentId, onLogout, onClose, onLanguageChange }: ProfilePageProps) {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [language, setLanguage] = useState<"ru" | "en">("ru")
+  const [groupName, setGroupName] = useState<string>("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const fetchStudentData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/timetable/${studentId}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch timetable data')
+        }
+        const data: TimetableResponse = await response.json()
+        setGroupName(data.groupName)
+      } catch (err) {
+        console.error('Error fetching timetable data:', err)
+        setError('Failed to load student data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark")
@@ -24,14 +52,15 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
     if (savedLanguage) {
       setLanguage(savedLanguage)
     }
-  }, [])
+
+    fetchStudentData()
+  }, [studentId])
 
   const toggleTheme = () => {
     const newTheme = !isDarkMode
     setIsDarkMode(newTheme)
     localStorage.setItem("theme", newTheme ? "dark" : "light")
 
-    // Apply theme to document
     if (newTheme) {
       document.documentElement.classList.add("dark")
     } else {
@@ -44,12 +73,6 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
     setLanguage(newLanguage)
     localStorage.setItem("language", newLanguage)
     onLanguageChange(newLanguage)
-  }
-
-  // Generate group number based on student ID (mock logic)
-  const getGroupNumber = (id: string) => {
-    const lastDigit = Number.parseInt(id.slice(-1)) || 1
-    return `МПол24-${lastDigit}`
   }
 
   const t = {
@@ -67,6 +90,8 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       english: "English",
       change: "Изменить",
       logout: "Выйти из аккаунта",
+      loading: "Загрузка...",
+      error: "Ошибка загрузки"
     },
     en: {
       profile: "Profile",
@@ -82,7 +107,32 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       english: "English",
       change: "Change",
       logout: "Logout",
+      loading: "Loading...",
+      error: "Loading error"
     },
+  }
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+        <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+        <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex flex-col items-center justify-center">
+          <p className="text-destructive mb-4">{t[language].error}</p>
+          <Button variant="outline" onClick={onClose}>
+            {t[language].change}
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -111,11 +161,11 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">{t[language].studentId}</span>
-                <span className="text-foreground font-mono">{studentId}</span>
+                <span className="text-foreground font-medium">{studentId}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">{t[language].group}</span>
-                <span className="text-foreground">{getGroupNumber(studentId)}</span>
+                <span className="text-foreground font-medium">{groupName || "N/A"}</span>
               </div>
             </div>
           </div>

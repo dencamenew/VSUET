@@ -32,6 +32,7 @@ interface Lesson {
   room: string
   teacher: string
   type: "lecture" | "practice" | "lab" | "other"
+  weekType?: "Числитель" | "Знаменатель"
   grades?: {
     value: string
     date: string
@@ -227,30 +228,36 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     const result: Record<string, Lesson[]> = {}
     const { timetable } = data
     
-    const startDate = new Date(2025, 8, 1)
-    const endDate = new Date(2025, 11, 31)
-    let currentDate = new Date(startDate)
+    // Исправлено: сентябрь это 8 (0-январь, 8-сентябрь)
+    const FIRST_MONDAY = new Date(2025, 8, 1) // 1 сентября 2025
     
-    let isNumeratorWeek = true
-
-    const dayMapping: Record<string, string> = {
-      "ПОНЕДЕЛЬНИК": "Пн",
-      "ВТОРНИК": "Вт",
-      "СРЕДА": "Ср",
-      "ЧЕТВЕРГ": "Чт",
-      "ПЯТНИЦА": "Пт",
-      "СУББОТА": "Сб",
-      "ВОСКРЕСЕНЬЕ": "Вс"
+    // Проверяем что это действительно понедельник
+    if (FIRST_MONDAY.getDay() !== 1) {
+      console.error("Ошибка: 1 сентября 2025 должно быть понедельником, а это", 
+        ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][FIRST_MONDAY.getDay()])
+      return {}
     }
+
+    const endDate = new Date(2025, 11, 31) // Декабрь 2025
+    let currentDate = new Date(FIRST_MONDAY)
+    
+    // Порядок дней: Пн=0, Вт=1, ..., Вс=6
+    const RUSSIAN_DAYS = ["ПОНЕДЕЛЬНИК", "ВТОРНИК", "СРЕДА", "ЧЕТВЕРГ", "ПЯТНИЦА", "СУББОТА", "ВОСКРЕСЕНЬЕ"]
 
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0]
-      const dayOfWeekName = Object.keys(dayMapping).find(
-        key => dayMapping[key] === ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][currentDate.getDay()]
-      ) || ""
+      const dayOfWeek = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
       
-      const weekType = isNumeratorWeek ? "Числитель" : "Знаменатель"
-      const dayLessons = timetable[weekType]?.[dayOfWeekName] || {}
+      // Преобразуем в наш формат: 0=Пн, 1=Вт, ..., 6=Вс
+      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      const dayName = RUSSIAN_DAYS[adjustedDay]
+
+      // Неделя считается с понедельника
+      const weekDiff = Math.floor((currentDate.getTime() - FIRST_MONDAY.getTime()) / (7 * 24 * 60 * 60 * 1000))
+      const isNumerator = weekDiff % 2 === 0
+      const weekType = isNumerator ? "Числитель" : "Знаменатель"
+
+      const dayLessons = timetable[weekType]?.[dayName] || {}
       
       const parsedLessons: Lesson[] = []
       for (const [timeRange, lessonStr] of Object.entries(dayLessons)) {
@@ -263,7 +270,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
           subject,
           room,
           teacher,
-          type
+          type,
+          weekType // Добавляем тип недели к каждому занятию
         })
       }
       
@@ -273,15 +281,10 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       }
 
       currentDate.setDate(currentDate.getDate() + 1)
-      
-      if (currentDate.getDay() === 1) {
-        isNumeratorWeek = !isNumeratorWeek
-      }
     }
 
     return result
   }
-
   // Загрузка расписания
   const fetchTimetable = async () => {
     setLoading(true)
@@ -372,9 +375,10 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   // Генерация дат для календаря
   const generateAllDates = () => {
+  // Порядок: Пн, Вт, Ср, Чт, Пт, Сб, Вс
     const daysOfWeek = language === "ru" 
-      ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] 
-      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] 
+      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
     const months = language === "ru"
       ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
@@ -382,10 +386,10 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
     const today = new Date()
     const startDate = new Date(today)
-    startDate.setDate(today.getDate() - 30)
+    startDate.setDate(today.getDate() - 14)
 
     const endDate = new Date(today)
-    endDate.setDate(today.getDate() + 180)
+    endDate.setDate(today.getDate() + 60)
 
     const generatedDates: DateItem[] = []
     let currentDate = new Date(startDate)
@@ -393,10 +397,14 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0]
       const isToday = currentDate.toDateString() === today.toDateString()
+      const dayIndex = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
+      
+      // Преобразуем в порядок Пн-Вс (0=Пн, 6=Вс)
+      const displayDayIndex = dayIndex === 0 ? 6 : dayIndex - 1
 
       generatedDates.push({
         date: currentDate.getDate(),
-        day: daysOfWeek[currentDate.getDay()],
+        day: daysOfWeek[displayDayIndex], // Используем правильный индекс
         month: months[currentDate.getMonth()],
         isToday,
         fullDate: new Date(currentDate),
@@ -408,6 +416,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
     return generatedDates
   }
+
 
   // Инициализация дат и WebSocket
   useEffect(() => {
@@ -501,65 +510,31 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Шапка */}
       <div className="flex items-center justify-between p-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">{t.schedule}</h1>
           <p className="text-muted-foreground">{groupName || t.loading}</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="ghost" size="icon" className="text-primary hover:bg-muted">
-            <Search className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-primary hover:bg-muted">
-            <Grid3X3 className="h-5 w-5" />
-          </Button>
-        </div>
       </div>
 
-      {/* Индикатор статуса соединения */}
-      <div className="flex items-center gap-2 px-4 pb-2">
-        <div className={`w-3 h-3 rounded-full ${
-          connectionStatus === 'connected' ? 'bg-green-500' : 
-          connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-        }`} />
-        <span className="text-xs text-muted-foreground">
-          {connectionStatus === 'connected' ? t.synced : 
-           connectionStatus === 'connecting' ? t.connecting : t.offline}
-        </span>
-        {isUpdating && (
-          <span className="text-xs text-muted-foreground animate-pulse">
-            {t.updating}
-          </span>
-        )}
-      </div>
 
       {/* Календарь */}
       <div className="px-4 mb-6">
         <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-muted text-foreground"
-            onClick={scrollLeft}
-          >
+          <Button variant="ghost" size="icon" className="absolute left-0 top-1/2 -translate-y-1/2 z-10" onClick={scrollLeft}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-2 overflow-x-auto pb-2 px-8 scrollbar-hide"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+          <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-2 px-8 scrollbar-hide">
             {dates.map((dateItem) => (
               <button
                 key={dateItem.key}
                 onClick={() => setSelectedDateKey(dateItem.key)}
-                className={`flex-shrink-0 flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all duration-200 ${
-                  dateItem.isToday
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : selectedDateKey === dateItem.key
-                      ? "bg-muted text-foreground scale-105"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                className={`flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all ${
+                  dateItem.isToday ? "bg-primary text-primary-foreground" :
+                  selectedDateKey === dateItem.key ? "bg-muted" :
+                  "hover:bg-muted"
                 }`}
               >
                 <span className="text-lg font-semibold">{dateItem.date}</span>
@@ -568,23 +543,21 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
             ))}
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 hover:bg-muted text-foreground"
-            onClick={scrollRight}
-          >
+          <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 z-10" onClick={scrollRight}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Выбранная дата */}
-      <div className="px-4 mb-8">
-        <p className="text-muted-foreground">{selectedDateInfo}</p>
+      <div className="px-4 mb-4">
+        <p className="text-muted-foreground">
+          {selectedDateInfo}
+          {schedule[selectedDateKey]?.[0]?.weekType && ` • ${schedule[selectedDateKey][0].weekType}`}
+        </p>
       </div>
 
-      {/* Расписание */}
+      {/* Список занятий */}
       <div className="flex-1 px-4 pb-20">
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -662,25 +635,15 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       </div>
 
       {/* Нижнее меню */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-        <div className="flex justify-around items-center py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-foreground hover:bg-muted"
-            onClick={() => onNavigate("schedule")}
-          >
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t">
+        <div className="flex justify-around py-3">
+          <Button variant="ghost" size="icon" onClick={() => onNavigate("schedule")}>
             <Calendar className="h-6 w-6" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("rating")}
-          >
+          <Button variant="ghost" size="icon" onClick={() => onNavigate("rating")}>
             <GraduationCap className="h-6 w-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
+          <Button variant="ghost" size="icon" onClick={onShowProfile}>
             <User className="h-6 w-6" />
           </Button>
         </div>
