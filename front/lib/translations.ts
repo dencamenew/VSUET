@@ -56,7 +56,20 @@ export const translations = {
     // Navigation
     back: "Назад",
 
-    loadingSchedule: "Загрузка расписания..."
+    loadingSchedule: "Загрузка расписания...",
+
+    gradesLabel: "Оценки",
+    gradeUpdated: "Оценка обновлена",
+    attendanceUpdated: "Посещаемость обновлена",
+    present: "Присутствовал",
+    absent: "Отсутствовал",
+    late: "Опоздал",
+    synced: "Синхронизировано",
+    connecting: "Подключение...",
+    offline: "Оффлайн",
+    updating: "Обновление...",
+    scheduleUpdated: "Расписание обновлено",
+    scheduleLoadError: "Ошибка загрузки расписания"
   },
   en: {
     // Auth page
@@ -116,6 +129,19 @@ export const translations = {
 
     // Navigation
     back: "Back",
+
+    gradesLabel: "Grades",
+    gradeUpdated: "Grade updated",
+    attendanceUpdated: "Attendance updated",
+    present: "Present",
+    absent: "Absent",
+    late: "Late",
+    synced: "Synced",
+    connecting: "Connecting...",
+    offline: "Offline",
+    updating: "Updating...",
+    scheduleUpdated: "Schedule updated",
+    scheduleLoadError: "Error loading schedule"
   },
 }
 

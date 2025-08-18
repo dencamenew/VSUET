@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Search, Grid3X3, Calendar, User, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import { toast } from 'sonner'
 
 interface SchedulePageProps {
   studentId: string
@@ -31,6 +32,11 @@ interface Lesson {
   room: string
   teacher: string
   type: "lecture" | "practice" | "lab" | "other"
+  grades?: {
+    value: string
+    date: string
+  }[]
+  attendance?: "present" | "absent" | "late"
 }
 
 interface TimetableResponse {
@@ -42,6 +48,31 @@ interface TimetableResponse {
   }
 }
 
+interface GradeUpdate {
+  eventType: 'GRADE_CHANGED'
+  studentId: string
+  subject: string
+  date: string
+  newGrade: string
+  oldGrade?: string
+}
+
+interface AttendanceUpdate {
+  eventType: 'ATTENDANCE_UPDATED'
+  studentId: string
+  subject: string
+  date: string
+  status: 'present' | 'absent' | 'late'
+}
+
+interface ScheduleUpdate {
+  eventType: 'SCHEDULE_CHANGED'
+  groupId: string
+  studentId: string
+}
+
+type WebSocketMessage = GradeUpdate | AttendanceUpdate | ScheduleUpdate
+
 export default function SchedulePage({ studentId, onNavigate, onShowProfile, language }: SchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
@@ -49,11 +80,78 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [groupName, setGroupName] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
+  const [isUpdating, setIsUpdating] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
 
   const t = translations[language]
 
+  // Функция обработки обновления оценки
+  const handleGradeChange = useCallback((update: GradeUpdate) => {
+    setIsUpdating(true)
+    try {
+      setSchedule(prev => {
+        const newSchedule = {...prev}
+        const dateKey = update.date.split('T')[0]
+        
+        if (newSchedule[dateKey]) {
+          newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
+            if (lesson.subject === update.subject && lesson.time === update.date.split('T')[1].substring(0, 5)) {
+              return {
+                ...lesson,
+                grades: [
+                  ...(lesson.grades || []),
+                  {
+                    value: update.newGrade,
+                    date: update.date
+                  }
+                ]
+              }
+            }
+            return lesson
+          })
+        }
+        
+        return newSchedule
+      })
+      
+      toast.success(`${t.gradeUpdated}: ${update.subject} - ${update.newGrade}`)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [t.gradeUpdated])
+
+  // Функция обработки обновления посещаемости
+  const handleAttendanceUpdate = useCallback((update: AttendanceUpdate) => {
+    setIsUpdating(true)
+    try {
+      setSchedule(prev => {
+        const newSchedule = {...prev}
+        const dateKey = update.date.split('T')[0]
+        
+        if (newSchedule[dateKey]) {
+          newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
+            if (lesson.subject === update.subject && lesson.time === update.date.split('T')[1].substring(0, 5)) {
+              return {
+                ...lesson,
+                attendance: update.status
+              }
+            }
+            return lesson
+          })
+        }
+        
+        return newSchedule
+      })
+      
+      toast.info(`${t.attendanceUpdated}: ${update.subject} - ${t[update.status]}`)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [t])
+
+  // Парсинг информации о занятии
   const parseLessonString = (lessonStr: string): Omit<Lesson, 'time'|'endTime'> => {
     if (lessonStr.includes("физической культуре")) {
       const subject = lessonStr.split('(')[0].replace(', общая физическая', '').trim()
@@ -124,16 +222,16 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }
 
+  // Парсинг расписания
   const parseTimetableData = (data: TimetableResponse): Record<string, Lesson[]> => {
     const result: Record<string, Lesson[]> = {}
     const { timetable } = data
     
-    // Период с 1 сентября по 31 декабря 2025
-    const startDate = new Date(2025, 8, 1) // 1 сентября 2025
-    const endDate = new Date(2025, 11, 31) // 31 декабря 2025
+    const startDate = new Date(2025, 8, 1)
+    const endDate = new Date(2025, 11, 31)
     let currentDate = new Date(startDate)
     
-    let isNumeratorWeek = true // Первая неделя - числитель
+    let isNumeratorWeek = true
 
     const dayMapping: Record<string, string> = {
       "ПОНЕДЕЛЬНИК": "Пн",
@@ -176,7 +274,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
       currentDate.setDate(currentDate.getDate() + 1)
       
-      if (currentDate.getDay() === 1) { // Понедельник - смена недели
+      if (currentDate.getDay() === 1) {
         isNumeratorWeek = !isNumeratorWeek
       }
     }
@@ -184,6 +282,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     return result
   }
 
+  // Загрузка расписания
   const fetchTimetable = async () => {
     setLoading(true)
     setError(null)
@@ -204,27 +303,59 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       )
     } catch (err) {
       console.error("Failed to fetch timetable:", err)
-      setError("Не удалось загрузить расписание. Пожалуйста, попробуйте позже.")
+      setError(t.scheduleLoadError)
     } finally {
       setLoading(false)
     }
   }
 
+  // Настройка WebSocket
   const setupWebSocket = useCallback(() => {
     const socket = new SockJS('http://localhost:8080/ws')
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
       debug: (str) => console.debug(str),
+      
       onConnect: () => {
+        setConnectionStatus('connected')
         console.log('WebSocket connected')
-        client.subscribe(`/topic/timetable.updates.${studentId}`, (message) => {
-          const update = JSON.parse(message.body)
-          console.log('Received update:', update)
-          fetchTimetable()
+        client.subscribe(`/topic/gradebook.updates.${studentId}`, (message) => {
+          try {
+            const update: WebSocketMessage = JSON.parse(message.body)
+            console.log('Received update:', update)
+            
+            if (update.studentId === studentId) {
+              switch (update.eventType) {
+                case 'GRADE_CHANGED':
+                  handleGradeChange(update)
+                  break
+                case 'ATTENDANCE_UPDATED':
+                  handleAttendanceUpdate(update)
+                  break
+                case 'SCHEDULE_CHANGED':
+                  fetchTimetable()
+                  toast.info(t.scheduleUpdated)
+                  break
+                default:
+                  console.warn('Unknown update type:', update)
+              }
+            }
+          } catch (err) {
+            console.error('Error processing WebSocket message:', err)
+          }
         })
       },
+      
+      onDisconnect: () => {
+        setConnectionStatus('disconnected')
+        console.log('WebSocket disconnected')
+      },
+      
       onStompError: (frame) => {
+        setConnectionStatus('disconnected')
         console.error('WebSocket error:', frame.headers.message)
       }
     })
@@ -232,42 +363,36 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     client.activate()
     stompClientRef.current = client
 
-    return client
-  }, [studentId])
-
-  useEffect(() => {
-    fetchTimetable()
-    const client = setupWebSocket()
-
     return () => {
-      if (client?.connected) {
+      if (client.connected) {
         client.deactivate()
       }
     }
-  }, [studentId, setupWebSocket])
+  }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated])
 
+  // Генерация дат для календаря
   const generateAllDates = () => {
     const daysOfWeek = language === "ru" 
       ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] 
-      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     const months = language === "ru"
       ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
-      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 30); // Показываем 30 дней назад
+    const today = new Date()
+    const startDate = new Date(today)
+    startDate.setDate(today.getDate() - 30)
 
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 180); // И 180 дней вперед
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + 180)
 
-    const generatedDates: DateItem[] = [];
-    let currentDate = new Date(startDate);
+    const generatedDates: DateItem[] = []
+    let currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split('T')[0];
-      const isToday = currentDate.toDateString() === today.toDateString();
+      const dateKey = currentDate.toISOString().split('T')[0]
+      const isToday = currentDate.toDateString() === today.toDateString()
 
       generatedDates.push({
         date: currentDate.getDate(),
@@ -276,19 +401,39 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         isToday,
         fullDate: new Date(currentDate),
         key: dateKey,
-      });
+      })
 
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setDate(currentDate.getDate() + 1)
     }
 
-    return generatedDates;
-  };
+    return generatedDates
+  }
 
+  // Инициализация дат и WebSocket
   useEffect(() => {
     const allDates = generateAllDates()
     setDates(allDates)
   }, [language])
 
+  useEffect(() => {
+    let cleanup: () => void
+    
+    const init = async () => {
+      await fetchTimetable()
+      cleanup = setupWebSocket()
+    }
+
+    init()
+    
+    return () => {
+      if (cleanup) cleanup()
+      if (stompClientRef.current?.connected) {
+        stompClientRef.current.deactivate()
+      }
+    }
+  }, [studentId, setupWebSocket])
+
+  // Вспомогательные функции
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" })
@@ -301,15 +446,15 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }
 
-  const getScheduleForDate = (): Lesson[] => {
+  const currentSchedule = useMemo(() => {
     return schedule[selectedDateKey] || []
-  }
+  }, [schedule, selectedDateKey])
 
-  const getSelectedDateInfo = () => {
-    const selectedDateObj = dates.find((d) => d.key === selectedDateKey)
+  const selectedDateInfo = useMemo(() => {
+    const selectedDateObj = dates.find(d => d.key === selectedDateKey)
     if (!selectedDateObj) return t.selectDate
     return `${selectedDateObj.month} ${selectedDateObj.date} • ${selectedDateObj.day}`
-  }
+  }, [dates, selectedDateKey, language])
 
   const getCardStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
@@ -338,7 +483,21 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }
 
-  const currentSchedule = getScheduleForDate()
+  const getAttendanceBadge = (status?: "present" | "absent" | "late") => {
+    if (!status) return null
+    
+    const styles = {
+      present: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800",
+      absent: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800",
+      late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800"
+    }
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
+        {t[status]}
+      </span>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -357,6 +516,24 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         </div>
       </div>
 
+      {/* Индикатор статуса соединения */}
+      <div className="flex items-center gap-2 px-4 pb-2">
+        <div className={`w-3 h-3 rounded-full ${
+          connectionStatus === 'connected' ? 'bg-green-500' : 
+          connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+        }`} />
+        <span className="text-xs text-muted-foreground">
+          {connectionStatus === 'connected' ? t.synced : 
+           connectionStatus === 'connecting' ? t.connecting : t.offline}
+        </span>
+        {isUpdating && (
+          <span className="text-xs text-muted-foreground animate-pulse">
+            {t.updating}
+          </span>
+        )}
+      </div>
+
+      {/* Календарь */}
       <div className="px-4 mb-6">
         <div className="relative">
           <Button
@@ -402,10 +579,12 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         </div>
       </div>
 
+      {/* Выбранная дата */}
       <div className="px-4 mb-8">
-        <p className="text-muted-foreground">{getSelectedDateInfo()}</p>
+        <p className="text-muted-foreground">{selectedDateInfo}</p>
       </div>
 
+      {/* Расписание */}
       <div className="flex-1 px-4 pb-20">
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -430,6 +609,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(lesson.type)}`}>
                         {getTypeLabel(lesson.type)}
                       </span>
+                      {getAttendanceBadge(lesson.attendance)}
                     </div>
                     <div className="space-y-3">
                       <div>
@@ -458,6 +638,20 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                           </span>
                         </div>
                       )}
+                      {lesson.grades?.length ? (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                            {t.gradesLabel}
+                          </div>
+                          <div className="flex gap-2">
+                            {lesson.grades.map((grade, i) => (
+                              <span key={i} className="text-foreground font-medium bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-lg text-sm">
+                                {grade.value}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -467,6 +661,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         )}
       </div>
 
+      {/* Нижнее меню */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
         <div className="flex justify-around items-center py-3">
           <Button

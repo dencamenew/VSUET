@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, GraduationCap, User } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
+import { Client } from '@stomp/stompjs'
 
 interface RatingPageProps {
   studentId: string
@@ -32,12 +33,88 @@ interface SubjectRating {
   type: "single" | "multiple" | "points"
 }
 
+interface RatingUpdate {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+  zach_number: string
+  group_name: string
+  sbj: string
+  raiting: string[]
+}
+
 export default function RatingPage({ studentId, onNavigate, onShowProfile, language }: RatingPageProps) {
   const [ratingData, setRatingData] = useState<RatingResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [stompClient, setStompClient] = useState<Client | null>(null)
   const t = translations[language]
 
+  // Process and update ratings data
+  const updateRatings = useCallback((update: RatingUpdate) => {
+    if (update.zach_number !== studentId) return
+
+    setRatingData(prev => {
+      if (!prev) return prev
+
+      const updatedRatings = [...prev.ratings]
+      const subjectIndex = updatedRatings.findIndex(s => s.subject === update.sbj)
+
+      if (update.eventType === 'DELETE') {
+        // Remove subject
+        if (subjectIndex >= 0) {
+          updatedRatings.splice(subjectIndex, 1)
+        }
+      } else {
+        // Update or insert subject
+        const subjectData = {
+          subject: update.sbj,
+          ratings: update.raiting
+        }
+
+        if (subjectIndex >= 0) {
+          updatedRatings[subjectIndex] = subjectData
+        } else {
+          updatedRatings.push(subjectData)
+        }
+      }
+
+      return {
+        ...prev,
+        ratings: updatedRatings
+      }
+    })
+  }, [studentId])
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const client = new Client({
+      brokerURL: 'ws://localhost:8080/ws',
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: () => {
+        client.subscribe('/topic/raiting-updates', message => {
+          try {
+            const update: RatingUpdate = JSON.parse(message.body)
+            updateRatings(update)
+          } catch (err) {
+            console.error('Error processing update:', err)
+          }
+        })
+      },
+      onStompError: frame => {
+        console.error('WebSocket error:', frame.headers.message)
+      }
+    })
+
+    client.activate()
+    setStompClient(client)
+
+    return () => {
+      client.deactivate()
+    }
+  }, [updateRatings])
+
+  // Fetch initial data
   useEffect(() => {
     const fetchRating = async () => {
       try {
@@ -70,14 +147,12 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
       const subjectName = capitalizeFirstLetter(subject.subject)
       
       if (ratings.length === 1) {
-        // Предметы с одной оценкой
         return {
           name: subjectName,
           ratings: [{ name: "Оценка", value: ratings[0] }],
           type: "single"
         }
       } else if (ratings.length === 6) {
-        // Предметы с 6 оценками (5 КТ + итоговая)
         const checkpoints = ratings.slice(0, 5).map((r, i) => ({
           name: `КТ${i+1}`,
           value: r
@@ -89,7 +164,6 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
           type: "points"
         }
       } else {
-        // Предметы с несколькими оценками (но не 6)
         return {
           name: subjectName,
           ratings: ratings.map((r, i) => ({
