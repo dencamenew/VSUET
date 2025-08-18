@@ -3,12 +3,13 @@ kind: ClusterQueue
 metadata:
   name: "cq"
 spec:
+  namespaceSelector: {}  # Разрешает все неймспейсы
   resourceGroups:
-  - coveredResources: ["cpu", "memory"]
-    flavors:
-    - name: "default-flavor"
-      resources:
-      - name: "cpu"
-        nominalQuota: 12  # 12 ядер для задач
-      - name: "memory"
-        nominalQuota: 1500Mi  # 1.5 GB RAM для задач
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: "cpu"
+              nominalQuota: 2  
+            - name: "memory"
+              nominalQuota: 3Gi
