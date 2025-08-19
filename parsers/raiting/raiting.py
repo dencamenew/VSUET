@@ -9,6 +9,8 @@ import logging
 import psycopg2
 from dotenv import load_dotenv
 import os
+import time
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 
@@ -31,18 +33,20 @@ logger = logging.getLogger(__name__)
 
 
 """Функция получает ссылку и по ней парсит html страницу. Из ведомости считываются строки таблицы и обрабатываются."""
-def check_rait(url: str):
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=30, max=180),
+    retry=retry_if_exception_type(requests.exceptions.RequestException),
+    reraise=True
+)
+def check_rait(url: str, c: int):
     resp = requests.get(url)
     soup = BeautifulSoup(resp.text, 'html.parser')
 
-
     sbj = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
-
-
     table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
     ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text.strip()
-
 
     if ved_type == "Зачет" or ved_type == "Экзамен":
         # тип ведомости по КТ
@@ -59,33 +63,29 @@ def check_rait(url: str):
                     tds[29].text.strip() if len(tds) > 29 else "-"
                 ]
                 cursor.execute("""
-                    INSERT INTO raiting (group_name, zach_number, sbj, raiting)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (group_name, zach_number, sbj) 
+                    INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (group_name, zach_number, sbj, ved_type) 
                     DO UPDATE SET raiting = EXCLUDED.raiting
-                """, (group_name, zach_number, sbj, raiting))
+                """, (group_name, zach_number, sbj, ved_type, raiting))
             conn.commit()
+            logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
             return True
         else:
-            # ведомость зачет или экзамен только с оценкой
             for row in table_rows:
                 tds = row.find_all('td')
                 zach_number = tds[2].text.strip()
-                mark = ""
-                if len(tds[4].text.strip()) > 0:
-                    mark = tds[4].text.strip()
-                else:
-                    mark = "-"
+                mark = tds[4].text.strip() if len(tds[4].text.strip()) > 0 else "-"
                 cursor.execute("""
-                    INSERT INTO raiting (group_name, zach_number, sbj, raiting)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (group_name, zach_number, sbj) 
+                    INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (group_name, zach_number, sbj, ved_type) 
                     DO UPDATE SET raiting = EXCLUDED.raiting
-                """, (group_name, zach_number, sbj, [mark])) 
+                """, (group_name, zach_number, sbj, ved_type, [mark])) 
             conn.commit()
+            logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
             return True
     else:
-        # ведомости с практиками, курсовыми работами и т.д.
         for row in table_rows:
             tds = row.find_all('td')
             zach_number = tds[2].text.strip()
@@ -97,12 +97,13 @@ def check_rait(url: str):
             else:
                 mark = "-"
             cursor.execute("""
-                    INSERT INTO raiting (group_name, zach_number, sbj, raiting)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (group_name, zach_number, sbj) 
-                    DO UPDATE SET raiting = EXCLUDED.raiting
-                """, (group_name, zach_number, sbj, [mark])) 
+                INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (group_name, zach_number, sbj, ved_type) 
+                DO UPDATE SET raiting = EXCLUDED.raiting
+            """, (group_name, zach_number, sbj, ved_type, [mark])) 
         conn.commit()
+        logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
         return True
             
 
@@ -131,10 +132,11 @@ try:
     """)
     result = cursor.fetchall()
     urls = [url for tuple_item in result for url in tuple_item[0]]
-    logger.info(f"URL успешно полученны из БД.")
+    logger.info(f"URL успешно полученны из БД. Кол-во URL: {len(urls)}.")
 except Exception as e:
     logger.error(f"Ошибка при получении данных из БД. {e}")
 
-
+c = 1  
 for url in urls:
-    check_rait(url)
+    check_rait(url, c)  
+    c += 1  
