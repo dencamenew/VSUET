@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: zach
 spec:
+  ttlSecondsAfterFinished: 86400
   template:
     spec:
       initContainers:

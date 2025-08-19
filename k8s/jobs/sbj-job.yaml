@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: sbj-urls
 spec:
+  ttlSecondsAfterFinished: 86400
   template:
     spec:
       initContainers:

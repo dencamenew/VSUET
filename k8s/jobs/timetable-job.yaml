@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: timetable-updater-job
 spec:
+  ttlSecondsAfterFinished: 86400
   template:
     spec:
       initContainers:
