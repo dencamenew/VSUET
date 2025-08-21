@@ -5,7 +5,7 @@
 kubectl apply -f timetable-job.yaml
 
 # Запускаем Job с ссылками
-kubectl apply -f sdj-job.yaml
+kubectl apply -f sbj-job.yaml
 kubectl wait --for=condition=complete --timeout=300s job/sbj-urls || exit 1
 
 # Запускаем Job зачетками
