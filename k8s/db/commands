@@ -1,14 +1,10 @@
 # Команды для создания БД
 cd k8s/db
-kubectl apply -f postgres-secrets.yaml    
-kubectl apply -f postgres-configmap.yaml  
-kubectl apply -f postgres-pvc.yaml        
-kubectl apply -f postgres-deployment.yaml 
-kubectl apply -f postgres-service.yaml
+kubectl apply -f postgres-secrets.yaml -f postgres-configmap.yaml -f postgres-pvc.yaml -f postgres-deployment.yaml -f postgres-service.yaml
 
 
 # Для создания подключения с localhost
 1. в одном терминале пробрасываем порты на localhoct --> kubectl port-forward svc/postgres 5432:5432
-2. в другом терминале подключаемся                   --> psql -h localhost -U admin -d db
+2. в другом терминале подключаемся                   --> psql -h localhost -p 5432 -U admin -d db
 !!! kubectl port-forward svc/postgres 5432:5432 & --> запустит в фоном режиме
 !!! kubectl port-forward svc/postgres 5432:5432 --> при закрытии терминала с этой командой соединение разорвется
