@@ -29,6 +29,9 @@ export const translations = {
     sat: "Сб",
     sun: "Вс",
 
+    studentNotFound: "Студент с таким номером зачётки не найден",
+    connectionError: "Ошибка соединения с сервером",
+
     // Months
     january: "Январь",
     february: "Февраль",
@@ -141,7 +144,10 @@ export const translations = {
     offline: "Offline",
     updating: "Updating...",
     scheduleUpdated: "Schedule updated",
-    scheduleLoadError: "Error loading schedule"
+    scheduleLoadError: "Error loading schedule",
+
+    studentNotFound: "Student with this ID not found",
+    connectionError: "Connection error"
   },
 }
 

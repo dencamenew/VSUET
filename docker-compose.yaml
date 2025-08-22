@@ -84,8 +84,6 @@ services:
         condition: service_healthy
       timetable:
         condition: service_completed_successfully
-      raiting:
-        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]

@@ -100,9 +100,12 @@ try:
     }
     
     logger.info(f"Подключаемся к БД с параметрами: { {k:v for k,v in db_config.items() if k != 'password'} }")
+
+    
     
     with psycopg2.connect(**db_config) as conn:
         with conn.cursor() as cursor:
+            cursor.execute("ALTER TABLE timetable DISABLE TRIGGER timetable_notify_trigger")
             for group, info in timetable.items():
                 json_data = json.dumps(info)
                 logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
@@ -112,11 +115,13 @@ try:
                     INSERT INTO timetable (group_name, timetable)
                     VALUES (%s, %s::jsonb)
                     RETURNING id
-                """, (group, json_data,))
+                """, (group, json_data))
                 
                 record_id = cursor.fetchone()[0]
                 conn.commit()
                 logger.info(f"Данные успешно сохранены, ID: {record_id}")
+            cursor.execute("ALTER TABLE timetable ENABLE TRIGGER timetable_notify_trigger")
+            conn.commit()
 
 except psycopg2.Error as e:
     logger.error(f"Ошибка PostgreSQL: {e}")

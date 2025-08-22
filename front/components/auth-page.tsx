@@ -16,18 +16,57 @@ interface AuthPageProps {
 export default function AuthPage({ onLogin, language }: AuthPageProps) {
   const [studentId, setStudentId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const t = translations[language]
+
+  const checkStudentExists = async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/rating/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 404) {
+        return false
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data !== null && data !== undefined
+    } catch (error) {
+      console.error("Error checking student:", error)
+      return false
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!studentId.trim()) return
 
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    onLogin(studentId.trim())
-    setIsLoading(false)
+    setError("")
+
+    try {
+      const studentExists = await checkStudentExists(studentId.trim())
+      
+      if (!studentExists) {
+        setError(t.studentNotFound || "Студент с таким номером зачётки не найден")
+        return
+      }
+
+      onLogin(studentId.trim())
+    } catch (err) {
+      setError(t.connectionError || "Ошибка соединения с сервером")
+      console.error("Login error:", err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -44,10 +83,16 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
                 type="text"
                 placeholder={t.studentIdPlaceholder}
                 value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
+                onChange={(e) => {
+                  setStudentId(e.target.value)
+                  setError("") 
+                }}
                 className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
+              {error && (
+                <p className="text-destructive text-sm mt-2">{error}</p>
+              )}
             </div>
             <Button
               type="submit"

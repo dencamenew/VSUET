@@ -12,3 +12,4 @@ dist
 .env.development
 .DS_Store
 *.tsbuildinfo
+.venv
