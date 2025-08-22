@@ -88,13 +88,21 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   const t = translations[language]
 
+  // Функция для получения локальной даты в формате YYYY-MM-DD
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Функция обработки обновления оценки
   const handleGradeChange = useCallback((update: GradeUpdate) => {
     setIsUpdating(true)
     try {
       setSchedule(prev => {
         const newSchedule = {...prev}
-        const dateKey = update.date.split('T')[0]
+        const dateKey = getLocalDateString(new Date(update.date))
         
         if (newSchedule[dateKey]) {
           newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
@@ -129,7 +137,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     try {
       setSchedule(prev => {
         const newSchedule = {...prev}
-        const dateKey = update.date.split('T')[0]
+        const dateKey = getLocalDateString(new Date(update.date))
         
         if (newSchedule[dateKey]) {
           newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
@@ -228,84 +236,133 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     const result: Record<string, Lesson[]> = {}
     const { timetable } = data
     
-    // Исправлено: сентябрь это 8 (0-январь, 8-сентябрь)
-    const FIRST_MONDAY = new Date(2025, 8, 1) // 1 сентября 2025
+    // Карта соответствия русских названий дней и номеров дней недели в JS
+    const RUSSIAN_DAY_TO_JS: Record<string, number> = {
+      "ПОНЕДЕЛЬНИК": 1, // Понедельник = 1
+      "ВТОРНИК": 2,     // Вторник = 2
+      "СРЕДА": 3,       // Среда = 3
+      "ЧЕТВЕРГ": 4,     // Четверг = 4
+      "ПЯТНИЦА": 5,     // Пятница = 5
+      "СУББОТА": 6,     // Суббота = 6
+      "ВОСКРЕСЕНЬЕ": 0  // Воскресенье = 0
+    }
+
+    // 1 сентября 2025 года - это понедельник
+    const FIRST_DAY = new Date(2025, 8, 1) // 1 сентября 2025
     
     // Проверяем что это действительно понедельник
-    if (FIRST_MONDAY.getDay() !== 1) {
-      console.error("Ошибка: 1 сентября 2025 должно быть понедельником, а это", 
-        ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][FIRST_MONDAY.getDay()])
+    if (FIRST_DAY.getDay() !== 1) {
+      console.error("Ошибка: 1 сентября 2025 должно быть понедельником, а это:", 
+        ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][FIRST_DAY.getDay()])
       return {}
     }
 
-    const endDate = new Date(2025, 11, 31) // Декабрь 2025
-    let currentDate = new Date(FIRST_MONDAY)
-    
-    // Порядок дней: Пн=0, Вт=1, ..., Вс=6
-    const RUSSIAN_DAYS = ["ПОНЕДЕЛЬНИК", "ВТОРНИК", "СРЕДА", "ЧЕТВЕРГ", "ПЯТНИЦА", "СУББОТА", "ВОСКРЕСЕНЬЕ"]
+    const endDate = new Date(2025, 11, 31) // 31 декабря 2025
+    let currentDate = new Date(FIRST_DAY)
+
+    console.log("Начало парсинга расписания...")
+    console.log("Доступные дни в числителе:", Object.keys(timetable.Числитель || {}))
+    console.log("Доступные дни в знаменателе:", Object.keys(timetable.Знаменатель || {}))
 
     while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split('T')[0]
-      const dayOfWeek = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
-      
-      // Преобразуем в наш формат: 0=Пн, 1=Вт, ..., 6=Вс
-      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      const dayName = RUSSIAN_DAYS[adjustedDay]
+      const dateKey = getLocalDateString(currentDate)
+      const jsDayOfWeek = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
 
-      // Неделя считается с понедельника
-      const weekDiff = Math.floor((currentDate.getTime() - FIRST_MONDAY.getTime()) / (7 * 24 * 60 * 60 * 1000))
-      const isNumerator = weekDiff % 2 === 0
-      const weekType = isNumerator ? "Числитель" : "Знаменатель"
+      // Пропускаем воскресенья (нет занятий)
+      if (jsDayOfWeek !== 0) {
+        // Находим русское название дня для текущего дня недели
+        const russianDayName = Object.keys(RUSSIAN_DAY_TO_JS).find(
+          key => RUSSIAN_DAY_TO_JS[key] === jsDayOfWeek
+        )
 
-      const dayLessons = timetable[weekType]?.[dayName] || {}
-      
-      const parsedLessons: Lesson[] = []
-      for (const [timeRange, lessonStr] of Object.entries(dayLessons)) {
-        const [startTime, endTime] = timeRange.split('-')
-        const { subject, room, teacher, type } = parseLessonString(lessonStr)
+        if (!russianDayName) {
+          console.warn(`Не найдено русское название для дня недели: ${jsDayOfWeek}`)
+          currentDate.setDate(currentDate.getDate() + 1)
+          continue
+        }
+
+        // Определяем тип недели (числитель/знаменатель)
+        // Считаем сколько полных недель прошло с 1 сентября
+        const timeDiff = currentDate.getTime() - FIRST_DAY.getTime()
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+        const weekNumber = Math.floor(daysDiff / 7)
+        const isNumerator = weekNumber % 2 === 0
+        const weekType = isNumerator ? "Числитель" : "Знаменатель"
+
+        // Получаем расписание для этого дня и типа недели
+        const dayLessons = timetable[weekType]?.[russianDayName] || {}
         
-        parsedLessons.push({
-          time: startTime.replace('.', ':'),
-          endTime: endTime.replace('.', ':'),
-          subject,
-          room,
-          teacher,
-          type,
-          weekType // Добавляем тип недели к каждому занятию
-        })
-      }
-      
-      parsedLessons.sort((a, b) => a.time.localeCompare(b.time))
-      if (parsedLessons.length > 0) {
-        result[dateKey] = parsedLessons
+        const parsedLessons: Lesson[] = []
+        for (const [timeRange, lessonStr] of Object.entries(dayLessons)) {
+          const [startTime, endTime] = timeRange.split('-')
+          const { subject, room, teacher, type } = parseLessonString(lessonStr)
+          
+          parsedLessons.push({
+            time: startTime.replace('.', ':'),
+            endTime: endTime.replace('.', ':'),
+            subject,
+            room,
+            teacher,
+            type,
+            weekType
+          })
+        }
+        
+        parsedLessons.sort((a, b) => a.time.localeCompare(b.time))
+        if (parsedLessons.length > 0) {
+          result[dateKey] = parsedLessons
+          console.log(`✅ ${dateKey} (${russianDayName}, ${weekType}): ${parsedLessons.length} занятий`)
+        }
       }
 
       currentDate.setDate(currentDate.getDate() + 1)
     }
 
+    console.log("Парсинг завершен. Всего дней с занятиями:", Object.keys(result).length)
     return result
   }
+
   // Загрузка расписания
   const fetchTimetable = async () => {
     setLoading(true)
     setError(null)
     try {
+      console.log("Загрузка расписания для studentId:", studentId)
       const response = await fetch(`http://localhost:8080/api/timetable/${studentId}`)
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
+      
       const data: TimetableResponse = await response.json()
       setGroupName(data.groupName)
+      
+      console.log("✅ Данные получены успешно")
+      console.log("Группа:", data.groupName)
+      console.log("Номер зачётки:", data.zachNumber)
+      
+      // Проверим структуру расписания
+      if (data.timetable) {
+        console.log("Числитель дни:", Object.keys(data.timetable.Числитель || {}))
+        console.log("Знаменатель дни:", Object.keys(data.timetable.Знаменатель || {}))
+        
+        // Посмотрим на конкретные дни
+        Object.keys(data.timetable.Числитель || {}).forEach(day => {
+          console.log(`Числитель ${day}:`, Object.keys(data.timetable.Числитель[day] || {}).length, "занятий")
+        })
+      }
+      
       const parsedSchedule = parseTimetableData(data)
       setSchedule(parsedSchedule)
       
-      const todayKey = new Date().toISOString().split('T')[0]
-      setSelectedDateKey(
-        parsedSchedule[todayKey] ? todayKey : 
-        Object.keys(parsedSchedule)[0] || ""
-      )
+      const todayKey = getLocalDateString(new Date())
+      const newSelectedDateKey = parsedSchedule[todayKey] ? todayKey : Object.keys(parsedSchedule)[0] || ""
+      setSelectedDateKey(newSelectedDateKey)
+      
+      console.log("Выбрана дата:", newSelectedDateKey)
+      
     } catch (err) {
-      console.error("Failed to fetch timetable:", err)
+      console.error("❌ Ошибка загрузки расписания:", err)
       setError(t.scheduleLoadError)
     } finally {
       setLoading(false)
@@ -373,12 +430,10 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated])
 
-  // Генерация дат для календаря
   const generateAllDates = () => {
-  // Порядок: Пн, Вт, Ср, Чт, Пт, Сб, Вс
     const daysOfWeek = language === "ru" 
-      ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] 
-      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] // Правильный порядок: 0=Вс, 1=Пн, ..., 6=Сб
+      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     const months = language === "ru"
       ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
@@ -395,16 +450,13 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     let currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split('T')[0]
-      const isToday = currentDate.toDateString() === today.toDateString()
+      const dateKey = getLocalDateString(currentDate)
+      const isToday = getLocalDateString(currentDate) === getLocalDateString(today)
       const dayIndex = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
-      
-      // Преобразуем в порядок Пн-Вс (0=Пн, 6=Вс)
-      const displayDayIndex = dayIndex === 0 ? 6 : dayIndex - 1
 
       generatedDates.push({
         date: currentDate.getDate(),
-        day: daysOfWeek[displayDayIndex], // Используем правильный индекс
+        day: daysOfWeek[dayIndex], // Правильный индекс
         month: months[currentDate.getMonth()],
         isToday,
         fullDate: new Date(currentDate),
@@ -416,7 +468,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
     return generatedDates
   }
-
 
   // Инициализация дат и WebSocket
   useEffect(() => {
@@ -517,7 +568,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
           <p className="text-muted-foreground">{groupName || t.loading}</p>
         </div>
       </div>
-
 
       {/* Календарь */}
       <div className="px-4 mb-6">

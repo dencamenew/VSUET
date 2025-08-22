@@ -120,6 +120,8 @@ try:
     )
     cursor = conn.cursor()
     logger.info(f"Успешное подключение к БД.")
+    cursor.execute("ALTER TABLE timetable DISABLE TRIGGER timetable_notify_trigger")
+    conn.commit()
 except Exception as e:
     logger.error(f"Ошибка при подключении БД. {e}")
 
@@ -139,4 +141,6 @@ except Exception as e:
 c = 1  
 for url in urls:
     check_rait(url, c)  
-    c += 1  
+    c += 1 
+cursor.execute("ALTER TABLE timetable ENABLE TRIGGER timetable_notify_trigger")
+conn.commit()
