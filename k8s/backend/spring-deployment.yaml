@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring
+  labels:
+    app: spring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: spring
+    spec:
+      containers:
+      - name: spring
+        image: dimavysotskiy/back:2.2
+        ports:
+        - containerPort: 8080
+        
+        env:
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: spring-secrets
+              key: spring.datasource.username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: spring-secrets
+              key: spring.datasource.password
+        - name: SPRING_CONFIG_LOCATION
+          value: "file:/app/config/application.properties"
+        
+        
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      
+      volumes:
+      - name: config-volume
+        configMap:
+          name: spring-config
