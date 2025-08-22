@@ -148,12 +148,50 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
       'экзамен': 'Экзамен',
       'зачет': 'Зачёт',
       'диффзачет': 'Дифф. зачёт',
+      'зачет с оценкой': 'Зачёт с оценкой',
       'курсовая': 'Курсовая работа',
+      'курсовая работа': 'Курсовая работа',
+      'выпускная': 'Выпускная работа',
+      'выпускная работа': 'Выпускная работа',
+      'дипломная работа': 'Дипломная работа',
       'практика': 'Практика',
+      'учебная практика': 'Учебная практика',
+      'производственная практика': 'Производственная практика',
+      'преддипломная практика': 'Преддипломная практика',
+      'стажировка': 'Стажировка',
+      'реферат': 'Реферат',
+      'доклад': 'Доклад',
+      'проект': 'Проект',
       'default': 'Ведомость'
     }
     
-    return vedTypeMap[vedType.toLowerCase()] || vedTypeMap.default
+    // Приводим к нижнему регистру для поиска
+    const lowerVedType = vedType.toLowerCase().trim()
+    
+    // Проверяем содержит ли тип слово "практика"
+    if (lowerVedType.includes('практика')) {
+      // Пытаемся найти точное соответствие
+      if (vedTypeMap[lowerVedType]) {
+        return vedTypeMap[lowerVedType]
+      }
+      // Если есть уточнение типа практики
+      if (lowerVedType.includes('учебная')) return 'Учебная практика'
+      if (lowerVedType.includes('производственная')) return 'Производственная практика'
+      if (lowerVedType.includes('преддипломная')) return 'Преддипломная практика'
+      return 'Практика'
+    }
+    
+    // Проверяем содержит ли тип слово "курсовая"
+    if (lowerVedType.includes('курсовая')) {
+      return vedTypeMap[lowerVedType] || 'Курсовая работа'
+    }
+    
+    // Проверяем содержит ли тип слово "выпускная" или "диплом"
+    if (lowerVedType.includes('выпускная') || lowerVedType.includes('диплом')) {
+      return vedTypeMap[lowerVedType] || 'Выпускная работа'
+    }
+    
+    return vedTypeMap[lowerVedType] || vedType || vedTypeMap.default
   }
 
   const processRatings = (): SubjectRating[] => {
