@@ -94,6 +94,7 @@ public class StudentService {
         return ratings.stream()
                 .map(r -> RatingDto.builder()
                         .subject(r.getSubject())
+                        .vedType(r.getVedType())
                         .ratings(r.getRatings())
                         .build())
                 .collect(Collectors.toList());

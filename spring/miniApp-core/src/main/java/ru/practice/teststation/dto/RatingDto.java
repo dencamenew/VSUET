@@ -15,5 +15,6 @@ import java.util.Map;
 @AllArgsConstructor
 public class RatingDto {
     private String subject;
+    private String vedType;
     private List<String> ratings;
 }

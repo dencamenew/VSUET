@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Calendar, GraduationCap, User } from "lucide-react"
+import { ArrowLeft, Calendar, GraduationCap, User, FileText } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { Client } from '@stomp/stompjs'
 
@@ -19,12 +19,14 @@ interface RatingResponse {
   groupName: string
   ratings: {
     subject: string
+    vedType: string // Добавлено поле типа ведомости
     ratings: string[]
   }[]
 }
 
 interface SubjectRating {
   name: string
+  vedType: string // Добавлено поле типа ведомости
   ratings: {
     name: string
     value: string
@@ -38,6 +40,7 @@ interface RatingUpdate {
   zach_number: string
   group_name: string
   sbj: string
+  ved_type: string // Добавлено поле типа ведомости
   raiting: string[]
 }
 
@@ -67,6 +70,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
         // Update or insert subject
         const subjectData = {
           subject: update.sbj,
+          vedType: update.ved_type, // Добавлено сохранение типа ведомости
           ratings: update.raiting
         }
 
@@ -139,16 +143,31 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   }
 
+  const getVedTypeDisplayName = (vedType: string) => {
+    const vedTypeMap: Record<string, string> = {
+      'экзамен': 'Экзамен',
+      'зачет': 'Зачёт',
+      'диффзачет': 'Дифф. зачёт',
+      'курсовая': 'Курсовая работа',
+      'практика': 'Практика',
+      'default': 'Ведомость'
+    }
+    
+    return vedTypeMap[vedType.toLowerCase()] || vedTypeMap.default
+  }
+
   const processRatings = (): SubjectRating[] => {
     if (!ratingData) return []
 
     return ratingData.ratings.map(subject => {
       const ratings = subject.ratings
       const subjectName = capitalizeFirstLetter(subject.subject)
+      const vedType = getVedTypeDisplayName(subject.vedType || 'default')
       
       if (ratings.length === 1) {
         return {
           name: subjectName,
+          vedType: vedType,
           ratings: [{ name: "Оценка", value: ratings[0] }],
           type: "single"
         }
@@ -159,6 +178,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
         }))
         return {
           name: subjectName,
+          vedType: vedType,
           ratings: checkpoints,
           finalGrade: ratings[5],
           type: "points"
@@ -166,6 +186,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
       } else {
         return {
           name: subjectName,
+          vedType: vedType,
           ratings: ratings.map((r, i) => ({
             name: `Оценка ${i+1}`,
             value: r
@@ -232,7 +253,15 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
               <Card key={index} className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="mb-3">
-                    <h3 className="text-foreground font-medium text-lg">{subject.name}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-foreground font-medium text-lg">{subject.name}</h3>
+                      <div className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full">
+                        <FileText className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {subject.vedType}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {subject.type === "single" ? (

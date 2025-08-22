@@ -101,7 +101,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8080/api
       - NODE_ENV=production
     depends_on:
-      spring-app:
+      postgres:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:

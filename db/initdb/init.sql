@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS raiting (
     zach_number VARCHAR(255) NOT NULL, 
     sbj VARCHAR(255) NOT NULL,
     raiting TEXT[] NOT NULL,
+    ved_type VARCHAR(255) NOT NULL,
     UNIQUE (group_name, zach_number, sbj)
+    
 );
 
 CREATE TABLE IF NOT EXISTS timetable (

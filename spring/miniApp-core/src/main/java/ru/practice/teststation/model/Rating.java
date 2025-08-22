@@ -28,6 +28,9 @@ public class Rating {
     @Column(name = "sbj")
     private String subject;
 
+    @Column(name = "ved_type")
+    private String vedType;
+
     @Column(name = "raiting")
     @JdbcTypeCode(SqlTypes.ARRAY)
     private List<String> ratings;

@@ -65,8 +65,12 @@ def check_rait(url: str, c: int):
                 cursor.execute("""
                     INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (group_name, zach_number, sbj, ved_type) 
-                    DO UPDATE SET raiting = EXCLUDED.raiting
+                    ON CONFLICT (group_name, zach_number, sbj) 
+                    DO UPDATE SET 
+                        ved_type = EXCLUDED.ved_type,
+                        raiting = EXCLUDED.raiting
+                    WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                    OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
                 """, (group_name, zach_number, sbj, ved_type, raiting))
             conn.commit()
             logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
@@ -79,9 +83,13 @@ def check_rait(url: str, c: int):
                 cursor.execute("""
                     INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (group_name, zach_number, sbj, ved_type) 
-                    DO UPDATE SET raiting = EXCLUDED.raiting
-                """, (group_name, zach_number, sbj, ved_type, [mark])) 
+                    ON CONFLICT (group_name, zach_number, sbj) 
+                    DO UPDATE SET 
+                        ved_type = EXCLUDED.ved_type,
+                        raiting = EXCLUDED.raiting
+                    WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                    OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
+                """, (group_name, zach_number, sbj, ved_type, [mark]))
             conn.commit()
             logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
             return True
@@ -99,9 +107,14 @@ def check_rait(url: str, c: int):
             cursor.execute("""
                 INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
                 VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (group_name, zach_number, sbj, ved_type) 
-                DO UPDATE SET raiting = EXCLUDED.raiting
-            """, (group_name, zach_number, sbj, ved_type, [mark])) 
+                ON CONFLICT (group_name, zach_number, sbj) 
+                DO UPDATE SET 
+                    ved_type = EXCLUDED.ved_type,
+                    raiting = EXCLUDED.raiting
+                WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
+            """, (group_name, zach_number, sbj, ved_type, [mark]))
+
         conn.commit()
         logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
         return True
