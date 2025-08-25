@@ -50,6 +50,8 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   const [error, setError] = useState<string | null>(null)
   const [stompClient, setStompClient] = useState<Client | null>(null)
   const t = translations[language]
+  const URL = process.env.NEXT_PUBLIC_API_URL;
+  const WS_URL = process.env.WS_URL;
 
   // Process and update ratings data
   const updateRatings = useCallback((update: RatingUpdate) => {
@@ -91,7 +93,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   // Initialize WebSocket connection
   useEffect(() => {
     const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws',
+      brokerURL: WS_URL,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -122,7 +124,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   useEffect(() => {
     const fetchRating = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/rating/${studentId}`)
+        const response = await fetch(`${URL}/rating/${studentId}`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }

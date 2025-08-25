@@ -20,9 +20,11 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
 
   const t = translations[language]
 
+  const URL = process.env.NEXT_PUBLIC_API_URL;
+
   const checkStudentExists = async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(`http://localhost:8080/api/rating/${id}`, {
+      const response = await fetch(`${URL}/rating/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

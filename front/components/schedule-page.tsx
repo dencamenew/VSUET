@@ -88,6 +88,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   const t = translations[language]
 
+  const URL = process.env.NEXT_PUBLIC_API_URL;
+  const SOCKET_URL = process.env.SOCKET_URL;
+
   // Функция для получения локальной даты в формате YYYY-MM-DD
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear();
@@ -328,7 +331,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     setError(null)
     try {
       console.log("Загрузка расписания для studentId:", studentId)
-      const response = await fetch(`http://localhost:8080/api/timetable/${studentId}`)
+      const response = await fetch(`${URL}/timetable/${studentId}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -371,7 +374,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   // Настройка WebSocket
   const setupWebSocket = useCallback(() => {
-    const socket = new SockJS('http://localhost:8080/ws')
+    const socket = new SockJS(`${SOCKET_URL}`)
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,

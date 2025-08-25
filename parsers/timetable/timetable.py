@@ -5,7 +5,6 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
-import requests
 import json
 import logging
 import psycopg2

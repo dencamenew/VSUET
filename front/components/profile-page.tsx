@@ -27,10 +27,12 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/timetable/${studentId}`)
+        const response = await fetch(`${URL}/timetable/${studentId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch timetable data')
         }

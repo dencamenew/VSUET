@@ -1,15 +1,9 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import requests
 import logging
 import psycopg2
 from dotenv import load_dotenv
 import os
-import time
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
@@ -17,7 +11,6 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 # Загрузка переменных окружения
 load_dotenv()
-
 
 
 
