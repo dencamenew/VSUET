@@ -9,8 +9,6 @@ spec:
   selector:
     matchLabels:
       app: spring
-  strategy:
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -18,30 +16,16 @@ spec:
     spec:
       containers:
       - name: spring
-        image: dimavysotskiy/back:2.2
+        image: dimavysotskiy/back:1.0
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
-        
         env:
-        - name: SPRING_DATASOURCE_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: spring-secrets
-              key: spring.datasource.username
-        - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: spring-secrets
-              key: spring.datasource.password
-        - name: SPRING_CONFIG_LOCATION
-          value: "file:/app/config/application.properties"
-        
-        
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config
-          readOnly: true
-        
+        - name: CORS_ALLOWED_ORIGINS
+          value: "https://vsuet-front.cloudpub.ru/"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres:5432/db"
+      
         resources:
           requests:
             memory: "512Mi"
@@ -49,8 +33,3 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-      
-      volumes:
-      - name: config-volume
-        configMap:
-          name: spring-config

@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         String allowedOrigin = System.getenv("CORS_ALLOWED_ORIGINS");
         if (allowedOrigin == null || allowedOrigin.isEmpty()) {
-            allowedOrigin = "https://webvsuet.cloudpub.ru";
+            allowedOrigin = "https://vsuet-app-v1.2.cloudpub.ru";
         }
 
         registry.addEndpoint("/ws")

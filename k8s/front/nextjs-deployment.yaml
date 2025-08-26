@@ -16,12 +16,17 @@ spec:
     spec:
       containers:
       - name: nextjs
-        image: dimavysotskiy/front:1.3
+        image: dimavysotskiy/front:1.0
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
         env:
         - name: NEXT_PUBLIC_API_URL
-          value: "http://spring:8080/api"
+          value: "https://vsuet-api.cloudpub.ru/api"
+        - name: WS_URL
+          value: "ws://vsuet-api.cloudpub.ru/ws"
+        - name: SOCKET_URL
+          value: "https://vsuet-api.cloudpub.ru/ws"
         resources:
           requests:
             memory: "256Mi"
