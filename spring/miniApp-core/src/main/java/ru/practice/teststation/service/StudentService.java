@@ -20,7 +20,6 @@ public class StudentService {
     private final ZachRepository zachRepository;
     private final RatingRepository ratingRepository;
     private final TimetableRepository timetableRepository;
-    private final SbjUrlsRepository sbjUrlsRepository;
     private final ObjectMapper objectMapper;
 
     // Получение информации о студенте (возможно, вам это больше не нужно)
