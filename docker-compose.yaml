@@ -79,7 +79,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: docker
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: https://webvsuet.cloudpub.ru
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "https://spring.cloudpub.ru/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -99,15 +99,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
-      - NEXT_PUBLIC_SOCKET_URL=http://localhost:8080/ws
+      - NEXT_PUBLIC_API_URL=https://spring.cloudpub.ru/api
+      - NEXT_PUBLIC_WS_URL=ws://spring.cloudpub.ru/ws
+      - NEXT_PUBLIC_SOCKET_URL=https://spring.cloudpub.ru/ws
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "https://spring.cloudpub.ru"]
       interval: 30s
       timeout: 10s
       retries: 5

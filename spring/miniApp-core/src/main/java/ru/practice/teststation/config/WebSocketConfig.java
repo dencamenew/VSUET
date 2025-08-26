@@ -12,9 +12,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String allowedOrigin = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (allowedOrigin == null || allowedOrigin.isEmpty()) {
+            allowedOrigin = "https://webvsuet.cloudpub.ru";
+        }
+
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // Используем вместо setAllowedOrigins
-                .withSockJS(); // Убрали несуществующий setSupressCors
+                .setAllowedOrigins(allowedOrigin.split(","))
+                .withSockJS();
     }
 
     @Override
