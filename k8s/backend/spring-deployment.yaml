@@ -22,7 +22,7 @@ spec:
         - containerPort: 8080
         env:
         - name: CORS_ALLOWED_ORIGINS
-          value: "https://vsuet-front.cloudpub.ru/"
+          value: "https://vsuet-front.cloudpub.ru/,http://localhost:3000"
         - name: SPRING_DATASOURCE_URL
           value: "jdbc:postgresql://postgres:5432/db"
       
