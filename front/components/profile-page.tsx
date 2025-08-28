@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { User, Moon, Sun, LogOut, X, Globe, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,20 +29,20 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const URL = process.env.NEXT_PUBLIC_API_URL;
+  const URL = process.env.NEXT_PUBLIC_API_URL
 
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
         const response = await fetch(`${URL}/timetable/${studentId}`)
         if (!response.ok) {
-          throw new Error('Failed to fetch timetable data')
+          throw new Error("Failed to fetch timetable data")
         }
         const data: TimetableResponse = await response.json()
         setGroupName(data.groupName)
       } catch (err) {
-        console.error('Error fetching timetable data:', err)
-        setError('Failed to load student data')
+        console.error("Error fetching timetable data:", err)
+        setError("Failed to load student data")
       } finally {
         setLoading(false)
       }
@@ -93,7 +95,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       change: "Изменить",
       logout: "Выйти из аккаунта",
       loading: "Загрузка...",
-      error: "Ошибка загрузки"
+      error: "Ошибка загрузки",
     },
     en: {
       profile: "Profile",
@@ -110,13 +112,20 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       change: "Change",
       logout: "Logout",
       loading: "Loading...",
-      error: "Loading error"
+      error: "Loading error",
     },
+  }
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close if clicking on the overlay itself, not on the panel
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
   }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={handleOverlayClick}>
         <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -126,7 +135,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={handleOverlayClick}>
         <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex flex-col items-center justify-center">
           <p className="text-destructive mb-4">{t[language].error}</p>
           <Button variant="outline" onClick={onClose}>
@@ -138,7 +147,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={handleOverlayClick}>
       <div className="w-80 h-full bg-card rounded-l-3xl p-6 animate-slide-in-right border-l border-border overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

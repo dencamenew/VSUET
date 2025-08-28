@@ -19,20 +19,9 @@ interface RatingResponse {
   groupName: string
   ratings: {
     subject: string
-    vedType: string // Добавлено поле типа ведомости
+    vedType: string
     ratings: string[]
   }[]
-}
-
-interface SubjectRating {
-  name: string
-  vedType: string // Добавлено поле типа ведомости
-  ratings: {
-    name: string
-    value: string
-  }[]
-  finalGrade?: string
-  type: "single" | "multiple" | "points"
 }
 
 interface RatingUpdate {
@@ -40,8 +29,19 @@ interface RatingUpdate {
   zach_number: string
   group_name: string
   sbj: string
-  ved_type: string // Добавлено поле типа ведомости
+  ved_type: string
   raiting: string[]
+}
+
+interface SubjectRating {
+  name: string
+  vedType: string
+  ratings: {
+    name: string
+    value: string
+  }[]
+  finalGrade?: string
+  type: "single" | "multiple" | "points"
 }
 
 export default function RatingPage({ studentId, onNavigate, onShowProfile, language }: RatingPageProps) {
@@ -72,7 +72,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
         // Update or insert subject
         const subjectData = {
           subject: update.sbj,
-          vedType: update.ved_type, // Добавлено сохранение типа ведомости
+          vedType: update.ved_type,
           ratings: update.raiting
         }
 
@@ -131,7 +131,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
         const data: RatingResponse = await response.json()
         setRatingData(data)
       } catch (err) {
-        setError("Не удалось загрузить рейтинг")
+        setError(language === "ru" ? "Не удалось загрузить рейтинг" : "Failed to load rating")
         console.error("Failed to fetch rating:", err)
       } finally {
         setLoading(false)
@@ -139,61 +139,58 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
     }
 
     fetchRating()
-  }, [studentId])
+  }, [studentId, language])
 
   const capitalizeFirstLetter = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   }
 
   const getVedTypeDisplayName = (vedType: string) => {
-    const vedTypeMap: Record<string, string> = {
-      'экзамен': 'Экзамен',
-      'зачет': 'Зачёт',
-      'диффзачет': 'Дифф. зачёт',
-      'зачет с оценкой': 'Зачёт с оценкой',
-      'курсовая': 'Курсовая работа',
-      'курсовая работа': 'Курсовая работа',
-      'выпускная': 'Выпускная работа',
-      'выпускная работа': 'Выпускная работа',
-      'дипломная работа': 'Дипломная работа',
-      'практика': 'Практика',
-      'учебная практика': 'Учебная практика',
-      'производственная практика': 'Производственная практика',
-      'преддипломная практика': 'Преддипломная практика',
-      'стажировка': 'Стажировка',
-      'реферат': 'Реферат',
-      'доклад': 'Доклад',
-      'проект': 'Проект',
-      'default': 'Ведомость'
+    const vedTypeMap: Record<string, { ru: string; en: string }> = {
+      'экзамен': { ru: 'Экзамен', en: 'Exam' },
+      'зачет': { ru: 'Зачёт', en: 'Test' },
+      'диффзачет': { ru: 'Дифф. зачёт', en: 'Diff. test' },
+      'зачет с оценкой': { ru: 'Зачёт с оценкой', en: 'Graded test' },
+      'курсовая': { ru: 'Курсовая работа', en: 'Coursework' },
+      'курсовая работа': { ru: 'Курсовая работа', en: 'Coursework' },
+      'выпускная': { ru: 'Выпускная работа', en: 'Graduation work' },
+      'выпускная работа': { ru: 'Выпускная работа', en: 'Graduation work' },
+      'дипломная работа': { ru: 'Дипломная работа', en: 'Diploma work' },
+      'практика': { ru: 'Практика', en: 'Practice' },
+      'учебная практика': { ru: 'Учебная практика', en: 'Training practice' },
+      'производственная практика': { ru: 'Производственная практика', en: 'Industrial practice' },
+      'преддипломная практика': { ru: 'Преддипломная практика', en: 'Pre-diploma practice' },
+      'стажировка': { ru: 'Стажировка', en: 'Internship' },
+      'реферат': { ru: 'Реферат', en: 'Report' },
+      'доклад': { ru: 'Доклад', en: 'Presentation' },
+      'проект': { ru: 'Проект', en: 'Project' },
+      'default': { ru: 'Ведомость', en: 'Record' }
     }
     
-    // Приводим к нижнему регистру для поиска
     const lowerVedType = vedType.toLowerCase().trim()
     
     // Проверяем содержит ли тип слово "практика"
-    if (lowerVedType.includes('практика')) {
-      // Пытаемся найти точное соответствие
+    if (lowerVedType.includes('практика') || lowerVedType.includes('practice')) {
       if (vedTypeMap[lowerVedType]) {
-        return vedTypeMap[lowerVedType]
+        return language === "ru" ? vedTypeMap[lowerVedType].ru : vedTypeMap[lowerVedType].en
       }
-      // Если есть уточнение типа практики
-      if (lowerVedType.includes('учебная')) return 'Учебная практика'
-      if (lowerVedType.includes('производственная')) return 'Производственная практика'
-      if (lowerVedType.includes('преддипломная')) return 'Преддипломная практика'
-      return 'Практика'
+      if (lowerVedType.includes('учебная') || lowerVedType.includes('training')) return language === "ru" ? 'Учебная практика' : 'Training practice'
+      if (lowerVedType.includes('производственная') || lowerVedType.includes('industrial')) return language === "ru" ? 'Производственная практика' : 'Industrial practice'
+      if (lowerVedType.includes('преддипломная') || lowerVedType.includes('pre-diploma')) return language === "ru" ? 'Преддипломная практика' : 'Pre-diploma practice'
+      return language === "ru" ? 'Практика' : 'Practice'
     }
     
     // Проверяем содержит ли тип слово "курсовая"
-    if (lowerVedType.includes('курсовая')) {
-      return vedTypeMap[lowerVedType] || 'Курсовая работа'
+    if (lowerVedType.includes('курсовая') || lowerVedType.includes('coursework')) {
+      return vedTypeMap[lowerVedType] ? (language === "ru" ? vedTypeMap[lowerVedType].ru : vedTypeMap[lowerVedType].en) : (language === "ru" ? 'Курсовая работа' : 'Coursework')
     }
     
     // Проверяем содержит ли тип слово "выпускная" или "диплом"
-    if (lowerVedType.includes('выпускная') || lowerVedType.includes('диплом')) {
-      return vedTypeMap[lowerVedType] || 'Выпускная работа'
+    if (lowerVedType.includes('выпускная') || lowerVedType.includes('диплом') || lowerVedType.includes('graduation') || lowerVedType.includes('diploma')) {
+      return vedTypeMap[lowerVedType] ? (language === "ru" ? vedTypeMap[lowerVedType].ru : vedTypeMap[lowerVedType].en) : (language === "ru" ? 'Выпускная работа' : 'Graduation work')
     }
     
-    return vedTypeMap[lowerVedType] || vedType || vedTypeMap.default
+    return vedTypeMap[lowerVedType] ? (language === "ru" ? vedTypeMap[lowerVedType].ru : vedTypeMap[lowerVedType].en) : vedType
   }
 
   const processRatings = (): SubjectRating[] => {
@@ -208,12 +205,12 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
         return {
           name: subjectName,
           vedType: vedType,
-          ratings: [{ name: "Оценка", value: ratings[0] }],
+          ratings: [{ name: language === "ru" ? "Оценка" : "Grade", value: ratings[0] }],
           type: "single"
         }
       } else if (ratings.length === 6) {
         const checkpoints = ratings.slice(0, 5).map((r, i) => ({
-          name: `КТ${i+1}`,
+          name: language === "ru" ? `КТ${i+1}` : `CP${i+1}`,
           value: r
         }))
         return {
@@ -228,7 +225,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
           name: subjectName,
           vedType: vedType,
           ratings: ratings.map((r, i) => ({
-            name: `Оценка ${i+1}`,
+            name: language === "ru" ? `Оценка ${i+1}` : `Grade ${i+1}`,
             value: r
           })),
           type: "multiple"
@@ -245,11 +242,13 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   }
 
   const getGradeText = (grade: string) => {
-    if (grade === "Отл") return "5"
-    if (grade === "Хор") return "4"
-    if (grade === "Удовл") return "3"
-    if (grade === "Неуд") return "2"
-    return grade
+  const gradeMap: Record<string, string> = {
+      "Отл": "5",
+      "Хор": "4", 
+      "Удовл": "3",
+      "Неуд": "2"
+    }
+    return gradeMap[grade] || grade
   }
 
   const processedSubjects = processRatings()
@@ -279,7 +278,9 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground text-lg">Загрузка рейтинга...</p>
+          <p className="text-muted-foreground text-lg">
+            {language === "ru" ? "Загрузка рейтинга..." : "Loading rating..."}
+          </p>
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-64">
@@ -306,27 +307,31 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
 
                   {subject.type === "single" ? (
                     <div className="flex justify-between items-center">
-                      <p className="text-muted-foreground text-sm">Оценка:</p>
+                      <p className="text-muted-foreground text-sm">
+                        {language === "ru" ? "Оценка:" : "Grade:"}
+                      </p>
                       <div className={`text-xl font-bold ${getGradeColor(subject.ratings[0].value)}`}>
                         {getGradeText(subject.ratings[0].value)}
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <div className="mb-3">
-                        {subject.type === "points" && (
-                          <div className="flex justify-between items-center mb-2">
-                            <p className="text-muted-foreground text-sm">Итоговая оценка:</p>
-                            <div className={`text-xl font-bold ${getGradeColor(subject.finalGrade || "")}`}>
-                              {subject.finalGrade ? getGradeText(subject.finalGrade) : "-"}
-                            </div>
+                      {subject.type === "points" && (
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="text-muted-foreground text-sm">
+                            {language === "ru" ? "Итоговая оценка:" : "Final grade:"}
+                          </p>
+                          <div className={`text-xl font-bold ${getGradeColor(subject.finalGrade || "")}`}>
+                            {subject.finalGrade ? getGradeText(subject.finalGrade) : "-"}
                           </div>
-                        )}
-                        
-                        <p className="text-muted-foreground text-sm font-medium">
-                          {subject.type === "points" ? "Контрольные точки:" : "Оценки:"}
-                        </p>
-                      </div>
+                        </div>
+                      )}
+                      
+                      <p className="text-muted-foreground text-sm font-medium mb-2">
+                        {subject.type === "points" 
+                          ? (language === "ru" ? "Контрольные точки:" : "Checkpoints:") 
+                          : (language === "ru" ? "Оценки:" : "Grades:")}
+                      </p>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                         {subject.ratings.map((rating, idx) => (
