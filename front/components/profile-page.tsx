@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { User, Moon, Sun, LogOut, X, Globe, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -22,6 +22,15 @@ interface ProfilePageProps {
   onLanguageChange: (language: "ru" | "en") => void
 }
 
+// Кеш данных студентов вне компонента
+interface StudentCache {
+  groupName: string
+  timestamp: number
+}
+
+const studentDataCache = new Map<string, StudentCache>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 минут
+
 export default function ProfilePage({ studentId, onLogout, onClose, onLanguageChange }: ProfilePageProps) {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [language, setLanguage] = useState<"ru" | "en">("ru")
@@ -31,34 +40,61 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
 
   const URL = process.env.NEXT_PUBLIC_API_URL
 
-  useEffect(() => {
-    const fetchStudentData = async () => {
-      try {
-        const response = await fetch(`${URL}/timetable/${studentId}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch timetable data")
-        }
-        const data: TimetableResponse = await response.json()
-        setGroupName(data.groupName)
-      } catch (err) {
-        console.error("Error fetching timetable data:", err)
-        setError("Failed to load student data")
-      } finally {
-        setLoading(false)
-      }
+  const fetchStudentData = useCallback(async () => {
+    // Проверяем кеш
+    const cachedData = studentDataCache.get(studentId)
+    const now = Date.now()
+    
+    if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+      setGroupName(cachedData.groupName)
+      setLoading(false)
+      setError(null)
+      return
     }
 
+    try {
+      setLoading(true)
+      const response = await fetch(`${URL}/timetable/${studentId}`)
+      if (!response.ok) {
+        throw new Error("Failed to fetch timetable data")
+      }
+      const data: TimetableResponse = await response.json()
+      setGroupName(data.groupName)
+      
+      // Сохраняем в кеш
+      studentDataCache.set(studentId, {
+        groupName: data.groupName,
+        timestamp: now
+      })
+      
+      setError(null)
+    } catch (err) {
+      console.error("Error fetching timetable data:", err)
+      setError("Failed to load student data")
+    } finally {
+      setLoading(false)
+    }
+  }, [studentId, URL])
+
+  useEffect(() => {
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark")
+      // Применяем тему сразу
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
     }
+
     const savedLanguage = localStorage.getItem("language") as "ru" | "en"
     if (savedLanguage) {
       setLanguage(savedLanguage)
     }
 
     fetchStudentData()
-  }, [studentId])
+  }, [fetchStudentData])
 
   const toggleTheme = () => {
     const newTheme = !isDarkMode
@@ -96,6 +132,8 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       logout: "Выйти из аккаунта",
       loading: "Загрузка...",
       error: "Ошибка загрузки",
+      close: "Закрыть",
+      retry: "Повторить",
     },
     en: {
       profile: "Profile",
@@ -113,21 +151,30 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
       logout: "Logout",
       loading: "Loading...",
       error: "Loading error",
+      close: "Close",
+      retry: "Retry",
     },
   }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if clicking on the overlay itself, not on the panel
     if (e.target === e.currentTarget) {
       onClose()
     }
+  }
+
+  const handleRetry = () => {
+    setError(null)
+    fetchStudentData()
   }
 
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={handleOverlayClick}>
         <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">{t[language].loading}</p>
+          </div>
         </div>
       </div>
     )
@@ -137,10 +184,15 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={handleOverlayClick}>
         <div className="w-80 h-full bg-card rounded-l-3xl p-6 border-l border-border flex flex-col items-center justify-center">
-          <p className="text-destructive mb-4">{t[language].error}</p>
-          <Button variant="outline" onClick={onClose}>
-            {t[language].change}
-          </Button>
+          <p className="text-destructive mb-4 text-center">{t[language].error}</p>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose}>
+              {t[language].close}
+            </Button>
+            <Button onClick={handleRetry}>
+              {t[language].retry}
+            </Button>
+          </div>
         </div>
       </div>
     )
