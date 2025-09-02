@@ -86,7 +86,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
 
-  const t = translations[language]
+  const t = translations[language] || translations.en
 
   const URL = process.env.NEXT_PUBLIC_API_URL
   const SOCKET_URL = process.env.SOCKET_URL
@@ -700,7 +700,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                             {t.teacherLabel}
                           </div>
-                          <span className="text-foreground font-medium bg-accent/50 px-3 py-1.5 rounded-lg text-sm border border-accent/20">
+                          <span className="text-primary font-semibold bg-primary/10 px-3 py-1.5 rounded-lg text-sm">
                             {lesson.teacher}
                           </span>
                         </div>
