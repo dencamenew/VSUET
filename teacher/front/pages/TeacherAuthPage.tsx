@@ -47,16 +47,16 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-card border-border">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 gradient-primary rounded-full flex items-center justify-center shadow-soft-lg">
-              <GraduationCap className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
+              <GraduationCap className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-foreground">{t.welcome}</CardTitle>
-          <CardDescription className="text-muted-foreground">{t.enterCredentials}</CardDescription>
+          <CardTitle className="text-2xl font-bold">{t.welcome}</CardTitle>
+          <CardDescription>{t.enterCredentials}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,7 +69,6 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
                   setFullName(e.target.value)
                   setError("")
                 }}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
             </div>
@@ -82,14 +81,13 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
                   setPassword(e.target.value)
                   setError("")
                 }}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
               {error && <p className="text-destructive text-sm mt-2">{error}</p>}
             </div>
             <Button
               type="submit"
-              className="w-full gradient-primary hover:opacity-90 text-white shadow-soft hover:shadow-soft-lg transition-all duration-200"
+              className="w-full"
               disabled={isLoading || !fullName.trim() || !password.trim()}
             >
               {isLoading ? `${t.login}...` : t.login}
