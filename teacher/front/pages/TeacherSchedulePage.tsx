@@ -183,9 +183,29 @@ function CommentModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
       <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            {isEditMode ? t.editComment : t.addComment}
-          </h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.comment || "Комментарий"}</h3>
+          <div className="flex gap-1">
+            {isEditMode && onDeleteComment && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleDelete}
+                className="p-1 hover:bg-muted rounded-lg text-destructive"
+                title={t.delete}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose} 
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.back}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="mb-4 space-y-2">
@@ -204,35 +224,14 @@ function CommentModal({
             className="min-h-[100px] bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
             autoFocus
           />
-          <div className="flex gap-2">
-            {isEditMode && onDeleteComment && (
-              <Button 
-                type="button" 
-                variant="destructive" 
-                onClick={handleDelete}
-                className="flex-1"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {t.delete}
-              </Button>
-            )}
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose} 
-              className={isEditMode && onDeleteComment ? "flex-1" : "flex-1 bg-transparent"}
-            >
-              {t.back}
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={!comment.trim()} 
-              className="flex-1"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {isEditMode ? t.save : t.send}
-            </Button>
-          </div>
+          <Button 
+            type="submit" 
+            disabled={!comment.trim()} 
+            className="w-full py-3 rounded-lg bg-primary hover:bg-primary/90 text-black"
+          >
+            <Send className="w-4 h-4 mr-2 text-black" />
+            {isEditMode ? t.save : t.send}
+          </Button>
         </form>
       </div>
     </div>
