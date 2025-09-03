@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react"
+"use client"
+
+import type React from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Calendar, User, GraduationCap, Users, Save } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
-import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Faculty, type Group, type Subject, type Student, type Grade } from "@/data/mockData"
+import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Grade } from "@/data/mockData"
 
 interface TeacherRatingPageProps {
   teacherName: string
@@ -13,7 +16,12 @@ interface TeacherRatingPageProps {
   language: Language
 }
 
-export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfile, language }: TeacherRatingPageProps) {
+export default function TeacherRatingPage({
+  teacherName,
+  onNavigate,
+  onShowProfile,
+  language,
+}: TeacherRatingPageProps) {
   const [selectedFaculty, setSelectedFaculty] = useState<string>("")
   const [selectedGroup, setSelectedGroup] = useState<string>("")
   const [selectedSubject, setSelectedSubject] = useState<string>("")
@@ -22,22 +30,22 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
 
   const t = translations[language] || translations.en
 
-  const availableGroups = mockGroups.filter(group => group.facultyId === selectedFaculty)
-  const studentsInGroup = mockStudents.filter(student => student.groupId === selectedGroup)
-  const selectedSubjectData = mockSubjects.find(subject => subject.id === selectedSubject)
+  const availableGroups = mockGroups.filter((group) => group.facultyId === selectedFaculty)
+  const studentsInGroup = mockStudents.filter((student) => student.groupId === selectedGroup)
+  const selectedSubjectData = mockSubjects.find((subject) => subject.id === selectedSubject)
 
   // Функция для блокировки нечисловых символов
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Разрешаем: цифры, Backspace, Delete, Tab, стрелки
     if (
       !/[0-9]/.test(e.key) &&
-      e.key !== 'Backspace' &&
-      e.key !== 'Delete' &&
-      e.key !== 'Tab' &&
-      e.key !== 'ArrowLeft' &&
-      e.key !== 'ArrowRight' &&
-      e.key !== 'ArrowUp' &&
-      e.key !== 'ArrowDown'
+      e.key !== "Backspace" &&
+      e.key !== "Delete" &&
+      e.key !== "Tab" &&
+      e.key !== "ArrowLeft" &&
+      e.key !== "ArrowRight" &&
+      e.key !== "ArrowUp" &&
+      e.key !== "ArrowDown"
     ) {
       e.preventDefault()
     }
@@ -47,8 +55,8 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
     // Load existing grades when subject changes
     if (selectedSubject && studentsInGroup.length > 0) {
       const existingGrades: Record<string, Grade> = {}
-      studentsInGroup.forEach(student => {
-        const existingGrade = mockGrades.find(g => g.studentId === student.id && g.subjectId === selectedSubject)
+      studentsInGroup.forEach((student) => {
+        const existingGrade = mockGrades.find((g) => g.studentId === student.id && g.subjectId === selectedSubject)
         if (existingGrade) {
           existingGrades[student.id] = existingGrade
         } else {
@@ -66,15 +74,15 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
     // Разрешаем только цифры и пустую строку
     if (value === "" || /^\d+$/.test(value)) {
       const numValue = value === "" ? undefined : Number(value)
-      
+
       // Проверяем диапазон только если значение не пустое
       if (numValue === undefined || (numValue >= 1 && numValue <= 100)) {
-        setGrades(prev => ({
+        setGrades((prev) => ({
           ...prev,
           [studentId]: {
             ...prev[studentId],
-            [field]: numValue
-          }
+            [field]: numValue,
+          },
         }))
       }
     }
@@ -84,7 +92,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
     setLoading(true)
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
       console.log("Saving grades:", grades)
       alert(t.gradesSaved)
     } catch (error) {
@@ -118,10 +126,13 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                 setSelectedGroup("")
                 setSelectedSubject("")
               }}
+              className="bg-background border-border text-foreground"
             >
               <option value="">{t.selectFaculty}</option>
-              {mockFaculties.map(faculty => (
-                <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
+              {mockFaculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
               ))}
             </Select>
           </div>
@@ -135,10 +146,13 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                 setSelectedSubject("")
               }}
               disabled={!selectedFaculty}
+              className="bg-background border-border text-foreground disabled:opacity-50"
             >
               <option value="">{t.selectGroup}</option>
-              {availableGroups.map(group => (
-                <option key={group.id} value={group.id}>{group.name}</option>
+              {availableGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
               ))}
             </Select>
           </div>
@@ -149,10 +163,13 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
               disabled={!selectedGroup}
+              className="bg-background border-border text-foreground disabled:opacity-50"
             >
               <option value="">{t.selectSubject}</option>
-              {mockSubjects.map(subject => (
-                <option key={subject.id} value={subject.id}>{subject.name}</option>
+              {mockSubjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
               ))}
             </Select>
           </div>
@@ -165,7 +182,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">
-                {selectedSubjectData?.name} - {mockGroups.find(g => g.id === selectedGroup)?.name}
+                {selectedSubjectData?.name} - {mockGroups.find((g) => g.id === selectedGroup)?.name}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {selectedSubjectData?.type === "exam" ? t.checkpoint : t.practicalWork}
@@ -206,7 +223,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "checkpoint1", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                           <td className="p-3">
@@ -218,7 +235,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "checkpoint2", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                           <td className="p-3">
@@ -230,7 +247,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "checkpoint3", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                           <td className="p-3">
@@ -242,7 +259,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "checkpoint4", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                           <td className="p-3">
@@ -254,7 +271,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "checkpoint5", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                           <td className="p-3">
@@ -266,7 +283,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                               onChange={(e) => handleGradeChange(student.id, "finalGrade", e.target.value)}
                               onKeyDown={handleKeyDown}
                               onWheel={(e) => e.currentTarget.blur()}
-                              className="w-16 text-center"
+                              className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                             />
                           </td>
                         </>
@@ -280,7 +297,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
                             onChange={(e) => handleGradeChange(student.id, "practicalGrade", e.target.value)}
                             onKeyDown={handleKeyDown}
                             onWheel={(e) => e.currentTarget.blur()}
-                            className="w-16 text-center"
+                            className="w-16 text-center bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
                           />
                         </td>
                       )}
@@ -292,11 +309,7 @@ export default function TeacherRatingPage({ teacherName, onNavigate, onShowProfi
 
             {canSave && (
               <div className="p-4 border-t border-border">
-                <Button
-                  onClick={handleSaveGrades}
-                  disabled={loading}
-                  className="w-full"
-                >
+                <Button onClick={handleSaveGrades} disabled={loading} className="w-full">
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? `${t.saveGrades}...` : t.saveGrades}
                 </Button>

@@ -2,12 +2,10 @@ import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar, User, GraduationCap, Users, Save, Check, X, Clock } from "lucide-react"
+import { Calendar, User, GraduationCap, Users, Save, Check, X } from "lucide-react" // Убрал Clock
 import { translations, type Language } from "@/lib/translations"
 import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockAttendance, type Attendance } from "@/data/mockData"
 import { Input } from "@/components/ui/input"
-
-
 
 interface TeacherAttendancePageProps {
   teacherName: string
@@ -46,7 +44,7 @@ export default function TeacherAttendancePage({ teacherName, onNavigate, onShowP
             studentId: student.id,
             subjectId: selectedSubject,
             date: selectedDate,
-            status: "present"
+            status: "present" // Статус по умолчанию
           }
         }
       })
@@ -54,7 +52,7 @@ export default function TeacherAttendancePage({ teacherName, onNavigate, onShowP
     }
   }, [selectedSubject, selectedDate, selectedGroup])
 
-  const handleAttendanceChange = (studentId: string, status: "present" | "absent" | "late") => {
+  const handleAttendanceChange = (studentId: string, status: "present" | "absent") => { // Убрал "late"
     setAttendance(prev => ({
       ...prev,
       [studentId]: {
@@ -80,25 +78,21 @@ export default function TeacherAttendancePage({ teacherName, onNavigate, onShowP
 
   const canSave = selectedFaculty && selectedGroup && selectedSubject && selectedDate && studentsInGroup.length > 0
 
-  const getStatusIcon = (status: "present" | "absent" | "late") => {
+  const getStatusIcon = (status: "present" | "absent") => {
     switch (status) {
       case "present":
         return <Check className="w-4 h-4 text-green-600" />
       case "absent":
         return <X className="w-4 h-4 text-red-600" />
-      case "late":
-        return <Clock className="w-4 h-4 text-yellow-600" />
     }
   }
 
-  const getStatusColor = (status: "present" | "absent" | "late") => {
+  const getStatusColor = (status: "present" | "absent") => {
     switch (status) {
       case "present":
         return "bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300"
       case "absent":
         return "bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300"
-      case "late":
-        return "bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300"
     }
   }
 
@@ -196,7 +190,7 @@ export default function TeacherAttendancePage({ teacherName, onNavigate, onShowP
                   <span className="font-medium text-foreground">{student.name}</span>
                   
                   <div className="flex gap-2">
-                    {(["present", "late", "absent"] as const).map((status) => (
+                    {(["present", "absent"] as const).map((status) => (
                       <button
                         key={status}
                         onClick={() => handleAttendanceChange(student.id, status)}

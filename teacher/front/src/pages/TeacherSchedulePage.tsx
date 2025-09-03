@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap, Users, MessageSquare, ArrowLeft, Send } from "lucide-react"
+import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap, Users, MessageSquare, X, Send } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { generateMockSchedule, type Lesson } from "@/data/mockData"
 import { Textarea } from "@/components/ui/textarea"
@@ -26,9 +26,10 @@ interface CommentModalProps {
   onClose: () => void
   lesson: Lesson | null
   language: Language
+  selectedDate: string // Добавляем пропс для выбранной даты
 }
 
-function CommentModal({ isOpen, onClose, lesson, language }: CommentModalProps) {
+function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: CommentModalProps) {
   const [comment, setComment] = useState("")
   const t = translations[language] || translations.en
 
@@ -53,19 +54,32 @@ function CommentModal({ isOpen, onClose, lesson, language }: CommentModalProps) 
     }
   }
 
+  // Форматируем дату для отображения
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
       <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">{t.addComment}</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          {/* Убрали крестик - оставляем только заголовок */}
         </div>
         
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground mb-2">{lesson.subject}</p>
-          <p className="text-xs text-muted-foreground">{lesson.time} - {lesson.endTime} • {lesson.group}</p>
+        <div className="mb-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.time} - {lesson.endTime} • {lesson.group}
+          </p>
+          <p className="text-xs text-muted-foreground"> {/* Добавляем дату пары */}
+            {formatDate(selectedDate)}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -363,6 +377,7 @@ export default function TeacherSchedulePage({ teacherName, onNavigate, onShowPro
         onClose={closeCommentModal}
         lesson={commentModal.lesson}
         language={language}
+        selectedDate={selectedDateKey} // Передаем выбранную дату
       />
 
       {/* Bottom Navigation */}
