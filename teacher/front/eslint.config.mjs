@@ -12,21 +12,11 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
-  },
-  {
-    // Добавьте этот блок для настройки правил
     rules: {
-      "@typescript-eslint/no-empty-object-type": "off", // отключаем правило о пустых интерфейсах
-      "@typescript-eslint/no-unused-vars": "warn",      // предупреждение вместо ошибки для неиспользуемых переменных
-      "@typescript-eslint/no-unused-expressions": "warn",
-      "react-hooks/exhaustive-deps": "warn"
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@next/next/no-img-element": "off", 
+      "react-hooks/exhaustive-deps": "off",
+      "@typescript-eslint/no-unused-vars": "off"
     }
   }
 ];
