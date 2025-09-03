@@ -69,11 +69,11 @@ def check_zach(url: str, conn):
 try:
  # Подключение к БД
     with psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
+        host="localhost",
+        port=5432,
+        database="db",
+        user="admin",
+        password="admin"
     ) as conn:  # Контекстный менеджер для соединения
         logger.info("Успешное подключение к БД")
         # Получаем данные из таблицы sbj_urls

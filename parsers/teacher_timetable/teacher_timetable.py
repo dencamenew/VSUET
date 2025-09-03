@@ -34,26 +34,25 @@ driver.get("https://timetable.vsuet.ru/")
 
 
 WebDriverWait(driver, 20).until(
-    EC.presence_of_element_located((By.ID, "selectvaluegroup"))
+    EC.presence_of_element_located((By.ID, "selectvalueprepod"))
 )
 
-group_select = Select(WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, "selectvaluegroup"))
+teacher_select = Select(WebDriverWait(driver, 10).until(
+    EC.presence_of_element_located((By.ID, "selectvalueprepod"))
 ))
 
 
 check_select = Select(WebDriverWait(driver, 10).until(
     EC.presence_of_element_located((By.ID, "selectvalueweek"))
 ))
-groups = [opt.text for opt in group_select.options if opt.text and opt.text.strip()]
-print(groups)
+teachers = [opt.text for opt in teacher_select.options if opt.text and opt.text.strip()]
 timetable = {}
-for group in groups:
-    print(group)
-    group_select = Select(WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "selectvaluegroup"))
+for teacher in teachers:
+    print(teacher)
+    teacher_select = Select(WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, "selectvalueprepod"))
     ))
-    group_select.select_by_visible_text(group)
+    teacher_select.select_by_visible_text(teacher)
     for check in ["Числитель", "Знаменатель"]:
         check_select = Select(WebDriverWait(driver, 30).until(
                 EC.element_to_be_clickable((By.ID, "selectvalueweek"))
@@ -68,8 +67,8 @@ for group in groups:
         table = soup.find_all("table", class_="table table-hover table-bordered table-sm")
         full_info = {}
 
-        if group not in timetable:
-            timetable[group] = {"Числитель": None, 
+        if teacher not in timetable:
+            timetable[teacher] = {"Числитель": None, 
                  "Знаменатель": None}
         for info in table:
             weekday = info.find("div", class_="vertical").text.strip()
@@ -82,9 +81,9 @@ for group in groups:
             full_info[weekday][stime] = subj
 
             if check == "Числитель":
-                timetable[str(group)]["Числитель"] = full_info
+                timetable[str(teacher)]["Числитель"] = full_info
             else:
-                timetable[str(group)]["Знаменатель"] = full_info
+                timetable[str(teacher)]["Знаменатель"] = full_info
 
 driver.quit()
 
@@ -99,16 +98,16 @@ try:
         )
         with conn.cursor() as cursor:
             cursor.execute("ALTER TABLE timetable DISABLE TRIGGER timetable_notify_trigger")
-            for group, info in timetable.items():
+            for teacher, info in timetable.items():
                 json_data = json.dumps(info)
                 logger.info(f"Размер JSON для сохранения: {len(json_data)} байт")
                 
 
                 cursor.execute("""
-                    INSERT INTO timetable (group_name, timetable)
+                    INSERT INTO teacher_timetable (teacher, timetable)
                     VALUES (%s, %s::jsonb)
                     RETURNING id
-                """, (group, json_data))
+                """, (teacher, json_data))
                 
                 record_id = cursor.fetchone()[0]
                 conn.commit()
