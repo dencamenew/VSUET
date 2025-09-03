@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,6 +12,8 @@ import {
   Send,
   QrCode,
   ArrowLeft,
+  Edit,
+  Trash2,
 } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { generateMockSchedule, type Lesson } from "@/data/mockData"
@@ -41,6 +41,10 @@ interface CommentModalProps {
   lesson: Lesson | null
   language: Language
   selectedDate: string
+  initialComment?: string
+  onSaveComment: (comment: string) => void
+  onDeleteComment?: () => void
+  isEditMode?: boolean
 }
 
 interface QRModalProps {
@@ -57,6 +61,8 @@ interface ViewCommentModalProps {
   comment: string
   lesson: Lesson | null
   language: Language
+  onEditComment: () => void
+  onDeleteComment: () => void
 }
 
 function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalProps) {
@@ -116,19 +122,29 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalPro
               className="w-48 h-48"
             />
           </div>
-
-          <Button onClick={refreshQR} variant="outline" className="w-full bg-background hover:bg-muted">
-            {language === "ru" ? "Обновить QR-код" : "Refresh QR Code"}
-          </Button>
         </div>
       </div>
     </div>
   )
 }
 
-function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: CommentModalProps) {
-  const [comment, setComment] = useState("")
+function CommentModal({ 
+  isOpen, 
+  onClose, 
+  lesson, 
+  language, 
+  selectedDate, 
+  initialComment = "", 
+  onSaveComment,
+  onDeleteComment,
+  isEditMode = false 
+}: CommentModalProps) {
+  const [comment, setComment] = useState(initialComment)
   const t = translations[language] || translations.en
+
+  useEffect(() => {
+    setComment(initialComment)
+  }, [initialComment])
 
   if (!isOpen || !lesson) return null
 
@@ -136,19 +152,16 @@ function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: Comme
     e.preventDefault()
     if (!comment.trim()) return
 
-    // Call parent component's function to save comment
-    const commentKey = `${lesson.subject}_${lesson.group}_${lesson.time}`
-
-    // Dispatch custom event to update comments in parent
-    const event = new CustomEvent("saveComment", {
-      detail: { key: commentKey, comment: comment.trim() },
-    })
-    window.dispatchEvent(event)
-
+    onSaveComment(comment.trim())
     setComment("")
     onClose()
+  }
 
-    alert(t.commentAdded)
+  const handleDelete = () => {
+    if (onDeleteComment) {
+      onDeleteComment()
+    }
+    onClose()
   }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -170,7 +183,9 @@ function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: Comme
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
       <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">{t.addComment}</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            {isEditMode ? t.editComment : t.addComment}
+          </h3>
         </div>
 
         <div className="mb-4 space-y-2">
@@ -190,12 +205,32 @@ function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: Comme
             autoFocus
           />
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+            {isEditMode && onDeleteComment && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={handleDelete}
+                className="flex-1"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t.delete}
+              </Button>
+            )}
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className={isEditMode && onDeleteComment ? "flex-1" : "flex-1 bg-transparent"}
+            >
               {t.back}
             </Button>
-            <Button type="submit" disabled={!comment.trim()} className="flex-1">
+            <Button 
+              type="submit" 
+              disabled={!comment.trim()} 
+              className="flex-1"
+            >
               <Send className="w-4 h-4 mr-2" />
-              {t.send}
+              {isEditMode ? t.save : t.send}
             </Button>
           </div>
         </form>
@@ -204,7 +239,15 @@ function CommentModal({ isOpen, onClose, lesson, language, selectedDate }: Comme
   )
 }
 
-function ViewCommentModal({ isOpen, onClose, comment, lesson, language }: ViewCommentModalProps) {
+function ViewCommentModal({ 
+  isOpen, 
+  onClose, 
+  comment, 
+  lesson, 
+  language, 
+  onEditComment, 
+  onDeleteComment 
+}: ViewCommentModalProps) {
   const t = translations[language] || translations.en
 
   if (!isOpen || !lesson) return null
@@ -220,9 +263,35 @@ function ViewCommentModal({ isOpen, onClose, comment, lesson, language }: ViewCo
       <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">{t.comment || "Comment"}</h3>
-          <Button variant="ghost" size="sm" onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onEditComment}
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.edit}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onDeleteComment}
+              className="p-1 hover:bg-muted rounded-lg text-destructive"
+              title={t.delete}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose} 
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.back}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="mb-4 space-y-2">
@@ -232,14 +301,8 @@ function ViewCommentModal({ isOpen, onClose, comment, lesson, language }: ViewCo
           </p>
         </div>
 
-        <div className="bg-muted/50 rounded-lg p-4">
-          <p className="text-foreground whitespace-pre-wrap">{comment}</p>
-        </div>
-
-        <div className="mt-4">
-          <Button onClick={onClose} className="w-full">
-            {t.close || "Close"}
-          </Button>
+        <div className="bg-muted/50 rounded-lg p-4 mb-4 max-h-60 overflow-y-auto">
+          <p className="text-foreground whitespace-pre-wrap break-words">{comment}</p>
         </div>
       </div>
     </div>
@@ -256,9 +319,16 @@ export default function TeacherSchedulePage({
   const [dates, setDates] = useState<DateItem[]>([])
   const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
   const [loading, setLoading] = useState<boolean>(true)
-  const [commentModal, setCommentModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
+  const [commentModal, setCommentModal] = useState<{ 
+    isOpen: boolean; 
+    lesson: Lesson | null;
+    initialComment?: string;
+    isEditMode?: boolean;
+  }>({
     isOpen: false,
     lesson: null,
+    initialComment: "",
+    isEditMode: false
   })
   const [qrModal, setQrModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
     isOpen: false,
@@ -344,22 +414,6 @@ export default function TeacherSchedulePage({
     setLoading(false)
   }, [language])
 
-  useEffect(() => {
-    const handleSaveComment = (event: CustomEvent) => {
-      const { key, comment } = event.detail
-      setLessonComments((prev) => ({
-        ...prev,
-        [key]: comment,
-      }))
-    }
-
-    window.addEventListener("saveComment", handleSaveComment as EventListener)
-
-    return () => {
-      window.removeEventListener("saveComment", handleSaveComment as EventListener)
-    }
-  }, [])
-
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" })
@@ -421,12 +475,50 @@ export default function TeacherSchedulePage({
     }
   }
 
-  const openCommentModal = (lesson: Lesson) => {
-    setCommentModal({ isOpen: true, lesson })
+  const getCommentKey = (lesson: Lesson) => {
+    return `${lesson.subject}_${lesson.group}_${lesson.time}`
+  }
+
+  const truncateComment = (text: string, maxLength = 60) => {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + "..."
+  }
+
+  const openCommentModal = (lesson: Lesson, isEditMode = false) => {
+    const commentKey = getCommentKey(lesson)
+    const existingComment = lessonComments[commentKey] || ""
+    
+    setCommentModal({ 
+      isOpen: true, 
+      lesson,
+      initialComment: existingComment,
+      isEditMode
+    })
   }
 
   const closeCommentModal = () => {
-    setCommentModal({ isOpen: false, lesson: null })
+    setCommentModal({ isOpen: false, lesson: null, initialComment: "" })
+  }
+
+  const handleSaveComment = (comment: string) => {
+    if (commentModal.lesson) {
+      const commentKey = getCommentKey(commentModal.lesson)
+      setLessonComments(prev => ({
+        ...prev,
+        [commentKey]: comment
+      }))
+    }
+  }
+
+  const handleDeleteComment = () => {
+    if (commentModal.lesson) {
+      const commentKey = getCommentKey(commentModal.lesson)
+      setLessonComments(prev => {
+        const newComments = { ...prev }
+        delete newComments[commentKey]
+        return newComments
+      })
+    }
   }
 
   const openQRModal = (lesson: Lesson) => {
@@ -437,21 +529,31 @@ export default function TeacherSchedulePage({
     setQrModal({ isOpen: false, lesson: null })
   }
 
-  const getCommentKey = (lesson: Lesson, date: string) => {
-    return `${lesson.subject}_${lesson.group}_${lesson.time}`
-  }
-
-  const truncateComment = (text: string, maxLength = 60) => {
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength) + "..."
-  }
-
   const openViewCommentModal = (comment: string, lesson: Lesson) => {
     setViewCommentModal({ isOpen: true, comment, lesson })
   }
 
   const closeViewCommentModal = () => {
     setViewCommentModal({ isOpen: false, comment: "", lesson: null })
+  }
+
+  const handleEditCommentFromView = () => {
+    if (viewCommentModal.lesson) {
+      closeViewCommentModal()
+      openCommentModal(viewCommentModal.lesson, true)
+    }
+  }
+
+  const handleDeleteCommentFromView = () => {
+    if (viewCommentModal.lesson) {
+      const commentKey = getCommentKey(viewCommentModal.lesson)
+      setLessonComments(prev => {
+        const newComments = { ...prev }
+        delete newComments[commentKey]
+        return newComments
+      })
+      closeViewCommentModal()
+    }
   }
 
   return (
@@ -524,7 +626,7 @@ export default function TeacherSchedulePage({
         ) : (
           <div className="space-y-4">
             {currentSchedule.map((lesson, index) => {
-              const commentKey = getCommentKey(lesson, selectedDateKey)
+              const commentKey = getCommentKey(lesson)
               const lessonComment = lessonComments[commentKey]
 
               return (
@@ -578,7 +680,7 @@ export default function TeacherSchedulePage({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openCommentModal(lesson)}
+                          onClick={() => openCommentModal(lesson, !!lessonComment)}
                           className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
                         >
                           <MessageSquare className="w-4 h-4" />
@@ -591,10 +693,11 @@ export default function TeacherSchedulePage({
                             {t.comment || "Комментарий"}
                           </div>
                           <div
-                            className="bg-muted/50 px-3 py-2 rounded-lg text-sm text-foreground cursor-pointer hover:bg-muted/70 transition-colors text-right"
+                            className="bg-muted/50 px-3 py-2 rounded-lg text-sm text-foreground cursor-pointer hover:bg-muted/70 transition-colors text-right whitespace-nowrap overflow-hidden text-ellipsis"
                             onClick={() => openViewCommentModal(lessonComment, lesson)}
+                            title={lessonComment}
                           >
-                            {truncateComment(lessonComment, 40)}
+                            {truncateComment(lessonComment, 60)}
                           </div>
                         </div>
                       )}
@@ -614,6 +717,10 @@ export default function TeacherSchedulePage({
         lesson={commentModal.lesson}
         language={language}
         selectedDate={selectedDateKey}
+        initialComment={commentModal.initialComment}
+        onSaveComment={handleSaveComment}
+        onDeleteComment={handleDeleteComment}
+        isEditMode={commentModal.isEditMode}
       />
 
       {/* QR Modal */}
@@ -632,6 +739,8 @@ export default function TeacherSchedulePage({
         comment={viewCommentModal.comment}
         lesson={viewCommentModal.lesson}
         language={language}
+        onEditComment={handleEditCommentFromView}
+        onDeleteComment={handleDeleteCommentFromView}
       />
 
       {/* Bottom Navigation */}

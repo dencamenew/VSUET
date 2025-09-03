@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -22,7 +20,6 @@ export default function TeacherRatingPage({
   onShowProfile,
   language,
 }: TeacherRatingPageProps) {
-  const [selectedFaculty, setSelectedFaculty] = useState<string>("")
   const [selectedGroup, setSelectedGroup] = useState<string>("")
   const [selectedSubject, setSelectedSubject] = useState<string>("")
   const [grades, setGrades] = useState<Record<string, Grade>>({})
@@ -30,7 +27,6 @@ export default function TeacherRatingPage({
 
   const t = translations[language] || translations.en
 
-  const availableGroups = mockGroups.filter((group) => group.facultyId === selectedFaculty)
   const studentsInGroup = mockStudents.filter((student) => student.groupId === selectedGroup)
   const selectedSubjectData = mockSubjects.find((subject) => subject.id === selectedSubject)
 
@@ -102,7 +98,7 @@ export default function TeacherRatingPage({
     }
   }
 
-  const canSave = selectedFaculty && selectedGroup && selectedSubject && studentsInGroup.length > 0
+  const canSave = selectedGroup && selectedSubject && studentsInGroup.length > 0
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -116,27 +112,7 @@ export default function TeacherRatingPage({
 
       {/* Filters */}
       <div className="px-4 mb-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">{t.faculty}</label>
-            <Select
-              value={selectedFaculty}
-              onChange={(e) => {
-                setSelectedFaculty(e.target.value)
-                setSelectedGroup("")
-                setSelectedSubject("")
-              }}
-              className="bg-background border-border text-foreground"
-            >
-              <option value="">{t.selectFaculty}</option>
-              {mockFaculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">{t.group}</label>
             <Select
@@ -145,15 +121,17 @@ export default function TeacherRatingPage({
                 setSelectedGroup(e.target.value)
                 setSelectedSubject("")
               }}
-              disabled={!selectedFaculty}
-              className="bg-background border-border text-foreground disabled:opacity-50"
+              className="bg-background border-border text-foreground"
             >
               <option value="">{t.selectGroup}</option>
-              {availableGroups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
+              {mockGroups.map((group) => {
+                const faculty = mockFaculties.find(f => f.id === group.facultyId);
+                return (
+                  <option key={group.id} value={group.id}>
+                    {group.name} {faculty ? `(${faculty.name})` : ''}
+                  </option>
+                )
+              })}
             </Select>
           </div>
 
@@ -307,19 +285,12 @@ export default function TeacherRatingPage({
               </table>
             </div>
 
-            {canSave && (
-              <div className="p-4 border-t border-border">
-                <Button onClick={handleSaveGrades} disabled={loading} className="w-full">
-                  <Save className="w-4 h-4 mr-2" />
-                  {loading ? `${t.saveGrades}...` : t.saveGrades}
-                </Button>
-              </div>
-            )}
+            
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground text-lg">
-              {language === "ru" ? "Выберите факультет, группу и предмет" : "Select faculty, group and subject"}
+              {language === "ru" ? "Выберите группу и предмет" : "Select group and subject"}
             </p>
           </div>
         )}
