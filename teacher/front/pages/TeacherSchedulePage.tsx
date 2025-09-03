@@ -141,6 +141,7 @@ function CommentModal({
 }: CommentModalProps) {
   const [comment, setComment] = useState(initialComment)
   const t = translations[language] || translations.en
+  const MAX_COMMENT_LENGTH = 100
 
   useEffect(() => {
     setComment(initialComment)
@@ -177,6 +178,12 @@ function CommentModal({
       month: "long",
       year: "numeric",
     })
+  }
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (e.target.value.length <= MAX_COMMENT_LENGTH) {
+      setComment(e.target.value)
+    }
   }
 
   return (
@@ -217,13 +224,21 @@ function CommentModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Textarea
-            placeholder={t.commentPlaceholder}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="min-h-[100px] bg-background border-border text-foreground focus:border-primary focus:ring-primary/20"
-            autoFocus
-          />
+          <div className="space-y-2">
+            <Textarea
+              placeholder={t.commentPlaceholder}
+              value={comment}
+              onChange={handleCommentChange}
+              className="min-h-[100px] bg-background border-border text-foreground focus:border-primary focus:ring-primary/20 resize-none"
+              autoFocus
+              maxLength={MAX_COMMENT_LENGTH}
+            />
+            <div className="flex justify-end">
+              <span className="text-xs text-muted-foreground">
+                {comment.length}/{MAX_COMMENT_LENGTH}
+              </span>
+            </div>
+          </div>
           <Button 
             type="submit" 
             disabled={!comment.trim()} 
@@ -478,7 +493,7 @@ export default function TeacherSchedulePage({
     return `${lesson.subject}_${lesson.group}_${lesson.time}`
   }
 
-  const truncateComment = (text: string, maxLength = 60) => {
+  const truncateComment = (text: string, maxLength = 40) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + "..."
   }
@@ -666,7 +681,7 @@ export default function TeacherSchedulePage({
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-3 min-w-0 max-w-[200px]">
+                    <div className="flex flex-col items-end gap-3 min-w-0 flex-1">
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -687,7 +702,7 @@ export default function TeacherSchedulePage({
                       </div>
 
                       {lessonComment && (
-                        <div className="w-full">
+                        <div className="w-full max-w-[280px]">
                           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 text-right">
                             {t.comment || "Комментарий"}
                           </div>
@@ -696,14 +711,13 @@ export default function TeacherSchedulePage({
                             onClick={() => openViewCommentModal(lessonComment, lesson)}
                             title={lessonComment}
                           >
-                            {truncateComment(lessonComment, 60)}
+                            {truncateComment(lessonComment, 40)}
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
-              )
+                </div>)
             })}
           </div>
         )}
