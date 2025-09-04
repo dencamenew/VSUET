@@ -14,24 +14,23 @@ import java.sql.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class PostgresNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgresNotificationService.class);
 
-    private final SimpMessagingTemplate messagingTemplate;
-    private final DataSource dataSource;
-    private final ObjectMapper objectMapper;
-    private volatile boolean running = true;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
-    public PostgresNotificationService(SimpMessagingTemplate messagingTemplate,
-                                       DataSource dataSource,
-                                       ObjectMapper objectMapper) {
-        this.messagingTemplate = messagingTemplate;
-        this.dataSource = dataSource;
-        this.objectMapper = objectMapper;
-    }
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private volatile boolean running = true;
 
     @PostConstruct
     public void init() {
@@ -46,6 +45,7 @@ public class PostgresNotificationService {
                     try (Statement stmt = conn.createStatement()) {
                         stmt.execute("LISTEN raiting_updates");
                         stmt.execute("LISTEN timetable_updates");
+                        stmt.execute("LISTEN timetable_changes");
                     }
 
                     logger.info("Started listening to PostgreSQL notifications");
@@ -71,15 +71,18 @@ public class PostgresNotificationService {
 
     private void processNotification(PGNotification notification) {
         try {
-            JsonNode json = objectMapper.readTree(notification.getParameter());
             String channel = notification.getName();
+            String parameter = notification.getParameter();
 
             switch (channel) {
                 case "raiting_updates":
-                    processRatingUpdate(json);
+                    processRatingUpdate(objectMapper.readTree(parameter));
                     break;
                 case "timetable_updates":
-                    processTimetableUpdate(json);
+                    processTimetableUpdate(objectMapper.readTree(parameter));
+                    break;
+                case "timetable_changes":
+                    processTimetableChanges(parameter);
                     break;
                 default:
                     logger.warn("Unknown notification channel: {}", channel);
@@ -119,6 +122,32 @@ public class PostgresNotificationService {
         );
 
         logger.debug("Processed timetable update for group: {}", groupName);
+    }
+
+    private void processTimetableChanges(String payload) {
+        switch (payload) {
+            case "bulk_update_completed":
+                messagingTemplate.convertAndSend("/topic/timetable/changes", "full_update");
+                logger.info("Full timetable update completed notification sent");
+                break;
+
+            case "data_updated":
+                messagingTemplate.convertAndSend("/topic/timetable/changes", "data_updated");
+                logger.debug("Timetable data updated notification sent");
+                break;
+
+            default:
+                logger.warn("Unknown timetable_changes payload: {}", payload);
+                try {
+                    JsonNode json = objectMapper.readTree(payload);
+                    messagingTemplate.convertAndSend("/topic/timetable/changes", json);
+                    logger.debug("Forwarded JSON notification to timetable/changes topic");
+                } catch (Exception e) {
+                    messagingTemplate.convertAndSend("/topic/timetable/changes", payload);
+                    logger.debug("Forwarded raw notification to timetable/changes topic");
+                }
+                break;
+        }
     }
 
     private void sleep(long millis) {

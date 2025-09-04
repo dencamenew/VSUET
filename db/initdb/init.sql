@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS full_timetable (
     subject VARCHAR(255) NOT NULL,
     teacher VARCHAR(255),
     turnout BOOLEAN DEFAULT FALSE,
+    comment VARCHAR(255),
     UNIQUE (date, zach_number, time)
 );
 

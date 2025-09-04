@@ -38,7 +38,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const URL = process.env.NEXT_PUBLIC_API_URL
+  const URL = "http://localhost:8080/api"
 
   const fetchStudentData = useCallback(async () => {
     // Проверяем кеш
@@ -54,7 +54,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
 
     try {
       setLoading(true)
-      const response = await fetch(`${URL}/timetable/${studentId}`)
+      const response = await fetch(`${URL}/info/${studentId}`)
       if (!response.ok) {
         throw new Error("Failed to fetch timetable data")
       }

@@ -29,6 +29,9 @@ export const translations = {
     sat: "Сб",
     sun: "Вс",
 
+    qrScanSuccess: "QR-код успешно отсканирован",
+    qrScannerError: "Не удалось инициализировать сканер QR-кодов",
+
     studentNotFound: "Студент с таким номером зачётки не найден",
     connectionError: "Ошибка соединения с сервером",
 
@@ -72,9 +75,41 @@ export const translations = {
     offline: "Оффлайн",
     updating: "Обновление...",
     scheduleUpdated: "Расписание обновлено",
-    scheduleLoadError: "Ошибка загрузки расписания"
+    scheduleLoadError: "Ошибка загрузки расписания",
+
+    // Добавьте в объект ru:
+    qrCameraError: "Ошибка доступа к камере",
+    scanQRCode: "Сканировать QR-код",
+    cancel: "Отмена",
+    simulateScan: "Симулировать сканирование",
+    attendanceMarked: "Посещение отмечено",
+    attendanceError: "Ошибка при отметке посещения",
+    invalidQRCode: "Неверный QR-код",
+
+    cameraAccessError: "Ошибка доступа к камере",
+    noCamera: "Камера не найдена",
+    scanning: "Сканирование...",
+    pointCamera: "Наведите камеру на QR-код",
+
   },
   en: {
+
+    scanQRCode: "Scan QR Code",
+    cancel: "Cancel",
+    attendanceMarked: "Attendance marked",
+    attendanceError: "Error marking attendance",
+    invalidQRCode: "Invalid QR code",
+    qrScannerError: "QR scanner initialization error",
+    cameraAccessError: "Camera access error",
+    noCamera: "Camera not found",
+    scanning: "Scanning...",
+    pointCamera: "Point camera at QR code",
+  
+    qrScanSuccess: "QR code scanned successfully",
+
+
+    qrCameraError: "Camera access error",
+    simulateScan: "Simulate scan",
     // Auth page
     welcome: "Welcome",
     enterStudentId: "Enter student ID",

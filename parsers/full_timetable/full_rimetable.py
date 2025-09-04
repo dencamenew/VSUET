@@ -2,6 +2,7 @@ import psycopg2
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
+import json
 
 # Настройка логирования
 logging.basicConfig(
@@ -34,6 +35,37 @@ def get_weekday_russian(date: datetime) -> str:
     }
     return weekdays[date.weekday()]
 
+def create_simple_notification_trigger(conn):
+    """Создает простой триггер для уведомления Spring о изменениях"""
+    try:
+        with conn.cursor() as cursor:
+            # Создаем простую функцию для отправки уведомления
+            cursor.execute("""
+                CREATE OR REPLACE FUNCTION notify_timetable_changed()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    -- Простое уведомление без данных - Spring сам запросит что нужно
+                    PERFORM pg_notify('timetable_changes', 'data_updated');
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            """)
+            
+            # Создаем триггер для таблицы full_timetable
+            cursor.execute("""
+                DROP TRIGGER IF EXISTS timetable_change_trigger ON full_timetable;
+                CREATE TRIGGER timetable_change_trigger
+                AFTER INSERT OR UPDATE OR DELETE ON full_timetable
+                FOR EACH STATEMENT
+                EXECUTE FUNCTION notify_timetable_changed();
+            """)
+            
+            logger.info("Триггер для уведомления Spring создан")
+            
+    except Exception as e:
+        logger.error(f"Ошибка при создании триггера: {e}")
+        raise
+
 def populate_full_timetable():
     """Заполняет таблицу full_timetable на основе timetable_with_zach"""
     
@@ -47,6 +79,9 @@ def populate_full_timetable():
             user="admin",
             password="admin"
         )
+        
+        # Создаем триггер для уведомлений
+        create_simple_notification_trigger(conn)
         
         with conn.cursor() as cursor:
             logger.info("Подключение к БД установлено")
@@ -72,13 +107,17 @@ def populate_full_timetable():
             
             total_inserted = 0
             
+            # Временно отключаем триггер чтобы избежать множественных уведомлений
+            cursor.execute("ALTER TABLE full_timetable DISABLE TRIGGER timetable_change_trigger")
+            
             # Обрабатываем каждый день в диапазоне
             while current_date <= end_date:
                 if current_date.weekday() < 5:  # Только рабочие дни (пн-пт)
                     week_type = get_week_type(current_date)
                     weekday_russian = get_weekday_russian(current_date)
                     
-                    logger.info(f"Обрабатывается дата: {current_date.date()} ({weekday_russian}, {week_type})")
+                    if total_inserted % 50 == 0:  # Реже логируем для производительности
+                        logger.info(f"Обрабатывается дата: {current_date.date()} ({weekday_russian}, {week_type})")
                     
                     # Для каждой зачетки находим занятия на этот день
                     for zach_number in zach_numbers:
@@ -102,7 +141,8 @@ def populate_full_timetable():
                                     ON CONFLICT (date, zach_number, time) 
                                     DO UPDATE SET
                                         subject = EXCLUDED.subject,
-                                        teacher = EXCLUDED.teacher
+                                        teacher = EXCLUDED.teacher,
+                                        turnout = EXCLUDED.turnout
                                 """, (
                                     current_date.date(),
                                     zach_number,
@@ -114,7 +154,7 @@ def populate_full_timetable():
                                 
                                 total_inserted += 1
                                 
-                                if total_inserted % 100 == 0:
+                                if total_inserted % 1000 == 0:
                                     logger.info(f"Добавлено {total_inserted} записей...")
                                     
                             except Exception as e:
@@ -122,10 +162,12 @@ def populate_full_timetable():
                                 continue
                 
                 current_date += timedelta(days=1)
-                
-                # Логируем прогресс каждые 7 дней
-                if (current_date - start_date).days % 7 == 0:
-                    logger.info(f"Обработано {(current_date - start_date).days} дней")
+            
+            # Включаем триггер обратно
+            cursor.execute("ALTER TABLE full_timetable ENABLE TRIGGER timetable_change_trigger")
+            
+            # Отправляем одно уведомление о завершении массового обновления
+            cursor.execute("SELECT pg_notify('timetable_changes', 'bulk_update_completed')")
             
             conn.commit()
             logger.info(f"Успешно добавлено/обновлено {total_inserted} записей в full_timetable")
@@ -134,18 +176,6 @@ def populate_full_timetable():
             cursor.execute("SELECT COUNT(*) FROM full_timetable")
             total_count = cursor.fetchone()[0]
             logger.info(f"Всего записей в full_timetable: {total_count}")
-            
-            if total_count > 0:
-                cursor.execute("""
-                    SELECT date, zach_number, time, subject 
-                    FROM full_timetable 
-                    ORDER BY date, zach_number, time 
-                    LIMIT 10
-                """)
-                samples = cursor.fetchall()
-                logger.info("Примеры записей:")
-                for sample in samples:
-                    logger.info(f"  {sample}")
             
     except Exception as e:
         logger.error(f"Ошибка при заполнении таблицы: {e}")
@@ -156,24 +186,5 @@ def populate_full_timetable():
             conn.close()
             logger.info("Подключение к БД закрыто")
 
-def test_date_functions():
-    """Тестирование функций работы с датами"""
-    test_dates = [
-        datetime(2025, 9, 1),   # Понедельник
-        datetime(2025, 9, 2),   # Вторник
-        datetime(2025, 9, 8),   # Следующий понедельник
-        datetime(2025, 12, 31)  # Последний день
-    ]
-    
-    logger.info("Тестирование функций дат:")
-    for date in test_dates:
-        week_type = get_week_type(date)
-        weekday = get_weekday_russian(date)
-        logger.info(f"  {date.date()} - {weekday} - {week_type}")
-
 if __name__ == "__main__":
-    # Можно раскомментировать для тестирования функций дат
-    # test_date_functions()
-    
-    # Запуск основного процесса
     populate_full_timetable()

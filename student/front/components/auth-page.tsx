@@ -13,6 +13,13 @@ interface AuthPageProps {
   language: Language
 }
 
+interface StudentInfo {
+  zachNumber: string
+  groupName: string
+  ratings: any[]
+  timetable: any
+}
+
 export default function AuthPage({ onLogin, language }: AuthPageProps) {
   const [studentId, setStudentId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -20,30 +27,47 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
 
   const t = translations[language]
 
-  const URL = process.env.NEXT_PUBLIC_API_URL;
+  const URL = 'http://localhost:8080/api'
 
   const checkStudentExists = async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${URL}/rating/${id}`, {
+      const response = await fetch(`${URL}/info/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       })
 
+      // Network errors (server not reachable)
+      if (response.status === 0) {
+        throw new Error('Network error: Cannot connect to server')
+      }
+
+      // If status 404 - student not found
       if (response.status === 404) {
         return false
       }
 
+      // Other server errors
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json()
-      return data !== null && data !== undefined
+      const data: StudentInfo = await response.json()
+      
+      return data !== null && 
+            data.zachNumber !== undefined && 
+            data.zachNumber !== null &&
+            data.zachNumber.trim() !== ""
     } catch (error) {
       console.error("Error checking student:", error)
-      return false
+      
+      // More specific error handling
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Cannot connect to server. Please make sure the backend is running.')
+      }
+      
+      throw error // Re-throw to handle in the calling function
     }
   }
 

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react"
+import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap, QrCode, Check, X, Clock, Camera, CameraOff } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { Client } from "@stomp/stompjs"
 import SockJS from "sockjs-client"
 import { toast } from "sonner"
+import { Html5QrcodeScanner } from "html5-qrcode"
 
 interface SchedulePageProps {
   studentId: string
@@ -22,31 +23,29 @@ interface DateItem {
   isToday: boolean
   fullDate: Date
   key: string
-  weekType?: "Числитель" | "Знаменатель" | "Numerator" | "Denominator"
 }
 
 interface Lesson {
+  date: string
   time: string
   endTime: string
   subject: string
   room: string
+  audience: string
   teacher: string
   type: "lecture" | "practice" | "lab" | "other"
-  weekType?: "Числитель" | "Знаменатель" | "Numerator" | "Denominator"
+  turnout: boolean
   grades?: {
     value: string
     date: string
   }[]
   attendance?: "present" | "absent" | "late"
+  hasPassed: boolean
 }
 
 interface TimetableResponse {
   zachNumber: string
-  groupName: string
-  timetable: {
-    Числитель: Record<string, Record<string, string>>
-    Знаменатель: Record<string, Record<string, string>>
-  }
+  timetable: Lesson[]
 }
 
 interface GradeUpdate {
@@ -78,18 +77,24 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
   const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
-  const [groupName, setGroupName] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showQRScanner, setShowQRScanner] = useState(false)
+  const [currentQRSubject, setCurrentQRSubject] = useState<string>("")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
-
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [currentQRDate, setCurrentQRDate] = useState<string>("")
+  const [currentQRTime, setCurrentQRTime] = useState<string>("")
+  const qrScannerRef = useRef<Html5QrcodeScanner | null>(null)
+  const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt">("prompt")
   const t = translations[language] || translations.en
 
-  const URL = process.env.NEXT_PUBLIC_API_URL
-  const SOCKET_URL = process.env.SOCKET_URL
+  const URL = "http://localhost:8080"
+  const SOCKET_URL = "http://localhost:8080/ws"
 
   // Функция для получения локальной даты в формате YYYY-MM-DD
   const getLocalDateString = (date: Date): string => {
@@ -99,14 +104,56 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     return `${year}-${month}-${day}`
   }
 
-  // Функция для перевода типа недели
-  const getWeekTypeTranslation = (weekType: "Числитель" | "Знаменатель"): string => {
-    if (language === "ru") {
-      return weekType
-    } else {
-      return weekType === "Числитель" ? "Numerator" : "Denominator"
+  // Проверка, прошло ли уже занятие
+  const hasLessonPassed = (lessonDate: string, lessonTime: string): boolean => {
+    try {
+      const now = new Date()
+      const [hours, minutes] = lessonTime.split(':').map(Number)
+      const lessonDateTime = new Date(lessonDate)
+      lessonDateTime.setHours(hours, minutes, 0, 0)
+      
+      return now > lessonDateTime
+    } catch {
+      return false
     }
   }
+
+  // Функция запроса разрешения камеры
+  const requestCameraPermission = async (): Promise<boolean> => {
+    try {
+      // Проверяем, есть ли уже разрешение
+      if (navigator.permissions) {
+        const permissionStatus = await navigator.permissions.query({ name: "camera" as PermissionName });
+        
+        if (permissionStatus.state === "granted") {
+          setCameraPermission("granted");
+          return true;
+        }
+        
+        if (permissionStatus.state === "denied") {
+          setCameraPermission("denied");
+          return false;
+        }
+      }
+
+      // Запрашиваем доступ к камере
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment" // Предпочитаем заднюю камеру для сканирования QR-кодов
+        } 
+      });
+      
+      // Немедленно останавливаем поток, так как нам нужно только разрешение
+      stream.getTracks().forEach(track => track.stop());
+      
+      setCameraPermission("granted");
+      return true;
+    } catch (error) {
+      console.error("Разрешение камеры отклонено:", error);
+      setCameraPermission("denied");
+      return false;
+    }
+  };
 
   // Функция обработки обновления оценки
   const handleGradeChange = useCallback(
@@ -160,6 +207,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
               if (lesson.subject === update.subject && lesson.time === update.date.split("T")[1].substring(0, 5)) {
                 return {
                   ...lesson,
+                  turnout: update.status === "present",
                   attendance: update.status,
                 }
               }
@@ -178,204 +226,119 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     [t],
   )
 
-  // Парсинг информации о занятии
-  const parseLessonString = (lessonStr: string): Omit<Lesson, "time" | "endTime"> => {
-    if (lessonStr.includes("физической культуре")) {
-      const subject = lessonStr.split("(")[0].replace(", общая физическая", "").trim()
-      return {
-        subject: "Элективные дисциплины (курсы) по физической культуре и спорту",
-        room: "а.подготовка",
-        teacher: "-",
-        type: "other",
-      }
-    }
-
-    const parts = lessonStr.split("(")
-    let subject = parts[0].trim()
-    const roomPart = parts[1]?.replace(")", "").trim() || ""
-
-    if (subject.includes("Иностранный язык")) {
-      const teacherMatch = subject.match(/([А-Я][а-я]+\s[А-Я]\.[А-Я]\.)\s?(\d[а-я])?\s?([А-Я][а-я]+\s[А-Я]\.[А-Я]\.)?/)
-      const teachers = []
-      const roomNumbers = []
-
-      if (teacherMatch) {
-        if (teacherMatch[1]) teachers.push(teacherMatch[1])
-        if (teacherMatch[2]) roomNumbers.push(teacherMatch[2])
-        if (teacherMatch[3]) teachers.push(teacherMatch[3])
-      }
-
-      if (roomPart) roomNumbers.push(roomPart.replace("а.", ""))
-
-      return {
-        subject: "Иностранный язык",
-        room: roomNumbers.length > 0 ? `${roomNumbers.join("/")}` : "",
-        teacher: teachers.join("/"),
-        type: "practice",
-      }
-    }
-
-    let teacher = "-"
-    let type: "lecture" | "practice" | "lab" | "other" = "other"
-    const room = roomPart ? `${roomPart}` : ""
-
-    if (subject.startsWith("лекция:")) {
-      type = "lecture"
-      subject = subject.replace("лекция:", "").trim()
-    } else if (subject.startsWith("практические занятия:")) {
-      type = "practice"
-      subject = subject.replace("практические занятия:", "").trim()
-    } else if (subject.startsWith("лабораторные занятия:")) {
-      type = "lab"
-      subject = subject.replace("лабораторные занятия:", "").trim()
-    }
-
-    const words = subject.split(" ")
-    if (words.length >= 2) {
-      const lastTwo = words.slice(-2).join(" ")
-      if (lastTwo.match(/[А-Я][а-я]+\s[А-Я]\.[А-Я]\./)) {
-        teacher = lastTwo
-        subject = words.slice(0, -2).join(" ").trim()
-      }
-    }
-
-    return {
-      subject,
-      room,
-      teacher,
-      type,
+  // Определение типа занятия на основе названия
+  const determineLessonType = (subject: string): "lecture" | "practice" | "lab" | "other" => {
+    const lowerSubject = subject.toLowerCase()
+    
+    if (lowerSubject.includes("лекция") || lowerSubject.includes("lecture")) {
+      return "lecture"
+    } else if (lowerSubject.includes("практика") || lowerSubject.includes("практические") || lowerSubject.includes("practice")) {
+      return "practice"
+    } else if (lowerSubject.includes("лабораторные") || lowerSubject.includes("lab")) {
+      return "lab"
+    } else {
+      return "other"
     }
   }
 
-  // Парсинг расписания
-  const parseTimetableData = (data: TimetableResponse): Record<string, Lesson[]> => {
-    const result: Record<string, Lesson[]> = {}
-    const { timetable } = data
-
-    // Карта соответствия русских названий дней и номеров дней недели в JS
-    const RUSSIAN_DAY_TO_JS: Record<string, number> = {
-      ПОНЕДЕЛЬНИК: 1, // Понедельник = 1
-      ВТОРНИК: 2, // Вторник = 2
-      СРЕДА: 3, // Среда = 3
-      ЧЕТВЕРГ: 4, // Четверг = 4
-      ПЯТНИЦА: 5, // Пятница = 5
-      СУББОТА: 6, // Суббота = 6
-      ВОСКРЕСЕНЬЕ: 0, // Воскресенье = 0
-    }
-
-    // 1 сентября 2025 года - это понедельник
-    const FIRST_DAY = new Date(2025, 8, 1) // 1 сентября 2025
-
-    // Проверяем что это действительно понедельник
-    if (FIRST_DAY.getDay() !== 1) {
-      console.error(
-        "Ошибка: 1 сентября 2025 должно быть понедельником, а это:",
-        ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][FIRST_DAY.getDay()],
-      )
-      return {}
-    }
-
-    const endDate = new Date(2025, 11, 31) // 31 декабря 2025
-    const currentDate = new Date(FIRST_DAY)
-
-    console.log("Начало парсинга расписания...")
-    console.log("Доступные дни в числителе:", Object.keys(timetable.Числитель || {}))
-    console.log("Доступные дни в знаменателе:", Object.keys(timetable.Знаменатель || {}))
-
-    while (currentDate <= endDate) {
-      const dateKey = getLocalDateString(currentDate)
-      const jsDayOfWeek = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
-
-      // Пропускаем воскресенья (нет занятий)
-      if (jsDayOfWeek !== 0) {
-        // Находим русское название дня для текущего дня недели
-        const russianDayName = Object.keys(RUSSIAN_DAY_TO_JS).find((key) => RUSSIAN_DAY_TO_JS[key] === jsDayOfWeek)
-
-        if (!russianDayName) {
-          console.warn(`Не найдено русское название для дня недели: ${jsDayOfWeek}`)
-          currentDate.setDate(currentDate.getDate() + 1)
-          continue
-        }
-
-        // Определяем тип недели (числитель/знаменатель)
-        // Считаем сколько полных недель прошло с 1 сентября
-        const timeDiff = currentDate.getTime() - FIRST_DAY.getTime()
-        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-        const weekNumber = Math.floor(daysDiff / 7)
-        const isNumerator = weekNumber % 2 === 0
-        const weekType = isNumerator ? "Числитель" : "Знаменатель"
-
-        // Получаем расписание для этого дня и типа недели
-        const dayLessons = timetable[weekType]?.[russianDayName] || {}
-
-        const parsedLessons: Lesson[] = []
-        for (const [timeRange, lessonStr] of Object.entries(dayLessons)) {
-          const [startTime, endTime] = timeRange.split("-")
-          const { subject, room, teacher, type } = parseLessonString(lessonStr)
-
-          parsedLessons.push({
-            time: startTime.replace(".", ":"),
-            endTime: endTime.replace(".", ":"),
-            subject,
-            room,
-            teacher,
-            type,
-            weekType: weekType,
-          })
-        }
-
-        parsedLessons.sort((a, b) => a.time.localeCompare(b.time))
-        if (parsedLessons.length > 0) {
-          result[dateKey] = parsedLessons
-          console.log(`✅ ${dateKey} (${russianDayName}, ${weekType}): ${parsedLessons.length} занятий`)
-        }
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
-
-    console.log("Парсинг завершен. Всего дней с занятиями:", Object.keys(result).length)
-    return result
-  }
-
-  // Загрузка расписания
-  const fetchTimetable = async () => {
-    setLoading(true)
-    setError(null)
+  // Загрузка расписания для конкретной даты
+  const fetchTimetableForDate = async (date: string) => {
     try {
-      console.log("Загрузка расписания для studentId:", studentId)
-      const response = await fetch(`${URL}/timetable/${studentId}`)
-
+      const response = await fetch(`${URL}/api/${date}/${studentId}`)
+      
       if (!response.ok) {
+        if (response.status === 404) {
+          return [] // Нет занятий в этот день
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data: TimetableResponse = await response.json()
-      setGroupName(data.groupName)
+      
+      // Преобразуем данные в формат Lesson
+      const lessons: Lesson[] = data.timetable.map(lesson => {
+        const hasPassed = hasLessonPassed(lesson.date, lesson.time)
 
-      console.log("✅ Данные получены успешно")
-      console.log("Группа:", data.groupName)
-      console.log("Номер зачётки:", data.zachNumber)
+        const str = lesson.subject;
+        const separator = ":";
 
-      // Проверим структуру расписания
-      if (data.timetable) {
-        console.log("Числитель дни:", Object.keys(data.timetable.Числитель || {}))
-        console.log("Знаменатель дни:", Object.keys(data.timetable.Знаменатель || {}))
+        let subject = "";
+        const index = str.indexOf(separator);
 
-        // Посмотрим на конкретные дни
-        Object.keys(data.timetable.Числитель || {}).forEach((day) => {
-          console.log(`Числитель ${day}:`, Object.keys(data.timetable.Числитель[day] || {}).length, "занятий")
-        })
+        if (index !== -1) {
+          subject = str.slice(index + 1).trim();
+        } else {
+          subject =str;
+        }
+
+        
+        return {
+          date: lesson.date,
+          time: lesson.time,
+          endTime: calculateEndTime(lesson.time),
+          subject: subject,
+          room: lesson.audience,
+          audience: lesson.audience,
+          teacher: lesson.teacher,
+          type: determineLessonType(lesson.subject),
+          turnout: lesson.turnout,
+          attendance: lesson.turnout ? "present" : hasPassed ? "absent" : undefined,
+          hasPassed
+        }
+      })
+
+      return lessons
+    } catch (err) {
+      console.error(`Ошибка загрузки расписания на ${date}:`, err)
+      return []
+    }
+  }
+
+  // Вычисление времени окончания занятия
+  const calculateEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number)
+    const endDate = new Date()
+    endDate.setHours(hours)
+    endDate.setMinutes(minutes)
+    endDate.setHours(endDate.getHours() + 1, endDate.getMinutes() + 30)
+    
+    return `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`
+  }
+
+  // Загрузка всего расписания
+  const fetchFullTimetable = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log("Загрузка расписания для studentId:", studentId)
+      
+      const startDate = new Date(2025, 8, 1)
+      const endDate = new Date(2025, 11, 31)
+      
+      const allSchedule: Record<string, Lesson[]> = {}
+      const currentDate = new Date(startDate)
+      
+      while (currentDate <= endDate) {
+        const dateKey = getLocalDateString(currentDate)
+        
+        if (currentDate.getDay() !== 0) {
+          const lessons = await fetchTimetableForDate(dateKey)
+          
+          if (lessons.length > 0) {
+            allSchedule[dateKey] = lessons
+          }
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1)
       }
-
-      const parsedSchedule = parseTimetableData(data)
-      setSchedule(parsedSchedule)
-
+      
+      setSchedule(allSchedule)
+      
       const todayKey = getLocalDateString(new Date())
-      const newSelectedDateKey = parsedSchedule[todayKey] ? todayKey : Object.keys(parsedSchedule)[0] || ""
+      const newSelectedDateKey = allSchedule[todayKey] ? todayKey : Object.keys(allSchedule)[0] || ""
       setSelectedDateKey(newSelectedDateKey)
-
-      console.log("Выбрана дата:", newSelectedDateKey)
+      
     } catch (err) {
       console.error("❌ Ошибка загрузки расписания:", err)
       setError(t.scheduleLoadError)
@@ -411,7 +374,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                   handleAttendanceUpdate(update)
                   break
                 case "SCHEDULE_CHANGED":
-                  fetchTimetable()
+                  fetchFullTimetable()
                   toast.info(t.scheduleUpdated)
                   break
                 default:
@@ -445,10 +408,11 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated])
 
+  // Генерация всех дат
   const generateAllDates = () => {
     const daysOfWeek =
       language === "ru"
-        ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] // Правильный порядок: 0=Вс, 1=Пн, ..., 6=Сб
+        ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
         : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     const months =
@@ -456,12 +420,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
         : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+    const startDate = new Date(2025, 8, 1)
+    const endDate = new Date(2025, 11, 31)
     const today = new Date()
-    const startDate = new Date(today)
-    startDate.setDate(today.getDate() - 14)
-
-    const endDate = new Date(today)
-    endDate.setDate(today.getDate() + 60)
 
     const generatedDates: DateItem[] = []
     const currentDate = new Date(startDate)
@@ -469,11 +430,11 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     while (currentDate <= endDate) {
       const dateKey = getLocalDateString(currentDate)
       const isToday = getLocalDateString(currentDate) === getLocalDateString(today)
-      const dayIndex = currentDate.getDay() // 0=Вс, 1=Пн, ..., 6=Сб
+      const dayIndex = currentDate.getDay()
 
       generatedDates.push({
         date: currentDate.getDate(),
-        day: daysOfWeek[dayIndex], // Правильный индекс
+        day: daysOfWeek[dayIndex],
         month: months[currentDate.getMonth()],
         isToday,
         fullDate: new Date(currentDate),
@@ -496,7 +457,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     let cleanup: () => void
 
     const init = async () => {
-      await fetchTimetable()
+      await fetchFullTimetable()
       cleanup = setupWebSocket()
     }
 
@@ -514,6 +475,168 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     const cleanup = setupWebSocket()
     return cleanup
   }, [setupWebSocket])
+
+  // Функции для сканирования QR-кода
+  const startQRScanner = async (subject: string, date: string, time: string) => {
+    const hasPermission = await requestCameraPermission();
+    
+    if (!hasPermission) {
+      toast.error("Для сканирования QR-кодов необходим доступ к камере");
+      return;
+    }
+    
+    setCurrentQRSubject(subject);
+    setCurrentQRDate(date);
+    setCurrentQRTime(time);
+    setShowQRScanner(true);
+    
+    // Инициализация сканера QR-кода после небольшой задержки для монтирования DOM
+    setTimeout(() => {
+      initQRScanner();
+    }, 100);
+  }
+
+  const stopQRScanner = () => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.clear().catch(error => {
+        console.error("Failed to clear QR scanner", error)
+      })
+      qrScannerRef.current = null
+    }
+    
+    // Остановка потока камеры
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    
+    setShowQRScanner(false)
+    setCurrentQRSubject("")
+    setCurrentQRDate("")
+    setCurrentQRTime("")
+  }
+
+  const initQRScanner = () => {
+    if (!document.getElementById('qr-reader')) return
+    
+    try {
+      // Создаем сканер QR-кода
+      qrScannerRef.current = new Html5QrcodeScanner(
+        "qr-reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          supportedScanTypes: [] 
+        },
+        false
+      )
+      
+      // Обработка успешного сканирования
+      qrScannerRef.current.render((decodedText, decodedResult) => {
+        console.log(`QR Code detected: ${decodedText}`, decodedResult)
+        handleScannedQRCode(decodedText)
+      }, (errorMessage) => {
+        // Игнорируем ошибки, так как они происходят постоянно, пока не найден QR-код
+      })
+    } catch (error) {
+      console.error("Error initializing QR scanner:", error)
+      toast.error(t.qrScannerError)
+      stopQRScanner()
+    }
+  }
+
+  const handleScannedQRCode = (qrData: string) => {
+    try {
+      // Парсим данные QR-кода (ожидаем JSON)
+      const qrDataObj = JSON.parse(qrData)
+      
+      // Проверяем, что QR-код содержит нужные данные
+      if (qrDataObj.subject && qrDataObj.date && qrDataObj.time) {
+        // Отправляем данные на сервер для отметки посещения
+        markAttendance(qrDataObj.subject, qrDataObj.date, qrDataObj.time)
+      } else {
+        toast.error(t.invalidQRCode)
+      }
+    } catch (error) {
+      console.error("Error parsing QR code data:", error)
+      toast.error(t.invalidQRCode)
+    }
+    
+    stopQRScanner()
+  }
+
+  const markAttendance = async (subject: string, date: string, time: string) => {
+    try {
+      setIsUpdating(true)
+      
+      const response = await fetch(`${URL}/api/attendance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          studentId,
+          subject,
+          date,
+          time,
+          status: "present"
+        }),
+      })
+      
+      if (response.ok) {
+        toast.success(t.attendanceMarked)
+        
+        // Обновляем локальное состояние
+        setSchedule(prev => {
+          const newSchedule = { ...prev }
+          const dateKey = getLocalDateString(new Date(date))
+          
+          if (newSchedule[dateKey]) {
+            newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
+              if (lesson.subject === subject && lesson.date === date && lesson.time === time) {
+                return {
+                  ...lesson,
+                  turnout: true,
+                  attendance: "present"
+                }
+              }
+              return lesson
+            })
+          }
+          
+          return newSchedule
+        })
+      } else {
+        throw new Error("Failed to mark attendance")
+      }
+    } catch (error) {
+      console.error("Error marking attendance:", error)
+      toast.error(t.attendanceError)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  // Проверка статуса разрешения камеры при загрузке
+  useEffect(() => {
+    const checkCameraPermission = async () => {
+      try {
+        if (navigator.permissions) {
+          const permissionStatus = await navigator.permissions.query({ name: "camera" as PermissionName });
+          setCameraPermission(permissionStatus.state as "granted" | "denied" | "prompt");
+          
+          // Слушаем изменения разрешения
+          permissionStatus.onchange = () => {
+            setCameraPermission(permissionStatus.state as "granted" | "denied" | "prompt");
+          };
+        }
+      } catch (error) {
+        console.error("Ошибка проверки разрешения камеры:", error);
+      }
+    };
+    
+    checkCameraPermission();
+  }, []);
 
   // Вспомогательные функции
   const scrollLeft = () => {
@@ -551,6 +674,10 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }
 
+  const isToday = (dateString: string): boolean => {
+    return getLocalDateString(new Date()) === dateString;
+  };
+
   const getTypeStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
@@ -577,26 +704,103 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }
   }
 
-  const getAttendanceBadge = (status?: "present" | "absent" | "late") => {
-    if (!status) return null
-
-    const styles = {
-      present:
-        "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800",
-      absent: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800",
-      late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800",
+  // Функция для отображения индикатора посещаемости
+  const renderAttendanceIndicator = (lesson: Lesson) => {
+    if (!lesson.hasPassed) {
+      // Занятие еще не прошло - белый кружок
+      return (
+        <div className="w-6 h-6 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+          <Clock className="w-3 h-3 text-gray-400" />
+        </div>
+      )
     }
 
-    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>{t[status]}</span>
+    if (lesson.turnout) {
+      // Посещено - зеленый кружок
+      return (
+        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+          <Check className="w-4 h-4 text-white" />
+        </div>
+      )
+    } else {
+      // Не посещено - красный кружок
+      return (
+        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+          <X className="w-4 h-4 text-white" />
+        </div>
+      )
+    }
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {showQRScanner && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">{t.scanQRCode}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={stopQRScanner}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mb-4 text-center">
+              {currentQRSubject}
+            </p>
+            
+            {/* Контейнер для сканера QR-кода */}
+            <div 
+              id="qr-reader" 
+              className="w-full mb-4 rounded-lg overflow-hidden border border-border bg-black"
+            />
+            
+            <div className="flex flex-col gap-2">
+              
+              {cameraPermission === "denied" && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
+                  <p className="text-destructive text-sm text-center">
+                    {t.qrCameraError}
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex justify-center gap-3 mt-2">
+                <Button 
+                  onClick={stopQRScanner} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  {t.cancel}
+                </Button>
+                
+                {cameraPermission === "denied" && (
+                  <Button 
+                    onClick={() => {
+                      stopQRScanner();
+                      setTimeout(() => startQRScanner(currentQRSubject, currentQRDate, currentQRTime), 100);
+                    }}
+                    className="flex-1"
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    {t.attendanceError}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Шапка */}
       <div className="flex items-center justify-between p-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">{t.schedule}</h1>
-          <p className="text-muted-foreground">{groupName || t.loading}</p>
+          <p className="text-muted-foreground">{studentId}</p>
         </div>
       </div>
 
@@ -646,8 +850,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       <div className="px-4 mb-4">
         <p className="text-muted-foreground">
           {selectedDateInfo}
-          {schedule[selectedDateKey]?.[0]?.weekType &&
-            ` • ${getWeekTypeTranslation(schedule[selectedDateKey][0].weekType as "Числитель" | "Знаменатель")}`}
         </p>
       </div>
 
@@ -668,15 +870,32 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         ) : (
           <div className="space-y-4">
             {currentSchedule.map((lesson, index) => (
-              <div key={index} className={`${getCardStyles(lesson.type)} rounded-xl p-4 transition-all duration-200`}>
+              <div key={index} className={`${getCardStyles(lesson.type)} rounded-xl p-4 transition-all duration-200 relative`}>
+                {/* Индикатор посещаемости */}
+                <div className="absolute top-4 right-4">
+                  {renderAttendanceIndicator(lesson)}
+                </div>
+
+                {/* Кнопка QR-сканера */}
+                {lesson.hasPassed && !lesson.turnout && isToday(lesson.date) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 right-12"
+                    onClick={() => startQRScanner(lesson.subject, lesson.date, lesson.time)}
+                    title={t.scanQRCode}
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                )}
+
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
+                  <div className="flex-1 pr-8">
                     <div className="flex items-center gap-2 mb-3">
                       <h3 className="text-foreground font-semibold text-lg">{lesson.subject}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(lesson.type)}`}>
                         {getTypeLabel(lesson.type)}
                       </span>
-                      {getAttendanceBadge(lesson.attendance)}
                     </div>
                     <div className="space-y-3">
                       <div>

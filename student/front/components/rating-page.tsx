@@ -50,8 +50,8 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   const [error, setError] = useState<string | null>(null)
   const [stompClient, setStompClient] = useState<Client | null>(null)
   const t = translations[language]
-  const URL = process.env.NEXT_PUBLIC_API_URL;
-  const WS_URL = process.env.WS_URL;
+  const URL = 'http://localhost:8080/api'
+  const WS_URL = 'ws://localhost:8080/ws'
 
   // Process and update ratings data
   const updateRatings = useCallback((update: RatingUpdate) => {

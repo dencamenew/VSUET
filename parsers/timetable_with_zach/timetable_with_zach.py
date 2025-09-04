@@ -68,10 +68,6 @@ def extract_subject(subject_text: str) -> str:
     
     try:
         subject = subject_text
-        
-        # Удаляем тип занятия (лекция, практические занятия и т.д.)
-        subject = re.sub(r'^(лекция|практические занятия|лабораторные занятия|Физическая культура|Курс)\s*:\s*', '', subject, flags=re.IGNORECASE)
-        
         # Удаляем аудиторию
         subject = re.sub(r'\s*\(а\.\s*\d+[а-яА-Я\-]*\)', '', subject, flags=re.IGNORECASE)
         subject = re.sub(r'\s*\(ауд\.\s*\d+[а-яА-Я\-]*\)', '', subject, flags=re.IGNORECASE)
