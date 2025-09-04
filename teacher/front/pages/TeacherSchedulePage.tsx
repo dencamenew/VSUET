@@ -791,3 +791,647 @@ export default function TeacherSchedulePage({
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import type React from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
+import { Button } from "@/components/ui/button"
+import {
+  Calendar,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  Users,
+  MessageSquare,
+  Send,
+  QrCode,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  RefreshCw,
+} from "lucide-react"
+import { translations, type Language } from "@/lib/translations"
+import { generateMockSchedule, type Lesson } from "@/data/mockData"
+import { Textarea } from "@/components/ui/textarea"
+
+
+interface TeacherSchedulePageProps {
+  teacherName: string
+  onNavigate: (page: "schedule" | "rating" | "attendance") => void
+  onShowProfile: () => void
+  language: Language
+}
+
+interface DateItem {
+  date: number
+  day: string
+  month: string
+  isToday: boolean
+  fullDate: Date
+  key: string
+}
+
+interface QRGenerationRequest {
+  subject: string
+  classTime: string
+  classDate: string
+  teacherName: string
+  groupName: string
+}
+
+interface QRGenerationResponse {
+  qrUUID: string
+  qrUrl: string
+  expiresAt: string
+  expiresIn: number
+}
+
+interface CommentModalProps {
+  isOpen: boolean
+  onClose: () => void
+  lesson: Lesson | null
+  language: Language
+  selectedDate: string
+  initialComment?: string
+  onSaveComment: (comment: string) => void
+  onDeleteComment?: () => void
+  isEditMode?: boolean
+}
+
+interface QRModalProps {
+  isOpen: boolean
+  onClose: () => void
+  lesson: Lesson | null
+  language: Language
+  selectedDate: string
+  onGenerateQR: (request: QRGenerationRequest) => Promise<QRGenerationResponse>
+}
+
+interface ViewCommentModalProps {
+  isOpen: boolean
+  onClose: () => void
+  comment: string
+  lesson: Lesson | null
+  language: Language
+  onEditComment: () => void
+  onDeleteComment: () => void
+}
+
+// Компонент для генерации SVG QR-кода
+function QRCodeSVG({ data, size = 200 }: { data: string; size?: number }) {
+  // Простая реализация QR-кода в виде SVG (в реальном проекте используйте библиотеку)
+  const cellSize = 8;
+  const margin = 4;
+  const qrSize = size - margin * 2;
+  
+  // Генерация простого паттерна для демонстрации
+  const renderPattern = () => {
+    const patterns = [];
+    const cells = Math.floor(qrSize / cellSize);
+    
+    for (let y = 0; y < cells; y++) {
+      for (let x = 0; x < cells; x++) {
+        // Простой паттерн на основе данных
+        const shouldFill = (x * y + data.length) % 3 === 0;
+        if (shouldFill) {
+          patterns.push(
+            <rect
+              key={`${x}-${y}`}
+              x={margin + x * cellSize}
+              y={margin + y * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill="black"
+            />
+          );
+        }
+      }
+    }
+    
+    return patterns;
+  };
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="qr-code"
+    >
+      <rect width={size} height={size} fill="white" />
+      {renderPattern()}
+      <text
+        x={size / 2}
+        y={size - 5}
+        textAnchor="middle"
+        fontSize="10"
+        fill="#666"
+      >
+        Scan me
+      </text>
+    </svg>
+  );
+}
+
+function QRModal({ isOpen, onClose, lesson, language, selectedDate, onGenerateQR }: QRModalProps) {
+  const [qrData, setQrData] = useState<QRGenerationResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+
+  useEffect(() => {
+    if (isOpen && lesson && !qrData) {
+      generateQRCode()
+    }
+  }, [isOpen, lesson])
+
+  if (!isOpen || !lesson) return null
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const generateQRCode = async () => {
+    if (!lesson) return
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const request: QRGenerationRequest = {
+        subject: lesson.subject,
+        classTime: lesson.time,
+        classDate: selectedDate,
+        teacherName: "Преподаватель", // Можно передавать из пропсов
+        groupName: lesson.group
+      }
+      
+      const response = await onGenerateQR(request)
+      setQrData(response)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const refreshQR = async () => {
+    setQrData(null)
+    await generateQRCode()
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleTimeString(language === "ru" ? "ru-RU" : "en-US", {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h3 className="text-lg font-semibold text-foreground">
+            {language === "ru" ? "QR Посещаемость" : "QR Attendance"}
+          </h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={refreshQR} 
+            className="p-2 hover:bg-muted rounded-lg"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+
+        <div className="mb-6 space-y-2 text-center">
+          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.time} - {lesson.endTime} • {lesson.room}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.group} • {formatDate(selectedDate)}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col items-center space-y-4">
+          {isLoading ? (
+            <div className="w-48 h-48 flex items-center justify-center">
+              <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : qrData ? (
+            <>
+              <div className="bg-white p-4 rounded-lg border-2 border-border">
+                <QRCodeSVG data={qrData.qrUUID} size={200} />
+              </div>
+              
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {language === "ru" ? "Действителен до: " : "Valid until: "}
+                  {formatTime(qrData.expiresAt)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ID: {qrData.qrUUID.substring(0, 8)}...
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="w-48 h-48 flex items-center justify-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              <p className="text-muted-foreground text-sm text-center">
+                {language === "ru" ? "Нажмите обновить" : "Click refresh"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Остальные компоненты (CommentModal, ViewCommentModal) остаются без изменений
+// [Вставьте здесь код CommentModal и ViewCommentModal из предыдущего файла]
+function CommentModal({ 
+  isOpen, 
+  onClose, 
+  lesson, 
+  language, 
+  selectedDate, 
+  initialComment = "", 
+  onSaveComment,
+  onDeleteComment,
+  isEditMode = false 
+}: CommentModalProps) {
+  const [comment, setComment] = useState(initialComment)
+  const t = translations[language] || translations.en
+  const MAX_COMMENT_LENGTH = 100
+
+  useEffect(() => {
+    setComment(initialComment)
+  }, [initialComment])
+
+  if (!isOpen || !lesson) return null
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!comment.trim()) return
+
+    onSaveComment(comment.trim())
+    setComment("")
+    onClose()
+  }
+
+  const handleDelete = () => {
+    if (onDeleteComment) {
+      onDeleteComment()
+    }
+    onClose()
+  }
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (e.target.value.length <= MAX_COMMENT_LENGTH) {
+      setComment(e.target.value)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">{t.comment || "Комментарий"}</h3>
+          <div className="flex gap-1">
+            {isEditMode && onDeleteComment && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleDelete}
+                className="p-1 hover:bg-muted rounded-lg text-destructive"
+                title={t.delete}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose} 
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.back}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="mb-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.time} - {lesson.endTime} • {lesson.group}
+          </p>
+          <p className="text-xs text-muted-foreground">{formatDate(selectedDate)}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Textarea
+              placeholder={t.commentPlaceholder}
+              value={comment}
+              onChange={handleCommentChange}
+              className="min-h-[100px] bg-background border-border text-foreground focus:border-primary focus:ring-primary/20 resize-none"
+              autoFocus
+              maxLength={MAX_COMMENT_LENGTH}
+            />
+            <div className="flex justify-end">
+              <span className="text-xs text-muted-foreground">
+                {comment.length}/{MAX_COMMENT_LENGTH}
+              </span>
+            </div>
+          </div>
+          <Button 
+            type="submit" 
+            disabled={!comment.trim()} 
+            className="w-full py-3 rounded-lg bg-primary hover:bg-primary/90 text-black"
+          >
+            <Send className="w-4 h-4 mr-2 text-black" />
+            {isEditMode ? t.save : t.send}
+          </Button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function ViewCommentModal({ 
+  isOpen, 
+  onClose, 
+  comment, 
+  lesson, 
+  language, 
+  onEditComment, 
+  onDeleteComment 
+}: ViewCommentModalProps) {
+  const t = translations[language] || translations.en
+
+  if (!isOpen || !lesson) return null
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">{t.comment || "Comment"}</h3>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onEditComment}
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.edit}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onDeleteComment}
+              className="p-1 hover:bg-muted rounded-lg text-destructive"
+              title={t.delete}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose} 
+              className="p-1 hover:bg-muted rounded-lg"
+              title={t.back}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="mb-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.time} - {lesson.endTime} • {lesson.group}
+          </p>
+        </div>
+
+        <div className="bg-muted/50 rounded-lg p-4 mb-4 max-h-60 overflow-y-auto">
+          <p className="text-foreground whitespace-pre-wrap break-words">{comment}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function TeacherSchedulePage({
+  teacherName,
+  onNavigate,
+  onShowProfile,
+  language,
+}: TeacherSchedulePageProps) {
+  const [selectedDateKey, setSelectedDateKey] = useState<string>("")
+  const [dates, setDates] = useState<DateItem[]>([])
+  const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
+  const [loading, setLoading] = useState<boolean>(true)
+  const [commentModal, setCommentModal] = useState<{ 
+    isOpen: boolean; 
+    lesson: Lesson | null;
+    initialComment?: string;
+    isEditMode?: boolean;
+  }>({
+    isOpen: false,
+    lesson: null,
+    initialComment: "",
+    isEditMode: false
+  })
+  const [qrModal, setQrModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
+    isOpen: false,
+    lesson: null,
+  })
+  const [viewCommentModal, setViewCommentModal] = useState<{
+    isOpen: boolean
+    comment: string
+    lesson: Lesson | null
+  }>({
+    isOpen: false,
+    comment: "",
+    lesson: null,
+  })
+  const [lessonComments, setLessonComments] = useState<Record<string, string>>({})
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+ 
+
+  const t = translations[language] || translations.en
+
+  // Функция для генерации QR-кода через API
+  const generateQRCode = async (request: QRGenerationRequest): Promise<QRGenerationResponse> => {
+    try {
+      const response = await fetch('/api/qr/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: QRGenerationResponse = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+      throw new Error(
+        language === "ru" 
+          ? "Ошибка при создании QR-кода" 
+          : "Error generating QR code"
+      )
+    }
+  }
+
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  const generateAllDates = () => {
+    const daysOfWeek =
+      language === "ru" ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+    const months =
+      language === "ru"
+        ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
+        : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    const today = new Date()
+    const startDate = new Date(today)
+    startDate.setDate(today.getDate() - 14)
+
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + 60)
+
+    const generatedDates: DateItem[] = []
+    const currentDate = new Date(startDate)
+
+    while (currentDate <= endDate) {
+      const dateKey = getLocalDateString(currentDate)
+      const isToday = getLocalDateString(currentDate) === getLocalDateString(today)
+      const dayIndex = currentDate.getDay()
+
+      generatedDates.push({
+        date: currentDate.getDate(),
+        day: daysOfWeek[dayIndex],
+        month: months[currentDate.getMonth()],
+        isToday,
+        fullDate: new Date(currentDate),
+        key: dateKey,
+      })
+
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+
+    return generatedDates
+  }
+
+  useEffect(() => {
+    const allDates = generateAllDates()
+    setDates(allDates)
+
+    const mockSchedule = generateMockSchedule()
+    setSchedule(mockSchedule)
+
+    const todayKey = getLocalDateString(new Date())
+    const newSelectedDateKey = mockSchedule[todayKey] ? todayKey : Object.keys(mockSchedule)[0] || ""
+    setSelectedDateKey(newSelectedDateKey)
+
+    setLoading(false)
+  }, [language])
+
+  // Остальные функции остаются без изменений
+  // [Вставьте здесь остальные функции из предыдущего файла]
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pt-12">
+        <div>
+          <h1 className="text-2xl font-bold">{t.schedule}</h1>
+          <p className="text-muted-foreground">{teacherName}</p>
+        </div>
+      </div>
+
+      
+
+      {/* QR Modal с передачей функции генерации */}
+      <QRModal
+        isOpen={qrModal.isOpen}
+        onClose={closeQRModal}
+        lesson={qrModal.lesson}
+        language={language}
+        selectedDate={selectedDateKey}
+        onGenerateQR={generateQRCode}
+      />
+    </div>
+  )
+}
