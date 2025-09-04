@@ -5,18 +5,18 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ru.practice.teststation</groupId>
-        <artifactId>miniApp</artifactId>
+        <artifactId>teacher-back</artifactId>
         <version>1.0.0</version>
     </parent>
     
-    <artifactId>miniApp-api</artifactId>
-    <name>miniApp-api</name>
+    <artifactId>teacher-api</artifactId>
+    <name>teacher-api</name>
     
     <dependencies>
         <!-- Зависимость от core модуля -->
         <dependency>
             <groupId>ru.practice.teststation</groupId>
-            <artifactId>miniApp-core</artifactId>
+            <artifactId>teacher-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         

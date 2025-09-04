@@ -12,15 +12,15 @@
     </parent>
     
     <groupId>ru.practice.teststation</groupId>
-    <artifactId>miniApp</artifactId>
+    <artifactId>teacher-back</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
-    <name>miniApp</name>
+    <name>teacher-back</name>
     <description>Demo project for Spring Boot</description>
     
     <modules>
-        <module>miniApp-core</module>
-        <module>miniApp-api</module>
+        <module>teacher-core</module>
+        <module>teacher-api</module>
     </modules>
     
     <properties>

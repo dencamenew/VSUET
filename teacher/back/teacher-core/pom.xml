@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ru.practice.teststation</groupId>
-        <artifactId>miniApp</artifactId>
+        <artifactId>teacher-back</artifactId>
         <version>1.0.0</version>
     </parent>
     
-    <artifactId>miniApp-core</artifactId>
-    <name>miniApp-core</name>
+    <artifactId>teacher-core</artifactId>
+    <name>teacher-core</name>
     
     <dependencies>
         <!-- Spring Data JPA -->
