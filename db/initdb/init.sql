@@ -157,3 +157,14 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER full_timetable_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON full_timetable
 FOR EACH ROW EXECUTE FUNCTION notify_full_timetable_change();
+
+
+-- Создание таблицы для хранения данных преподавателей
+CREATE TABLE teachers_info (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+-- Создание индекса для быстрого поиска по имени преподавателя
+CREATE INDEX idx_teachers_name ON teachers_info(name);
