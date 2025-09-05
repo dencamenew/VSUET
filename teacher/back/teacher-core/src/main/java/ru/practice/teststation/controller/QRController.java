@@ -16,7 +16,7 @@ public class QRController {
     private final QRService qrService;
 
     @PostMapping("/generate")
-    public ResponseEntity<QRGenerationResponse> generateQR(QRGenerationRequest qrGenerationRequest) {
+    public ResponseEntity<QRGenerationResponse> generateQR(@RequestBody QRGenerationRequest qrGenerationRequest) {
         QRGenerationResponse response = qrService.generateQRCode(qrGenerationRequest);
         return ResponseEntity.ok(response);
     }
