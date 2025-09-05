@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 def check_rait(url: str, c: int):
     resp = requests.get(url)
     soup = BeautifulSoup(resp.text, 'html.parser')
+    print(soup)
+
 
     sbj = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
@@ -118,7 +120,7 @@ def check_rait(url: str, c: int):
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host="postgres",
+        host="localhost",
         port=5432,
         database="db",
         user="admin",
@@ -146,6 +148,7 @@ except Exception as e:
 
 c = 1  
 for url in urls:
+    print(url)
     check_rait(url, c)  
     c += 1 
 cursor.execute("ALTER TABLE timetable ENABLE TRIGGER timetable_notify_trigger")

@@ -90,12 +90,20 @@ export const translations = {
     noCamera: "Камера не найдена",
     scanning: "Сканирование...",
     pointCamera: "Наведите камеру на QR-код",
+    retry: "Повторить",
+    teacherComment: "Комментарий преподавателя",
+    showMore: "Показать больше",
+    close: "Закрыть",
 
   },
   en: {
 
     scanQRCode: "Scan QR Code",
+    teacherComment: "Teacher's comment",
+    showMore: "Show more",
+    close: "Close",
     cancel: "Cancel",
+    retry: "Retry",
     attendanceMarked: "Attendance marked",
     attendanceError: "Error marking attendance",
     invalidQRCode: "Invalid QR code",

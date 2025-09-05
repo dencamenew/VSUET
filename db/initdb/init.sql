@@ -145,6 +145,7 @@ BEGIN
         'zach_number', NEW.zach_number,
         'time', NEW.time,
         'turnout', NEW.turnout,
+        ´comment´, New.comment,
         'changed_at', NOW()
     );
 

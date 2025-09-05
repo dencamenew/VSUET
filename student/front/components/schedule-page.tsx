@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap, QrCode, Check, X, Clock, Camera, CameraOff } from "lucide-react"
+import { Calendar, User, ChevronLeft, ChevronRight, GraduationCap, QrCode, Check, X, Clock, Camera, CameraOff, ChevronDown, ChevronUp } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { Client } from "@stomp/stompjs"
 import SockJS from "sockjs-client"
@@ -35,6 +35,7 @@ interface Lesson {
   teacher: string
   type: "lecture" | "practice" | "lab" | "other"
   turnout: boolean
+  comment?: string | null
   grades?: {
     value: string
     date: string
@@ -91,6 +92,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [currentQRTime, setCurrentQRTime] = useState<string>("")
   const qrScannerRef = useRef<Html5QrcodeScanner | null>(null)
   const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt">("prompt")
+  const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const t = translations[language] || translations.en
 
   const URL = "http://localhost:8080"
@@ -282,6 +284,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
           teacher: lesson.teacher,
           type: determineLessonType(lesson.subject),
           turnout: lesson.turnout,
+          comment: lesson.comment, // Добавляем комментарий
           attendance: lesson.turnout ? "present" : hasPassed ? "absent" : undefined,
           hasPassed
         }
@@ -638,6 +641,12 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     checkCameraPermission();
   }, []);
 
+  // Функция для обрезки комментария
+  const truncateComment = (comment: string, maxLength: number = 10): string => {
+    if (comment.length <= maxLength) return comment;
+    return comment.substring(0, maxLength) + '...';
+  };
+
   // Вспомогательные функции
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -719,14 +728,14 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       // Посещено - зеленый кружок
       return (
         <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-          <Check className="w-4 h-4 text-white" />
+          <Check className="w-4 w-4 text-white" />
         </div>
       )
     } else {
       // Не посещено - красный кружок
       return (
         <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-          <X className="w-4 h-4 text-white" />
+          <X className="w-4 w-4 text-white" />
         </div>
       )
     }
@@ -734,6 +743,45 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Модальное окно для полного комментария */}
+      {/* Модальное окно для полного комментария */}
+      {selectedComment && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedComment(null)}
+        >
+          <div 
+            className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">{t.teacherComment}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedComment(null)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="bg-muted p-4 rounded-lg mb-4 overflow-auto max-h-60">
+              <p className="text-foreground break-words whitespace-pre-wrap hyphens-auto text-justify">
+                {selectedComment}
+              </p>
+            </div>
+            
+            <Button 
+              onClick={() => setSelectedComment(null)}
+              className="w-full"
+            >
+              {t.close}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {showQRScanner && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl">
@@ -787,7 +835,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                     className="flex-1"
                   >
                     <Camera className="h-4 w-4 mr-2" />
-                    {t.attendanceError}
+                    {t.retry}
                   </Button>
                 )}
               </div>
@@ -942,6 +990,22 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                         </div>
                       ) : null}
                     </div>
+
+                    {lesson.comment && (
+                      <div className="mt-3">
+                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                          {t.teacherComment}
+                        </div>
+                        <button
+                          onClick={() => setSelectedComment(lesson.comment || '')}
+                          className="text-left bg-muted hover:bg-muted/80 px-3 py-1.5 rounded-lg transition-colors text-sm w-[100px] whitespace-nowrap overflow-hidden" // Теперь такой же стиль как у других элементов
+                        >
+                          <p className="text-foreground font-medium truncate"> {/* Добавил font-medium */}
+                            {truncateComment(lesson.comment)}
+                          </p>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
