@@ -38,7 +38,14 @@ def check_rait(url: str, c: int):
     print(soup)
 
 
-    sbj = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
+    try:
+        sbj = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
+    except AttributeError:
+        sbj = "Не найдено"
+        
+        print(f"Ошибка: элемент не найден на странице {url}")
+    # Дополнительная диагностика:
+    print(f"Заголовок страницы: {soup.title.text if soup.title else 'Нет заголовка'}")
     group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
     table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
     ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text.strip()
@@ -149,7 +156,88 @@ except Exception as e:
 c = 1  
 for url in urls:
     print(url)
-    check_rait(url, c)  
-    c += 1 
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    try:
+        sbj = soup.find('span', {'id': 'ucVedBox_lblDis'}).text.strip()
+        group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
+        table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
+        ved_type = soup.find_all('span', id="ucVedBox_lblTypeVed")[0].text.strip()
+
+    except AttributeError:
+        continue
+    if ved_type == "Зачет" or ved_type == "Экзамен":
+        # тип ведомости по КТ
+        if soup.find("input", id="ucVedBox_chkShowKT"): # проверка по наличию input для отображения по КТ
+            for row in table_rows:
+                tds = row.find_all('td')
+                zach_number = tds[1].text.strip()
+                raiting = [
+                    tds[7].text.strip() if len(tds) > 7 else "-",
+                    tds[12].text.strip() if len(tds) > 12 else "-",
+                    tds[17].text.strip() if len(tds) > 17 else "-",
+                    tds[22].text.strip() if len(tds) > 22 else "-",
+                    tds[27].text.strip() if len(tds) > 27 else "-",
+                    tds[29].text.strip() if len(tds) > 29 else "-"
+                ]
+                cursor.execute("""
+                    INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (group_name, zach_number, sbj) 
+                    DO UPDATE SET 
+                        ved_type = EXCLUDED.ved_type,
+                        raiting = EXCLUDED.raiting
+                    WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                    OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
+                """, (group_name, zach_number, sbj, ved_type, raiting))
+            conn.commit()
+            logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
+        else:
+            for row in table_rows:
+                tds = row.find_all('td')
+                zach_number = tds[2].text.strip()
+                mark = tds[4].text.strip() if len(tds[4].text.strip()) > 0 else "-"
+                cursor.execute("""
+                    INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (group_name, zach_number, sbj) 
+                    DO UPDATE SET 
+                        ved_type = EXCLUDED.ved_type,
+                        raiting = EXCLUDED.raiting
+                    WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                    OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
+                """, (group_name, zach_number, sbj, ved_type, [mark]))
+            conn.commit()
+            logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
+
+    else:
+        for row in table_rows:
+            tds = row.find_all('td')
+            zach_number = tds[2].text.strip()
+            mark = ""
+            if len(tds[7].text.strip()) > 0:
+                mark = tds[7].text.strip()
+            elif len(tds[4].text.strip()) > 0:
+                mark = tds[4].text.strip()
+            else:
+                mark = "-"
+            cursor.execute("""
+                INSERT INTO raiting (group_name, zach_number, sbj, ved_type, raiting)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (group_name, zach_number, sbj) 
+                DO UPDATE SET 
+                    ved_type = EXCLUDED.ved_type,
+                    raiting = EXCLUDED.raiting
+                WHERE raiting.raiting IS DISTINCT FROM EXCLUDED.raiting
+                OR raiting.ved_type IS DISTINCT FROM EXCLUDED.ved_type
+            """, (group_name, zach_number, sbj, ved_type, [mark]))
+
+        conn.commit()
+        logger.info(f"В БД добавлен рейтинг предмета {sbj} группы: {group_name}. Ссылка №  {c}")
+
+            
+
+
+
 cursor.execute("ALTER TABLE timetable ENABLE TRIGGER timetable_notify_trigger")
 conn.commit()
