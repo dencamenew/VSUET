@@ -5,6 +5,6 @@ import ru.practice.teststation.model.QRCode;
 
 
 
-public interface QRCodeRepository extends JpaRepository<QRCode, String> {
+public interface QRCodeRepository extends JpaRepository<QRCode, Long> {
 
 }
