@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../components/ui/button"
 import {
   Calendar,
   User,
@@ -10,14 +10,15 @@ import {
   Users,
   MessageSquare,
   Send,
-  QrCode,
   ArrowLeft,
   Edit,
   Trash2,
 } from "lucide-react"
-import { translations, type Language } from "@/lib/translations"
-import { generateMockSchedule, type Lesson } from "@/data/mockData"
-import { Textarea } from "@/components/ui/textarea"
+import { translations, type Language } from "../lib/translations"
+import { generateMockSchedule, type Lesson } from "../data/mockData"
+import { Textarea } from "../components/ui/textarea"
+import { QRCodeSVG } from 'qrcode.react'
+
 
 interface TeacherSchedulePageProps {
   teacherName: string
@@ -53,6 +54,7 @@ interface QRModalProps {
   lesson: Lesson | null
   language: Language
   selectedDate: string
+  teacherName: string
 }
 
 interface ViewCommentModalProps {
@@ -63,69 +65,6 @@ interface ViewCommentModalProps {
   language: Language
   onEditComment: () => void
   onDeleteComment: () => void
-}
-
-function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalProps) {
-  const [qrId, setQrId] = useState(1)
-
-  if (!isOpen || !lesson) return null
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
-  const refreshQR = () => {
-    setQrId((prev) => prev + 1)
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
-  }
-
-  const qrData = `lesson_${lesson.subject}_${lesson.group}_${lesson.time}_${selectedDate}_${qrId}`
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
-      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="sm" onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h3 className="text-lg font-semibold text-foreground">
-            QR {language === "ru" ? "Посещаемость" : "Attendance"}
-          </h3>
-          <div className="w-8" />
-        </div>
-
-        <div className="mb-6 space-y-2 text-center">
-          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
-          <p className="text-xs text-muted-foreground">
-            {lesson.time} - {lesson.endTime} • {lesson.room}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {lesson.group} • {formatDate(selectedDate)}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center space-y-4">
-          <div className="bg-white p-4 rounded-lg border-2 border-border">
-            <img
-              src={`/qr-code-.png?key=${qrData}&height=200&width=200`}
-              alt="QR Code for attendance"
-              className="w-48 h-48"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function CommentModal({ 
@@ -248,6 +187,278 @@ function CommentModal({
             {isEditMode ? t.save : t.send}
           </Button>
         </form>
+      </div>
+    </div>
+  )
+}
+
+
+function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName }: QRModalProps) {
+  const [currentQrData, setCurrentQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
+  const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>("")
+  const [timer, setTimer] = useState<number>(10) 
+  const [isSwitching, setIsSwitching] = useState<boolean>(false)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const switchRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (isOpen && lesson) {
+      generateQRCodeForLesson()
+    } else {
+      setCurrentQrData(null)
+      setNextQrData(null)
+      setError("")
+      setTimer(10)
+      setIsSwitching(false)
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      if (switchRef.current) {
+        clearTimeout(switchRef.current)
+        switchRef.current = null
+      }
+    }
+  }, [isOpen, lesson, selectedDate])
+
+  useEffect(() => {
+    if (currentQrData && timer > 0) {
+      timerRef.current = setInterval(() => {
+        setTimer(prev => prev - 1)
+      }, 1000)
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [currentQrData, timer])
+
+  useEffect(() => {
+    if (timer === 0 && timerRef.current && currentQrData) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+      
+      // Начинаем процесс плавной смены QR-кода
+      setIsSwitching(true)
+      
+      // Генерируем следующий QR-код
+      generateNextQRCode()
+    }
+  }, [timer, currentQrData])
+
+  useEffect(() => {
+  if (nextQrData && isSwitching) {
+    // Плавно переключаем на новый QR-код
+    switchRef.current = setTimeout(() => {
+      setCurrentQrData(nextQrData)
+      setNextQrData(null)
+      setIsSwitching(false)
+      setTimer(10) 
+    }, 200)
+  }
+
+  return () => {
+    if (switchRef.current) {
+      clearTimeout(switchRef.current)
+    }
+  }
+}, [nextQrData, isSwitching])
+
+  
+
+  const generateNextQRCode = async () => {
+    if (!lesson) return
+    
+    try {
+      const request = {
+        subject: lesson.subject,
+        groupName: lesson.group,
+        startLessonTime: lesson.time,
+        endLessonTime: lesson.endTime,
+        classDate: selectedDate,
+        teacherName: teacherName
+      }
+      console.log("lesson:", lesson)
+
+      const response = await fetch('http://localhost:8080/api/qr/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      })
+
+      if (!response.ok) {
+        throw new Error('Ошибка при создании QR-кода')
+      }
+
+      const newQrData = await response.json()
+      
+      if (newQrData && newQrData.qr_url) {
+        setNextQrData(newQrData)
+      } else {
+        throw new Error('Неверный формат ответа сервера')
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
+      console.error('Error generating QR:', err)
+      // Если ошибка, сбрасываем состояние переключения
+      setIsSwitching(false)
+      setTimer(10) // Перезапускаем таймер
+    }
+  }
+
+  const generateQRCodeForLesson = async () => {
+    if (!lesson) return
+    
+    setLoading(true)
+    setError("")
+    setTimer(10)
+    
+    try {
+      const request = {
+        subject: lesson.subject,
+        groupName: lesson.group,
+        startLessonTime: lesson.time,
+        endLessonTime: lesson.endTime,
+        classDate: selectedDate,
+        teacherName: teacherName
+      }
+
+      const response = await fetch('http://localhost:8080/api/qr/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      })
+
+      if (!response.ok) {
+        throw new Error('Ошибка при создании QR-кода')
+      }
+
+      const qrData = await response.json()
+      
+      if (qrData && qrData.qr_url) {
+        setCurrentQrData(qrData)
+      } else {
+        throw new Error('Неверный формат ответа сервера')
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
+      console.error('Error generating QR:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isOpen || !lesson) return null
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h3 className="text-lg font-semibold text-foreground">
+            QR {language === "ru" ? "Посещаемость" : "Attendance"}
+          </h3>
+          <div className="w-8" />
+        </div>
+
+        <div className="mb-6 space-y-2 text-center">
+          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.time} - {lesson.endTime} • {lesson.room}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {lesson.group} • {formatDate(selectedDate)}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center space-y-4">
+          {loading && !currentQrData ? (
+            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
+              <p className="text-muted-foreground">
+                {language === "ru" ? "Загрузка..." : "Loading..."}
+              </p>
+            </div>
+          ) : error ? (
+            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
+              <p className="text-destructive text-center text-sm">
+                {error}
+              </p>
+            </div>
+          ) : currentQrData ? (
+            <div className="flex flex-col items-center">
+              <div className="bg-white p-4 border-2 border-border w-48 h-48 flex items-center justify-center">
+                {/* Анимация только opacity без scale */}
+                <div className={`transition-opacity duration-300 ${
+                  isSwitching ? 'opacity-0' : 'opacity-100'
+                }`}>
+                  <QRCodeSVG
+                    value={currentQrData.qr_url}
+                    size={192}
+                    level="H"
+                    includeMargin
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {language === "ru" ? "Доступен еще:" : "Available for:"}
+                </p>
+                <p className="text-md font-semibold text-primary">
+                  {formatTime(timer)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
+              <p className="text-muted-foreground text-center text-sm">
+                {language === "ru" ? "Генерация QR-кода..." : "Generating QR code..."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="mt-4 text-center">
+            <p className="text-destructive text-sm mb-2">{error}</p>
+            <p className="text-xs text-muted-foreground">
+              {language === "ru" ? "Новый QR-код будет сгенерирован автоматически" : "New QR code will be generated automatically"}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -689,7 +900,7 @@ export default function TeacherSchedulePage({
                           onClick={() => openQRModal(lesson)}
                           className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
                         >
-                          <QrCode className="w-4 h-4" />
+                          <QRCodeSVG className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -743,6 +954,7 @@ export default function TeacherSchedulePage({
         lesson={qrModal.lesson}
         language={language}
         selectedDate={selectedDateKey}
+        teacherName={teacherName}
       />
 
       {/* View Comment Modal */}
