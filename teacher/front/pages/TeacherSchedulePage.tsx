@@ -17,7 +17,6 @@ import {
 import { translations, type Language } from "../lib/translations"
 import { generateMockSchedule, type Lesson } from "../data/mockData"
 import { Textarea } from "../components/ui/textarea"
-import { QRGenerationResponse } from "../lib/qrUtils"
 import { QRCodeSVG } from 'qrcode.react'
 
 
@@ -55,6 +54,7 @@ interface QRModalProps {
   lesson: Lesson | null
   language: Language
   selectedDate: string
+  teacherName: string
 }
 
 interface ViewCommentModalProps {
@@ -193,12 +193,12 @@ function CommentModal({
 }
 
 
-function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalProps) {
+function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName }: QRModalProps) {
   const [currentQrData, setCurrentQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
-  const [timer, setTimer] = useState<number>(120) 
+  const [timer, setTimer] = useState<number>(10) 
   const [isSwitching, setIsSwitching] = useState<boolean>(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
@@ -257,7 +257,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalPro
       setCurrentQrData(nextQrData)
       setNextQrData(null)
       setIsSwitching(false)
-      setTimer(120) 
+      setTimer(10) 
     }, 200)
   }
 
@@ -277,10 +277,12 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalPro
       const request = {
         subject: lesson.subject,
         groupName: lesson.group,
-        classTime: lesson.time,
+        startLessonTime: lesson.time,
+        endLessonTime: lesson.endTime,
         classDate: selectedDate,
-        teacherName: "Преподаватель"
+        teacherName: teacherName
       }
+      console.log("lesson:", lesson)
 
       const response = await fetch('http://localhost:8080/api/qr/generate', {
         method: 'POST',
@@ -316,15 +318,16 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate }: QRModalPro
     
     setLoading(true)
     setError("")
-    setTimer(120)
+    setTimer(10)
     
     try {
       const request = {
         subject: lesson.subject,
         groupName: lesson.group,
-        classTime: lesson.time,
+        startLessonTime: lesson.time,
+        endLessonTime: lesson.endTime,
         classDate: selectedDate,
-        teacherName: "Преподаватель"
+        teacherName: teacherName
       }
 
       const response = await fetch('http://localhost:8080/api/qr/generate', {
@@ -951,6 +954,7 @@ export default function TeacherSchedulePage({
         lesson={qrModal.lesson}
         language={language}
         selectedDate={selectedDateKey}
+        teacherName={teacherName}
       />
 
       {/* View Comment Modal */}

@@ -7,7 +7,6 @@ import ru.practice.teststation.response.QRGenerationResponse;
 import ru.practice.teststation.model.QRCode;
 import ru.practice.teststation.repository.QRCodeRepository;
 import ru.practice.teststation.requests.QRGenerationRequest;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -23,8 +22,6 @@ public class QRService {
         String qrUUID = UUID.randomUUID().toString();
         String token = generateSecureToken();
         
-        // Расчет времени истечения (2 минут)
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(2);
         
         // Формирование URL для сканирования
         String qrUrl = "https://localhost:8080/api/qr/scan?qr_id=" + qrUUID + "&token=" + token;
@@ -34,11 +31,10 @@ public class QRService {
         qrCode.setQrUUID(qrUUID);
         qrCode.setToken(token);
         qrCode.setStatus("pending");
-        qrCode.setExpiresAt(expiresAt);
-        qrCode.setCreatedAt(LocalDateTime.now());
 
         qrCode.setSubject(qrGenerationRequest.getSubject());
-        qrCode.setClassTime(qrGenerationRequest.getClassTime());
+        qrCode.setStartLessonTime(qrGenerationRequest.getStartLessonTime());
+        qrCode.setEndLessonTime(qrGenerationRequest.getEndLessonTime());
         qrCode.setClassDate(qrGenerationRequest.getClassDate());
         qrCode.setTeacherName(qrGenerationRequest.getTeacherName());
         qrCode.setGroupName(qrGenerationRequest.getGroupName());
@@ -50,9 +46,7 @@ public class QRService {
         // Формирование ответа
         return new QRGenerationResponse(
             qrUUID,
-            qrUrl,
-            expiresAt,
-            120 
+            qrUrl
         );
     }
 

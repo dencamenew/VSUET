@@ -2,7 +2,7 @@ package ru.practice.teststation.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDateTime;
+
 
 
 @Data
@@ -19,14 +19,12 @@ public class QRCode {
 
     // передаётся с фронта учителя
     private String subject;
-    private String classTime; // как будет на фронте передаваться хз поэтому пока string 
-    private String classDate; // как будет на фронте передаваться хз поэтому пока string
+    private String startLessonTime;
+    private String endLessonTime;
+    private String classDate; 
     private String groupName;
-    private String teacherName; // привязка к преподавателю
+    private String teacherName;
     
     // Кто отсканировал 
     private String studentWhoScan;
-    
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
 }

@@ -10,8 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class QRGenerationRequest {
     private String subject;
-    private String classTime; // как будет на фронте передаваться хз поэтому пока string 
-    private String classDate; // как будет на фронте передаваться хз поэтому пока string
+    private String startLessonTime;
+    private String endLessonTime;
+    private String classDate; 
     private String groupName;
-    private String teacherName; // привязка к преподавателю
+    private String teacherName;
 }
