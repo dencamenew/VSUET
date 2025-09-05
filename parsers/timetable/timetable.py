@@ -91,7 +91,7 @@ driver.quit()
 
 try:
         conn = psycopg2.connect(
-            host="localhost",
+            host="postgres",
             port=5432,
             database="db",
             user="admin",

@@ -118,11 +118,11 @@ def check_rait(url: str, c: int):
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
+        host="postgres",
+        port=5432,
+        database="db",
+        user="admin",
+        password="admin"
     )
     cursor = conn.cursor()
     logger.info(f"Успешное подключение к БД.")

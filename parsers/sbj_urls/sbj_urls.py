@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         port=5432,
         database="db",
         user="admin",
@@ -77,6 +77,7 @@ try:
     
     # Ждем обновления страницы после выбора года
     time.sleep(2)
+    print(57687)
     
 except Exception as e:
     logger.error(f"Ошибка при выборе учебного года: {e}")
@@ -90,6 +91,7 @@ faculty_select = Select(WebDriverWait(driver, 10).until(
     EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbFacultets"))
 ))
 faculties = [opt.text for opt in faculty_select.options if opt.text and opt.text.strip()]
+print(faculties)
 
 for faculty in faculties:
     if faculty == "Выберите факультет":
