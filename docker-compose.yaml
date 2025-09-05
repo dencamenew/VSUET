@@ -134,14 +134,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      timetable:
-        condition: service_completed_successfully
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "https://spring.cloudpub.ru/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   student_frontend:
     container_name: student_frontend
@@ -158,11 +151,7 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "https://spring.cloudpub.ru"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+
 
 volumes:
   postgres_data:

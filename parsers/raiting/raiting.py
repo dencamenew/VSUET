@@ -127,7 +127,7 @@ def check_rait(url: str, c: int):
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         port=5432,
         database="db",
         user="admin",
