@@ -95,8 +95,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const t = translations[language] || translations.en
 
-  const URL = "http://localhost:8080"
-  const SOCKET_URL = "http://localhost:8080/ws"
+  const URL = process.env.NEXT_PUBLIC_API_URL
+  const SOCKET_URL = process.env.SOCKET_URL
 
   // Функция для получения локальной даты в формате YYYY-MM-DD
   const getLocalDateString = (date: Date): string => {
@@ -246,7 +246,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   // Загрузка расписания для конкретной даты
   const fetchTimetableForDate = async (date: string) => {
     try {
-      const response = await fetch(`${URL}/api/${date}/${studentId}`)
+      const response = await fetch(`${URL}/${date}/${studentId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -572,7 +572,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     try {
       setIsUpdating(true)
       
-      const response = await fetch(`${URL}/api/attendance`, {
+      const response = await fetch(`${URL}/attendance`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -925,7 +925,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                 </div>
 
                 {/* Кнопка QR-сканера */}
-                {lesson.hasPassed && !lesson.turnout && isToday(lesson.date) && (
+                {lesson.hasPassed && !lesson.turnout && (
                   <Button
                     variant="ghost"
                     size="icon"

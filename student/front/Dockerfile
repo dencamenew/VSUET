@@ -48,7 +48,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Переменная для backend API (будет переопределена в docker-compose)
-ENV NEXT_PUBLIC_API_URL="http://localhost:8000/api"
+ENV NEXT_PUBLIC_API_URL="https://studentback.cloudpub.ru/api"
 
 # Запускаем приложение
 CMD ["npm", "start"]

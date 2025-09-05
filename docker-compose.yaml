@@ -17,106 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  sbj_urls:
-    container_name: sbj_urls
-    build:
-      context: ./parsers/sbj_urls
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  timetable:
-    container_name: timetable
-    build:
-      context: ./parsers/timetable
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
   
-  teacher_timetable:
-    container_name: teacher_timetable
-    build:
-      context: ./parsers/teacher_timetable
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-   
-  raiting:
-    container_name: raiting
-    build:
-      context: ./parsers/raiting
-      dockerfile: Dockerfile
-    depends_on:
-      sbj_urls:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  zach:
-    container_name: zach
-    build:
-      context: ./parsers/zach
-      dockerfile: Dockerfile
-    depends_on:
-      sbj_urls:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  timetable_with_zach:
-    container_name: timetable_with_zach
-    build: 
-      context: ./parsers/timetable_with_zach
-      dockerfile: Dockerfile
-    depends_on:
-      zach:
-        condition: service_completed_successfully
-      timetable:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  full_timetable:
-    container_name: full_timetable
-    build: 
-      context: ./parsers/full_timetable
-      dockerfile: Dockerfile
-    depends_on:
-      timetable_with_zach:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
   student_backend:
     container_name: student_backend
     build:
@@ -130,7 +31,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: docker
-      CORS_ALLOWED_ORIGINS: https://webvsuet.cloudpub.ru
+      CORS_ALLOWED_ORIGINS: https://vsuetstudent.cloudpub.ru
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,9 +45,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://spring.cloudpub.ru/api
-      - NEXT_PUBLIC_WS_URL=ws://spring.cloudpub.ru/ws
-      - NEXT_PUBLIC_SOCKET_URL=https://spring.cloudpub.ru/ws
+      - NEXT_PUBLIC_API_URL=https://studentback.cloudpub.ru/api
+      - NEXT_PUBLIC_WS_URL=ws://studentback.cloudpub.ru/ws
+      - NEXT_PUBLIC_SOCKET_URL=https://studentback.cloudpub.ru/ws
     depends_on:
       postgres:
         condition: service_healthy

@@ -38,7 +38,7 @@ export default function ProfilePage({ studentId, onLogout, onClose, onLanguageCh
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const URL = "http://localhost:8080/api"
+  const URL = process.env.NEXT_PUBLIC_API_URL
 
   const fetchStudentData = useCallback(async () => {
     // Проверяем кеш

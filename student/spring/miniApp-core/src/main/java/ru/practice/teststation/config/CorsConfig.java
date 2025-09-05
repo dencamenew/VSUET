@@ -14,7 +14,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:3000")
+                        .allowedOrigins("https://vsuetstudent.cloudpub.ru")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
                         .allowedHeaders("*")
                         .allowCredentials(true)
@@ -22,7 +22,7 @@ public class CorsConfig {
 
                 // Добавьте для всех endpoints на всякий случай
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000")
+                        .allowedOrigins("https://vsuetstudent.cloudpub.ru")
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);

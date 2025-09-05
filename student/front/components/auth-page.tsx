@@ -27,7 +27,7 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
 
   const t = translations[language]
 
-  const URL = 'http://localhost:8080/api'
+  const URL = process.env.NEXT_PUBLIC_API_URL
 
   const checkStudentExists = async (id: string): Promise<boolean> => {
     try {
