@@ -61,7 +61,7 @@ try:
 
     # Подключение к базе данных и обработка данных
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         port=5432,
         database="db",
         user="admin",

@@ -116,6 +116,15 @@ services:
       DB_USER: admin
       DB_PASSWORD: admin
       DB_NAME: db
+    
+  teachers_info:
+    container_name: teachers_info
+    build:
+      context: ./parsers/teacher_info
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   student_backend:
     container_name: student_backend
