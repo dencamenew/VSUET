@@ -1,17 +1,17 @@
-package ru.practice.teststation.service;
+// package ru.practice.teststation.service;
 
-import org.springframework.stereotype.Service;
+// import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-import ru.practice.teststation.repository.TeacherInfoRepository;
-import ru.practice.teststation.repository.TeacherSchuduleRepository;
+// import lombok.RequiredArgsConstructor;
+// import ru.practice.teststation.repository.TeacherInfoRepository;
+// import ru.practice.teststation.repository.TeacherSchuduleRepository;
 
-@Service
-@RequiredArgsConstructor
-public class TeacherService {
+// @Service
+// @RequiredArgsConstructor
+// public class TeacherService {
 
-    private final TeacherInfoRepository teacherInfoRepository;
-    private final TeacherSchuduleRepository teacherSchuduleRepository;
+//     private final TeacherInfoRepository teacherInfoRepository;
+//     private final TeacherSchuduleRepository teacherSchuduleRepository;
 
     
-}
+// }
