@@ -1,7 +1,6 @@
 package ru.practice.teststation.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.practice.teststation.model.TeacherInfo;
 import ru.practice.teststation.repository.TeacherInfoRepository;

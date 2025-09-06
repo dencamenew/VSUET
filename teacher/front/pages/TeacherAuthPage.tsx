@@ -9,8 +9,18 @@ import { translations, type Language } from "@/lib/translations"
 import { GraduationCap } from "lucide-react"
 
 interface TeacherAuthPageProps {
-  onLogin: (teacherName: string) => void
+  onLogin: (teacherName: string, sessionId: string) => void
   language: Language
+}
+
+interface LoginResponse {
+  message: string
+  user: {
+    id: number
+    name: string
+    password: string
+  }
+  sessionId: string
 }
 
 export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPageProps) {
@@ -29,12 +39,25 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName.trim(),
+          password: password.trim()
+        }),
+      })
 
-      // Mock validation - accept any non-empty credentials
-      if (fullName.trim() && password.trim()) {
-        onLogin(fullName.trim())
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: LoginResponse = await response.json()
+
+      if (data.message === "Login successful") {
+        onLogin(data.user.name, data.sessionId)
       } else {
         setError(t.invalidCredentials)
       }

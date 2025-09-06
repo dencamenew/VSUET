@@ -14,6 +14,13 @@ interface TeacherProfilePageProps {
   language: Language
 }
 
+interface LogoutResponse {
+  message: string
+  sessionInvalidated?: boolean
+  error?: string
+  code?: string
+}
+
 export default function TeacherProfilePage({
   teacherName,
   onLogout,
@@ -22,6 +29,8 @@ export default function TeacherProfilePage({
   language,
 }: TeacherProfilePageProps) {
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState("")
 
   const t = translations[language] || translations.en
 
@@ -58,6 +67,41 @@ export default function TeacherProfilePage({
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose()
+    }
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    setLogoutError("")
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // Важно! Отправляем куки с сессией
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const data: LogoutResponse = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`)
+      }
+
+      if (data.sessionInvalidated || data.message === "Logout successful") {
+        onLogout()
+      } else if (data.message === "No active session found") {
+        // Если сессии нет, все равно считаем что выход выполнен
+        onLogout()
+      } else {
+        setLogoutError(data.message || t.logoutError || "Logout failed")
+      }
+    } catch (err) {
+      setLogoutError(err instanceof Error ? err.message : t.connectionError || "Connection error")
+      console.error("Logout error:", err)
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -171,14 +215,29 @@ export default function TeacherProfilePage({
         </div>
 
         {/* Logout Button */}
-        <Button
-          onClick={onLogout}
-          variant="destructive"
-          className="w-full py-3 rounded-xl flex items-center justify-center gap-2 shadow-soft hover:shadow-soft-lg transition-all duration-200"
-        >
-          <LogOut className="w-5 h-5" />
-          {t.logout}
-        </Button>
+        <div className="space-y-2">
+          {logoutError && (
+            <p className="text-destructive text-sm text-center">{logoutError}</p>
+          )}
+          <Button
+            onClick={handleLogout}
+            variant="destructive"
+            disabled={isLoggingOut}
+            className="w-full py-3 rounded-xl flex items-center justify-center gap-2 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+          >
+            {isLoggingOut ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                {t.loggingOut || "Logging out..."}
+              </>
+            ) : (
+              <>
+                <LogOut className="w-5 h-5" />
+                {t.logout}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )

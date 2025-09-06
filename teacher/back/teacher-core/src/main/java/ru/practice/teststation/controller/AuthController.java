@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import ru.practice.teststation.dto.requests.LoginRequest;
 import ru.practice.teststation.model.TeacherInfo;
@@ -46,4 +47,34 @@ public class AuthController {
             ));
         }
     }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        try {
+            // Получаем текущую сессию (не создавая новую)
+            HttpSession session = request.getSession(false);
+            
+            if (session != null) {
+                // Инвалидируем сессию - это удалит ее из Redis
+                session.invalidate();
+                
+                
+                return ResponseEntity.ok(Map.of(
+                    "message", "Logout successful",
+                    "sessionInvalidated", true
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                    "message", "No active session found",
+                    "sessionInvalidated", false
+                ));
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Logout failed: " + e.getMessage(),
+                "code", "LOGOUT_ERROR"
+            ));
+        }
+    } 
 }
