@@ -94,6 +94,12 @@ export const translations = {
     teacherComment: "Комментарий преподавателя",
     showMore: "Показать больше",
     close: "Закрыть",
+    loadingCamera: "Загрузка камеры...",
+
+    qrSuccess: "QR-код успешно отсканирован",
+    qrNotFound: "QR-код не найден", 
+    cameraAccessDenied: "Доступ к камере запрещен",
+    cameraNotAvailable: "Камера недоступна",
 
   },
   en: {
@@ -114,6 +120,7 @@ export const translations = {
     pointCamera: "Point camera at QR code",
   
     qrScanSuccess: "QR code scanned successfully",
+    oadingCamera: "Loading camera...",
 
 
     qrCameraError: "Camera access error",
@@ -152,6 +159,11 @@ export const translations = {
     fri: "Fri",
     sat: "Sat",
     sun: "Sun",
+
+    qrSuccess: "QR code scanned successfully",
+    qrNotFound: "QR code not found",
+    cameraAccessDenied: "Camera access denied", 
+    cameraNotAvailable: "Camera not available",
 
     // Months
     january: "January",

@@ -7,7 +7,7 @@ import { translations, type Language } from "@/lib/translations"
 import { Client } from "@stomp/stompjs"
 import SockJS from "sockjs-client"
 import { toast } from "sonner"
-import { Html5QrcodeScanner } from "html5-qrcode"
+import { Html5Qrcode } from "html5-qrcode"
 
 interface SchedulePageProps {
   studentId: string
@@ -90,7 +90,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const streamRef = useRef<MediaStream | null>(null)
   const [currentQRDate, setCurrentQRDate] = useState<string>("")
   const [currentQRTime, setCurrentQRTime] = useState<string>("")
-  const qrScannerRef = useRef<Html5QrcodeScanner | null>(null)
+  const qrScannerRef = useRef<Html5Qrcode | null>(null)
   const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt">("prompt")
   const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const t = translations[language] || translations.en
@@ -499,53 +499,62 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     }, 100);
   }
 
-  const stopQRScanner = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.clear().catch(error => {
-        console.error("Failed to clear QR scanner", error)
-      })
-      qrScannerRef.current = null
-    }
-    
-    // Остановка потока камеры
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    
-    setShowQRScanner(false)
-    setCurrentQRSubject("")
-    setCurrentQRDate("")
-    setCurrentQRTime("")
-  }
-
   const initQRScanner = () => {
     if (!document.getElementById('qr-reader')) return
     
     try {
-      // Создаем сканер QR-кода
-      qrScannerRef.current = new Html5QrcodeScanner(
-        "qr-reader",
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          supportedScanTypes: [] 
-        },
-        false
-      )
+      qrScannerRef.current = new Html5Qrcode("qr-reader");
       
-      // Обработка успешного сканирования
-      qrScannerRef.current.render((decodedText, decodedResult) => {
-        console.log(`QR Code detected: ${decodedText}`, decodedResult)
-        handleScannedQRCode(decodedText)
-      }, (errorMessage) => {
-        // Игнорируем ошибки, так как они происходят постоянно, пока не найден QR-код
-      })
+      if (!qrScannerRef.current) {
+        throw new Error("Failed to create QR scanner instance");
+      }
+      
+      qrScannerRef.current.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText: string, decodedResult: any) => {
+          console.log(`QR Code detected: ${decodedText}`, decodedResult);
+          handleScannedQRCode(decodedText);
+          stopQRScanner();
+        },
+        (errorMessage: string) => {
+          // Игнорируем ошибки сканирования
+        }
+      ).catch((error: Error) => {
+        console.error("Error starting QR scanner:", error);
+        toast.error(t.qrScannerError);
+        stopQRScanner();
+      });
     } catch (error) {
-      console.error("Error initializing QR scanner:", error)
-      toast.error(t.qrScannerError)
-      stopQRScanner()
+      console.error("Error initializing QR scanner:", error);
+      toast.error(t.qrScannerError);
+      stopQRScanner();
     }
+  }
+
+  const stopQRScanner = () => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop().then(() => {
+        if (qrScannerRef.current) {
+          qrScannerRef.current.clear();
+        }
+        qrScannerRef.current = null;
+      }).catch((error: Error) => {
+        console.error("Failed to stop QR scanner", error);
+        qrScannerRef.current = null;
+      });
+    }
+    
+    // Остановка потока камеры
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    setShowQRScanner(false);
+    setCurrentQRSubject("");
+    setCurrentQRDate("");
+    setCurrentQRTime("");
   }
 
   const handleScannedQRCode = (qrData: string) => {
@@ -807,39 +816,13 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
               className="w-full mb-4 rounded-lg overflow-hidden border border-border bg-black"
             />
             
-            <div className="flex flex-col gap-2">
-              
-              {cameraPermission === "denied" && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
-                  <p className="text-destructive text-sm text-center">
-                    {t.qrCameraError}
-                  </p>
-                </div>
-              )}
-              
-              <div className="flex justify-center gap-3 mt-2">
-                <Button 
-                  onClick={stopQRScanner} 
-                  variant="outline"
-                  className="flex-1"
-                >
-                  {t.cancel}
-                </Button>
-                
-                {cameraPermission === "denied" && (
-                  <Button 
-                    onClick={() => {
-                      stopQRScanner();
-                      setTimeout(() => startQRScanner(currentQRSubject, currentQRDate, currentQRTime), 100);
-                    }}
-                    className="flex-1"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    {t.retry}
-                  </Button>
-                )}
+            {cameraPermission === "denied" && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <p className="text-destructive text-sm text-center">
+                  {t.qrCameraError}
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
