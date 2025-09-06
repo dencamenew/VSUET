@@ -7,12 +7,21 @@ import TeacherAttendancePage from "../pages/TeacherAttendancePage"
 import TeacherProfilePage from "../pages/TeacherProfilePage"
 import type { Language } from "../lib/translations"
 
+// Добавьте интерфейс для данных групп и предметов
+export interface GroupSubjects {
+  [groupName: string]: {
+    [subjectName: string]: string[]
+  }
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [teacherName, setTeacherName] = useState("")
+  const [sessionId, setSessionId] = useState("")
+  const [groupsSubjects, setGroupsSubjects] = useState<GroupSubjects>({})
   const [currentPage, setCurrentPage] = useState<"schedule" | "rating" | "attendance">("schedule")
   const [showProfile, setShowProfile] = useState(false)
-  const [language, setLanguage] = useState<Language>("ru") // По умолчанию русский
+  const [language, setLanguage] = useState<Language>("ru")
 
   useEffect(() => {
     // Загрузка сохраненного языка
@@ -20,44 +29,41 @@ function App() {
     if (savedLanguage) {
       setLanguage(savedLanguage)
     } else {
-      // Если язык не сохранен, устанавливаем русский по умолчанию
       localStorage.setItem("language", "ru")
     }
 
     // Установка темы
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme === "dark" || savedTheme === null) {
-      // Если тема не установлена или установлена темная - применяем темную
       document.documentElement.classList.add("dark")
       if (savedTheme === null) {
-        localStorage.setItem("theme", "dark") // Сохраняем темную тему по умолчанию
+        localStorage.setItem("theme", "dark")
       }
     } else {
       document.documentElement.classList.remove("dark")
     }
   }, [])
 
-  const handleLogin = (name: string) => {
+  const handleLogin = (name: string, sessionId: string, groupsData: GroupSubjects) => {
     setTeacherName(name)
+    setSessionId(sessionId)
+    setGroupsSubjects(groupsData)
     setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
     setIsAuthenticated(false)
     setTeacherName("")
+    setSessionId("")
+    setGroupsSubjects({})
     setCurrentPage("schedule")
     setShowProfile(false)
-
-    // Сброс настроек к значениям по умолчанию
     resetSettingsToDefault()
   }
 
   const resetSettingsToDefault = () => {
-    // Сброс языка на русский
     setLanguage("ru")
     localStorage.setItem("language", "ru")
-
-    // Сброс темы на темную
     document.documentElement.classList.add("dark")
     localStorage.setItem("theme", "dark")
   }
@@ -92,6 +98,7 @@ function App() {
       {currentPage === "attendance" && (
         <TeacherAttendancePage
           teacherName={teacherName}
+          groupsSubjects={groupsSubjects}
           onNavigate={setCurrentPage}
           onShowProfile={() => setShowProfile(true)}
           language={language}

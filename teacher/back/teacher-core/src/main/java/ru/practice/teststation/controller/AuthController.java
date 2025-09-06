@@ -30,11 +30,11 @@ public class AuthController {
             TeacherInfo teacher = authService.login(request);
             
             
-            session.setAttribute("user", teacher);
+            session.setAttribute("user", teacher.getName());
             
             return ResponseEntity.ok(Map.of(
                 "message", "Login successful",
-                "user", teacher,
+                "teacher", teacher,
                 "sessionId", session.getId()
             ));
             

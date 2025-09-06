@@ -1,6 +1,10 @@
 package ru.practice.teststation.model;
 
 import java.io.Serializable;
+import java.util.Map;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -18,4 +22,8 @@ public class TeacherInfo implements Serializable {
     private Long id;
     private String name;
     private String password;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Map<String, String[]>> groupsSubjects;
 }

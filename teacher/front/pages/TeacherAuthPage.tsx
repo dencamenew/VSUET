@@ -7,18 +7,19 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { translations, type Language } from "@/lib/translations"
 import { GraduationCap } from "lucide-react"
-
+import type { GroupSubjects } from "../app/page"
 interface TeacherAuthPageProps {
-  onLogin: (teacherName: string, sessionId: string) => void
+  onLogin: (teacherName: string, sessionId: string, groupsSubjects: GroupSubjects) => void
   language: Language
 }
 
 interface LoginResponse {
   message: string
-  user: {
+  teacher: {
     id: number
     name: string
     password: string
+    groupsSubjects: GroupSubjects
   }
   sessionId: string
 }
@@ -57,7 +58,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
       const data: LoginResponse = await response.json()
 
       if (data.message === "Login successful") {
-        onLogin(data.user.name, data.sessionId)
+        onLogin(data.teacher.name, data.sessionId, data.teacher.groupsSubjects)
       } else {
         setError(t.invalidCredentials)
       }
