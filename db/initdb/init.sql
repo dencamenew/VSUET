@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS teacher_timetable (
     id SERIAL PRIMARY KEY,
     teacher VARCHAR(255) NOT NULL UNIQUE,
     timetable JSONB NOT NULL
-); 
+);  -- ДОБАВЬТЕ ТОЧКУ С ЗАПЯТОЙ ЗДЕСЬ!
 
 CREATE TABLE IF NOT EXISTS timetable (
     id SERIAL PRIMARY KEY,
@@ -160,11 +160,12 @@ FOR EACH ROW EXECUTE FUNCTION notify_full_timetable_change();
 
 
 -- Создание таблицы для хранения данных преподавателей
-CREATE TABLE teachers_info (
+CREATE TABLE IF NOT EXISTS teachers_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    groups_subjects JSONB NOT NULL
 );
 
 -- Создание индекса для быстрого поиска по имени преподавателя
-CREATE INDEX idx_teachers_name ON teachers_info(name);
+CREATE INDEX IF NOT EXISTS idx_teachers_name ON teachers_info(name);
