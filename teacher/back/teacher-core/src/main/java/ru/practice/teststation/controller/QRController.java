@@ -3,8 +3,9 @@ package ru.practice.teststation.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.practice.teststation.response.QRGenerationResponse;
-import ru.practice.teststation.requests.QRGenerationRequest;
+
+import ru.practice.teststation.dto.requests.QRGenerationRequest;
+import ru.practice.teststation.dto.response.QRGenerationResponse;
 import ru.practice.teststation.service.QRService;
 
 

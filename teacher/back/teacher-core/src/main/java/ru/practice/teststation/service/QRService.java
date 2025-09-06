@@ -3,10 +3,12 @@ package ru.practice.teststation.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practice.teststation.response.QRGenerationResponse;
+
+import ru.practice.teststation.dto.requests.QRGenerationRequest;
+import ru.practice.teststation.dto.response.QRGenerationResponse;
 import ru.practice.teststation.model.QRCode;
 import ru.practice.teststation.repository.QRCodeRepository;
-import ru.practice.teststation.requests.QRGenerationRequest;
+
 import java.util.UUID;
 
 @Service

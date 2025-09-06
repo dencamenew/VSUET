@@ -1,4 +1,4 @@
-package ru.practice.teststation.response;
+package ru.practice.teststation.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
