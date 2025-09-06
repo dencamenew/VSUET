@@ -43,6 +43,15 @@ export default function TeacherAttendancePage({
       )
     : []
 
+  // Автоматически выбираем предмет, если он всего один
+  useEffect(() => {
+    if (subjects.length === 1) {
+      setSelectedSubject(subjects[0].id)
+    } else if (subjects.length === 0) {
+      setSelectedSubject("")
+    }
+  }, [subjects])
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
