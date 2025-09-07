@@ -284,7 +284,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
       }
       console.log("lesson:", lesson)
 
-      const response = await fetch('http://localhost:8080/api/qr/generate', {
+      const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -330,7 +330,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
         teacherName: teacherName
       }
 
-      const response = await fetch('http://localhost:8080/api/qr/generate', {
+      const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

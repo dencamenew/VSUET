@@ -16,6 +16,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    container_name: radis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   sbj_urls:
     container_name: sbj_urls
@@ -125,6 +132,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      timetable_with_zach:
+        condition: service_completed_successfully
 
   student_backend:
     container_name: student_backend
@@ -162,5 +171,7 @@ services:
     restart: unless-stopped
 
 
+
 volumes:
   postgres_data:
+  redis_data:

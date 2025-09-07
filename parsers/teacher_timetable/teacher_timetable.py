@@ -59,8 +59,8 @@ for teacher in teachers:
             ))
         check_select.select_by_visible_text(check)
 
+        time.sleep(1)
 
-        time.sleep(0.1)
         page_html = driver.page_source
 
         soup = BeautifulSoup(page_html, 'html.parser')
@@ -80,10 +80,12 @@ for teacher in teachers:
             
             full_info[weekday][stime] = subj
 
+
             if check == "Числитель":
                 timetable[str(teacher)]["Числитель"] = full_info
             else:
                 timetable[str(teacher)]["Знаменатель"] = full_info
+
 
 driver.quit()
 

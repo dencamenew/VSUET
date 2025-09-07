@@ -1,9 +1,3 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
 import json
 import logging
 import psycopg2
@@ -25,137 +19,64 @@ def generate_password(length=12):
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-def parse_lesson_type(text):
+def clean_subject_name(subject):
     """
-    Парсит тип занятия из текста
+    Очищает название предмета: удаляет всё, что в скобках
     """
-    text = ' '.join(text.split())
+    if not subject:
+        return subject
     
-    lesson_types = {
-        'лекция': ['лекция'],
-        'лабораторные занятия': ['лабораторные занятия', 'лабораторные', 'лаб. занятия'],
-        'практические занятия': ['практические занятия', 'практические', 'практ. занятия'],
-        'семинар': ['семинар'],
-        'консультация': ['консультация'],
-        'зачет': ['зачет'],
-        'экзамен': ['экзамен']
-    }
+    # Удаляем всё, что находится в скобках (включая сами скобки)
+    cleaned_subject = re.sub(r'\([^)]*\)', '', subject)
     
-    for lesson_type, variants in lesson_types.items():
-        for variant in variants:
-            if variant + ':' in text:
-                return lesson_type
+    # Удаляем лишние пробелы и знаки препинания
+    cleaned_subject = cleaned_subject.strip()
+    cleaned_subject = re.sub(r'[,\s.-]+$', '', cleaned_subject)
+    cleaned_subject = re.sub(r'^[,\s.-]+', '', cleaned_subject)
     
-    return "не указано"
+    return cleaned_subject
 
-def parse_subject_and_group(text):
+def process_teacher_data(cursor):
     """
-    Парсит название предмета и группу из текста
+    Обрабатывает данные из timetable_with_zach и создает структуру преподаватель-группы-предметы
     """
-    text = ' '.join(text.split())
+    teacher_data = {}
     
-    # Удаляем информацию об аудитории
-    text = re.sub(r'\(а\.\d+[а-я]?\)', '', text)
-    
-    # Извлекаем группу
-    group_match = re.search(r'гр\.([^,.\s]+)', text)
-    group = group_match.group(1).strip() if group_match else None
-    
-    # Удаляем информацию о группе
-    if group_match:
-        text = re.sub(r'гр\.[^,.\s]+', '', text)
-    
-    # Удаляем тип занятия (если есть)
-    text = re.sub(r'^(лекция|лабораторные занятия|практические занятия|семинар|консультация|зачет|экзамен):', '', text)
-    
-    # Очищаем название предмета
-    subject = text.strip()
-    subject = re.sub(r'[,\s]+$', '', subject)
-    subject = re.sub(r'^[,\s]+', '', subject)
-    
-    return subject, group
-
-# Основной код
-try:
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.page_load_strategy = 'eager'
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get("https://timetable.vsuet.ru/")
-
-    WebDriverWait(driver, 30).until(
-        EC.presence_of_element_located((By.ID, "selectvalueprepod"))
-    )
-
-    teacher_select = Select(WebDriverWait(driver, 15).until(
-        EC.presence_of_element_located((By.ID, "selectvalueprepod"))
-    ))
-    
-    # Получаем список преподавателей
-    teachers = [opt.text for opt in teacher_select.options if opt.text and opt.text.strip()]
+    # Получаем всех уникальных преподавателей
+    cursor.execute("SELECT DISTINCT teacher FROM timetable_with_zach WHERE teacher IS NOT NULL AND teacher != ''")
+    teachers = [row[0] for row in cursor.fetchall()]
     
     logger.info(f"Найдено преподавателей: {len(teachers)}")
-    
-    # Создаем словарь для хранения данных всех преподавателей
-    teacher_data = {}
     
     for teacher in teachers:
         logger.info(f"Обрабатываем преподавателя: {teacher}")
         
-        # Выбираем преподавателя
-        teacher_select = Select(WebDriverWait(driver, 15).until(
-            EC.element_to_be_clickable((By.ID, "selectvalueprepod"))
-        ))
-        teacher_select.select_by_visible_text(teacher)   
-        # Структура: {"group_name": {"subject1": ["тип1", "тип2"], "subject2": ["тип1"]}}
+        # Получаем все группы и предметы для данного преподавателя
+        cursor.execute("""
+            SELECT DISTINCT group_name, subject 
+            FROM timetable_with_zach 
+            WHERE teacher = %s 
+            AND group_name IS NOT NULL 
+            AND group_name != '' 
+            AND subject IS NOT NULL 
+            AND subject != ''
+        """, (teacher,))
+        
         group_subjects = {}
-        
-        # Обрабатываем оба типа недель (числитель и знаменатель)
-        for check in ["Числитель", "Знаменатель"]:
-            try:
-                check_select = Select(WebDriverWait(driver, 15).until(
-                    EC.element_to_be_clickable((By.ID, "selectvalueweek"))
-                ))
-                check_select.select_by_visible_text(check)
-
-                page_html = driver.page_source
-                soup = BeautifulSoup(page_html, 'html.parser')
-                table = soup.find_all("table", class_="table table-hover table-bordered table-sm")
-                
-                for info in table:
-                    # Получаем полный текст из ячейки
-                    cell_text = info.find("td", class_="align-middle").text.strip()
-                    
-                    # Парсим тип занятия
-                    lesson_type = parse_lesson_type(cell_text)
-                    
-                    # Парсим предмет и группу
-                    subject, group = parse_subject_and_group(cell_text)
-                    
-                    # Пропускаем если нет группы или предмета
-                    if not group or not subject:
-                        continue
-                    
-                    # Добавляем информацию в структуру
-                    if group not in group_subjects:
-                        group_subjects[group] = {}
-                    
-                    if subject not in group_subjects[group]:
-                        group_subjects[group][subject] = set()
-                    
-                    if lesson_type != "не указано":
-                        group_subjects[group][subject].add(lesson_type)          
-            except Exception as e:
-                logger.warning(f"Ошибка при обработке {check} для {teacher}: {e}")
+        for group_name, subject in cursor.fetchall():
+            # Очищаем название предмета
+            cleaned_subject = clean_subject_name(subject)
+            
+            if not cleaned_subject:
                 continue
+                
+            if group_name not in group_subjects:
+                group_subjects[group_name] = set()
+            group_subjects[group_name].add(cleaned_subject)
         
-        # Преобразуем sets в lists для JSON
+        # Преобразуем sets в lists
         for group in group_subjects:
-            for subject in group_subjects[group]:
-                group_subjects[group][subject] = list(group_subjects[group][subject])
+            group_subjects[group] = list(group_subjects[group])
         
         # Сохраняем данные преподавателя
         teacher_data[teacher] = {
@@ -163,13 +84,19 @@ try:
             'groups_subjects': group_subjects
         }
         
-        logger.info(f"Преподаватель {teacher}: обработано {len(group_subjects)} групп")
-    
-    driver.quit()
+        logger.info(f"Преподаватель {teacher}: найдено {len(group_subjects)} групп")
+        
+        # Логируем результат для отладки
+        for group, subjects in group_subjects.items():
+            logger.info(f"  Группа {group}: {subjects}")
 
-    # Подключение к базе данных и сохранение данных
+    return teacher_data
+
+# Основной код
+try:
+    # Подключение к базе данных
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         port=5432,
         database="db",
         user="admin",
@@ -177,11 +104,15 @@ try:
     )
     
     with conn.cursor() as cursor:
+        # Обрабатываем данные преподавателей
+        teacher_data = process_teacher_data(cursor)
+        
+        # Сохраняем данные в таблицу teachers_info
         for teacher_name, data in teacher_data.items():
             password = data['password']
             groups_subjects_json = json.dumps(data['groups_subjects'], ensure_ascii=False)
             
-            # Вставляем данные в базу с правильными названиями колонок
+            # Вставляем данные в базу
             insert_query = """
             INSERT INTO teachers_info (name, password, groups_subjects) 
             VALUES (%s, %s, %s::jsonb)
@@ -195,7 +126,7 @@ try:
         
         # Сохраняем изменения
         conn.commit()
-        logger.info("Все данные успешно сохранены в базу данных")
+        logger.info(f"Все данные успешно сохранены в базу данных. Обработано {len(teacher_data)} преподавателей")
 
 except psycopg2.Error as e:
     logger.error(f"Ошибка PostgreSQL: {e}")
@@ -211,5 +142,3 @@ finally:
     if 'conn' in locals() and not conn.closed:
         conn.close()
         logger.info("Соединение с базой данных закрыто")
-    if 'driver' in locals():
-        driver.quit()

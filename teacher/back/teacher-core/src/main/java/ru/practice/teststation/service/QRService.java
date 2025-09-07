@@ -26,7 +26,7 @@ public class QRService {
         
         
         // Формирование URL для сканирования
-        String qrUrl = "https://localhost:8080/api/qr/scan?qr_id=" + qrUUID + "&token=" + token;
+        String qrUrl = "https://localhost:8081/api/qr/scan?qr_id=" + qrUUID + "&token=" + token;
         
         // Сохранение в базу данных
         QRCode qrCode = new QRCode();
