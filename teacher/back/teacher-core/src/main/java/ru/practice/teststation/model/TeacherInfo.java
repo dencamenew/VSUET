@@ -25,5 +25,5 @@ public class TeacherInfo implements Serializable {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Map<String, Map<String, String[]>> groupsSubjects;
+    private Map<String, String[]> groupsSubjects;
 }

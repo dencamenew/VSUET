@@ -35,12 +35,10 @@ export default function TeacherAttendancePage({
 
   // Получаем список предметов для выбранной группы
   const subjects = selectedGroup && groupsSubjects[selectedGroup]
-    ? Object.entries(groupsSubjects[selectedGroup]).flatMap(([subjectName, lessonTypes]) => 
-        lessonTypes.map(lessonType => ({
-          id: `${subjectName}_${lessonType}`,
-          name: `${subjectName} (${lessonType})`
-        }))
-      )
+    ? groupsSubjects[selectedGroup].map(subject => ({
+        id: subject,
+        name: subject
+      }))
     : []
 
   // Автоматически выбираем предмет, если он всего один

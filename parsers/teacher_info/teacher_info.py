@@ -25,29 +25,6 @@ def generate_password(length=12):
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-def parse_lesson_type(text):
-    """
-    Парсит тип занятия из текста
-    """
-    text = ' '.join(text.split())
-    
-    lesson_types = {
-        'лекция': ['лекция'],
-        'лабораторные занятия': ['лабораторные занятия', 'лабораторные', 'лаб. занятия'],
-        'практические занятия': ['практические занятия', 'практические', 'практ. занятия'],
-        'семинар': ['семинар'],
-        'консультация': ['консультация'],
-        'зачет': ['зачет'],
-        'экзамен': ['экзамен']
-    }
-    
-    for lesson_type, variants in lesson_types.items():
-        for variant in variants:
-            if variant + ':' in text:
-                return lesson_type
-    
-    return "не указано"
-
 def get_teacher_name_variants(full_name):
     """
     Генерирует различные варианты написания имени преподавателя
@@ -70,7 +47,7 @@ def get_teacher_name_variants(full_name):
 
 def parse_subject_and_group(text, teacher_name):
     """
-    Парсит название предмета и группу из текста, удаляя имя преподавателя из названия предмета
+    Парсит полное название предмета (с типом занятия) и группу из текста
     """
     text = ' '.join(text.split())
     
@@ -85,10 +62,7 @@ def parse_subject_and_group(text, teacher_name):
     if group_match:
         text = re.sub(r'гр\.[^,.\s]+', '', text)
     
-    # Удаляем тип занятия (если есть)
-    text = re.sub(r'^(лекция|лабораторные занятия|практические занятия|семинар|консультация|зачет|экзамен):', '', text)
-    
-    # Очищаем название предмета
+    # Очищаем название предмета (сохраняем тип занятия)
     subject = text.strip()
     subject = re.sub(r'[,\s]+$', '', subject)
     subject = re.sub(r'^[,\s]+', '', subject)
@@ -148,7 +122,7 @@ try:
         ))
         teacher_select.select_by_visible_text(teacher)   
         
-        # Структура: {"group_name": {"subject1": ["тип1", "тип2"], "subject2": ["тип1"]}}
+        # Структура: {"group_name": ["предмет1", "предмет2", ...]}
         group_subjects = {}
         
         # Обрабатываем оба типа недель (числитель и знаменатель)
@@ -167,10 +141,7 @@ try:
                     # Получаем полный текст из ячейки
                     cell_text = info.find("td", class_="align-middle").text.strip()
                     
-                    # Парсим тип занятия
-                    lesson_type = parse_lesson_type(cell_text)
-                    
-                    # Парсим предмет и группу с передачей имени преподавателя
+                    # Парсим предмет и группу (сохраняем полное название с типом занятия)
                     subject, group = parse_subject_and_group(cell_text, teacher)
                     
                     # Пропускаем если нет группы или предмета
@@ -179,21 +150,17 @@ try:
                     
                     # Добавляем информацию в структуру
                     if group not in group_subjects:
-                        group_subjects[group] = {}
+                        group_subjects[group] = set()
                     
-                    if subject not in group_subjects[group]:
-                        group_subjects[group][subject] = set()
+                    group_subjects[group].add(subject)
                     
-                    if lesson_type != "не указано":
-                        group_subjects[group][subject].add(lesson_type)          
             except Exception as e:
                 logger.warning(f"Ошибка при обработке {check} для {teacher}: {e}")
                 continue
         
         # Преобразуем sets в lists для JSON
         for group in group_subjects:
-            for subject in group_subjects[group]:
-                group_subjects[group][subject] = list(group_subjects[group][subject])
+            group_subjects[group] = list(group_subjects[group])
         
         # Сохраняем данные преподавателя
         teacher_data[teacher] = {
