@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { translations, type Language } from "@/lib/translations"
 import { GraduationCap } from "lucide-react"
 import type { GroupSubjects } from "../app/page"
+
 interface TeacherAuthPageProps {
   onLogin: (teacherName: string, sessionId: string, groupsSubjects: GroupSubjects) => void
   language: Language
@@ -49,6 +50,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
           name: fullName.trim(),
           password: password.trim()
         }),
+        credentials: 'include' // ← КРИТИЧЕСКИ ВАЖНО!
       })
 
       if (!response.ok) {
