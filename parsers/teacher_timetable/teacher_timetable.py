@@ -48,7 +48,7 @@ check_select = Select(WebDriverWait(driver, 10).until(
 teachers = [opt.text for opt in teacher_select.options if opt.text and opt.text.strip()]
 timetable = {}
 for teacher in teachers:
-    print(teacher)
+    logging.info(teacher)
     teacher_select = Select(WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "selectvalueprepod"))
     ))
