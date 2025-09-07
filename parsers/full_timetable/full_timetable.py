@@ -95,10 +95,13 @@ def populate_full_timetable():
                 logger.error("Таблица timetable_with_zach пустая!")
                 return
             
-            # Получаем все уникальные номера зачеток
-            cursor.execute("SELECT DISTINCT zach_number FROM timetable_with_zach")
-            zach_numbers = [row[0] for row in cursor.fetchall()]
-            logger.info(f"Найдено {len(zach_numbers)} уникальных зачеток")
+            # Получаем все уникальные номера зачеток с соответствующими группами
+            cursor.execute("""
+                SELECT DISTINCT zach_number, group_name 
+                FROM timetable_with_zach
+            """)
+            zach_groups = cursor.fetchall()
+            logger.info(f"Найдено {len(zach_groups)} уникальных зачеток с группами")
             
             # Диапазон дат: с 1 сентября 2025 по 31 декабря 2025
             start_date = datetime(2025, 9, 1)
@@ -120,7 +123,7 @@ def populate_full_timetable():
                         logger.info(f"Обрабатывается дата: {current_date.date()} ({weekday_russian}, {week_type})")
                     
                     # Для каждой зачетки находим занятия на этот день
-                    for zach_number in zach_numbers:
+                    for zach_number, group_name in zach_groups:
                         cursor.execute("""
                             SELECT time, subject, teacher 
                             FROM timetable_with_zach 
@@ -136,16 +139,18 @@ def populate_full_timetable():
                             try:
                                 cursor.execute("""
                                     INSERT INTO full_timetable 
-                                    (date, zach_number, time, subject, teacher, turnout)
-                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                    (date, zach_number, group_name, time, subject, teacher, turnout)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                                     ON CONFLICT (date, zach_number, time) 
                                     DO UPDATE SET
+                                        group_name = EXCLUDED.group_name,
                                         subject = EXCLUDED.subject,
                                         teacher = EXCLUDED.teacher,
                                         turnout = EXCLUDED.turnout
                                 """, (
                                     current_date.date(),
                                     zach_number,
+                                    group_name,
                                     lesson_time,
                                     subject,
                                     teacher,

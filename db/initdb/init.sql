@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS timetable_with_zach (
 CREATE TABLE IF NOT EXISTS full_timetable (
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL,
+    group_name VARCHAR(100),
     zach_number VARCHAR(255) NOT NULL,
     time TIME NOT NULL,
     subject VARCHAR(255) NOT NULL,
