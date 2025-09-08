@@ -198,7 +198,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
   const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
-  const [timer, setTimer] = useState<number>(10) 
+  const [timer, setTimer] = useState<number>(120) 
   const [isSwitching, setIsSwitching] = useState<boolean>(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
@@ -210,7 +210,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
       setCurrentQrData(null)
       setNextQrData(null)
       setError("")
-      setTimer(10)
+      setTimer(120)
       setIsSwitching(false)
       if (timerRef.current) {
         clearInterval(timerRef.current)
@@ -257,7 +257,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
       setCurrentQrData(nextQrData)
       setNextQrData(null)
       setIsSwitching(false)
-      setTimer(10) 
+      setTimer(120) 
     }, 200)
   }
 
@@ -290,6 +290,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -309,7 +310,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
       console.error('Error generating QR:', err)
       // Если ошибка, сбрасываем состояние переключения
       setIsSwitching(false)
-      setTimer(10) // Перезапускаем таймер
+      setTimer(120) // Перезапускаем таймер
     }
   }
 
@@ -318,7 +319,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
     
     setLoading(true)
     setError("")
-    setTimer(10)
+    setTimer(120)
     
     try {
       const request = {
@@ -336,6 +337,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        credentials: 'include'
       })
 
       if (!response.ok) {
