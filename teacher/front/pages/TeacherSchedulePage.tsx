@@ -15,10 +15,8 @@ import {
   Trash2,
 } from "lucide-react"
 import { translations, type Language } from "../lib/translations"
-import { generateMockSchedule, type Lesson } from "../data/mockData"
 import { Textarea } from "../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
-
 
 interface TeacherSchedulePageProps {
   teacherName: string
@@ -65,6 +63,29 @@ interface ViewCommentModalProps {
   language: Language
   onEditComment: () => void
   onDeleteComment: () => void
+}
+
+interface ApiScheduleItem {
+  id: number
+  time: string
+  date: string
+  subject: string
+  groupName: string
+}
+
+interface ApiScheduleResponse {
+  schedule: ApiScheduleItem[]
+  teacher: string
+}
+
+interface Lesson {
+  id: number
+  subject: string
+  time: string
+  endTime: string
+  room: string
+  group: string
+  type: "lecture" | "practice" | "lab" | "other"
 }
 
 function CommentModal({ 
@@ -192,7 +213,6 @@ function CommentModal({
   )
 }
 
-
 function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName }: QRModalProps) {
   const [currentQrData, setCurrentQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
@@ -268,8 +288,6 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
   }
 }, [nextQrData, isSwitching])
 
-  
-
   const generateNextQRCode = async () => {
     if (!lesson) return
     
@@ -310,7 +328,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
       console.error('Error generating QR:', err)
       // Если ошибка, сбрасываем состояние переключения
       setIsSwitching(false)
-      setTimer(120) // Перезапускаем таймер
+      setTimer(10) // Перезапускаем таймер
     }
   }
 
@@ -319,7 +337,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
     
     setLoading(true)
     setError("")
-    setTimer(120)
+    setTimer(10)
     
     try {
       const request = {
@@ -570,13 +588,7 @@ export default function TeacherSchedulePage({
     comment: "",
     lesson: null,
   })
-  const [lessonComments, setLessonComments] = useState<Record<string, string>>({
-    "Математический анализ_ИВТ-21_09:00":
-      "Студенты хорошо усвоили материал по производным. Рекомендую дополнительные задачи на интегралы для закрепления.",
-    "Физика_ИВТ-22_10:45": "Отличная работа на лабораторной по механике.",
-    "Программирование_ИВТ-21_14:30":
-      "Нужно больше практики с алгоритмами сортировки. Некоторые студенты испытывают трудности с рекурсией.",
-  })
+  const [lessonComments, setLessonComments] = useState<Record<string, string>>({})
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const t = translations[language] || translations.en
@@ -586,6 +598,83 @@ export default function TeacherSchedulePage({
     const month = String(date.getMonth() + 1).padStart(2, "0")
     const day = String(date.getDate()).padStart(2, "0")
     return `${year}-${month}-${day}`
+  }
+
+  // Функция для преобразования времени в формат "HH:MM"
+  const formatTime = (timeString: string): string => {
+    const time = new Date(`2000-01-01T${timeString}`)
+    return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  // Функция для вычисления времени окончания пары (длительность 1 час 35 минут)
+  const calculateEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number)
+    const startDate = new Date(0, 0, 0, hours, minutes)
+    const endDate = new Date(startDate.getTime() + 95 * 60 * 1000) // 95 минут = 1 час 35 минут
+    return endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  // Функция для определения типа занятия по названию предмета
+  const getLessonType = (subject: string): "lecture" | "practice" | "lab" | "other" => {
+    if (subject.toLowerCase().includes('лекция') || subject.toLowerCase().includes('lecture')) {
+      return "lecture"
+    } else if (subject.toLowerCase().includes('практические') || subject.toLowerCase().includes('practice')) {
+      return "practice"
+    } else if (subject.toLowerCase().includes('лабораторные') || subject.toLowerCase().includes('lab')) {
+      return "lab"
+    } else {
+      return "other"
+    }
+  }
+
+  // Функция для получения расписания с API
+  const fetchSchedule = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`http://localhost:8081/api/schudule/teacher?teacher=${encodeURIComponent(teacherName)}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке расписания')
+      }
+      
+      const data: ApiScheduleResponse = await response.json()
+      
+      // Преобразуем данные API в формат, который ожидает приложение
+      const formattedSchedule: Record<string, Lesson[]> = {}
+      
+      data.schedule.forEach(item => {
+        const dateKey = item.date
+        const formattedTime = formatTime(item.time)
+        const endTime = calculateEndTime(formattedTime)
+        
+        const lesson: Lesson = {
+          id: item.id,
+          subject: item.subject,
+          time: formattedTime,
+          endTime: endTime,
+          room: "Аудитория не указана", // В API нет информации об аудитории
+          group: item.groupName,
+          type: getLessonType(item.subject)
+        }
+        
+        if (!formattedSchedule[dateKey]) {
+          formattedSchedule[dateKey] = []
+        }
+        
+        formattedSchedule[dateKey].push(lesson)
+      })
+      
+      setSchedule(formattedSchedule)
+      
+    } catch (error) {
+      console.error('Error fetching schedule:', error)
+      // В случае ошибки используем пустое расписание
+      setSchedule({})
+    } finally {
+      setLoading(false)
+    }
   }
 
   const generateAllDates = () => {
@@ -630,16 +719,19 @@ export default function TeacherSchedulePage({
   useEffect(() => {
     const allDates = generateAllDates()
     setDates(allDates)
+    
+    // Загружаем расписание с API
+    fetchSchedule()
+  }, [language, teacherName])
 
-    const mockSchedule = generateMockSchedule()
-    setSchedule(mockSchedule)
-
-    const todayKey = getLocalDateString(new Date())
-    const newSelectedDateKey = mockSchedule[todayKey] ? todayKey : Object.keys(mockSchedule)[0] || ""
-    setSelectedDateKey(newSelectedDateKey)
-
-    setLoading(false)
-  }, [language])
+  useEffect(() => {
+    // После загрузки расписания выбираем сегодняшнюю дату или первую доступную
+    if (!loading && Object.keys(schedule).length > 0) {
+      const todayKey = getLocalDateString(new Date())
+      const newSelectedDateKey = schedule[todayKey] ? todayKey : Object.keys(schedule)[0] || ""
+      setSelectedDateKey(newSelectedDateKey)
+    }
+  }, [loading, schedule])
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -660,7 +752,14 @@ export default function TeacherSchedulePage({
   const selectedDateInfo = useMemo(() => {
     const selectedDateObj = dates.find((d) => d.key === selectedDateKey)
     if (!selectedDateObj) return t.selectDate
-    return `${selectedDateObj.month} ${selectedDateObj.date} • ${selectedDateObj.day}`
+    
+    const date = new Date(selectedDateObj.key)
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "short"
+    })
   }, [dates, selectedDateKey, language])
 
   const getCardStyles = (type: "lecture" | "practice" | "lab" | "other") => {
@@ -895,42 +994,44 @@ export default function TeacherSchedulePage({
                     </div>
 
                     <div className="flex flex-col items-end gap-3 min-w-0 flex-1">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openQRModal(lesson)}
-                          className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
-                        >
-                          <QRCodeSVG className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openCommentModal(lesson, !!lessonComment)}
-                          className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </Button>
-                      </div>
+  <div className="flex gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => openQRModal(lesson)}
+      className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
+    >
+      <QRCodeSVG className="w-4 h-4" />
+    </Button>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => openCommentModal(lesson, !!lessonComment)}
+      className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
+    >
+      <MessageSquare className="w-4 h-4" />
+    </Button>
+  </div>
 
-                      {lessonComment && (
-                        <div className="w-full max-w-[280px]">
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 text-right">
-                            {t.comment || "Комментарий"}
-                          </div>
-                          <div
-                            className="bg-muted/50 px-3 py-2 rounded-lg text-sm text-foreground cursor-pointer hover:bg-muted/70 transition-colors text-right whitespace-nowrap overflow-hidden text-ellipsis"
-                            onClick={() => openViewCommentModal(lessonComment, lesson)}
-                            title={lessonComment}
-                          >
-                            {truncateComment(lessonComment, 40)}
-                          </div>
+  {lessonComment && (
+    <div className="w-full max-w-[280px]">
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 text-right">
+        {t.comment || "Комментарий"}
+      </div>
+      <div
+        className="bg-muted/50 px-3 py-2 rounded-lg text-sm text-foreground cursor-pointer hover:bg-muted/70 transition-colors text-right whitespace-nowrap overflow-hidden text-ellipsis"
+        onClick={() => openViewCommentModal(lessonComment, lesson)}
+        title={lessonComment}
+      >
+        {truncateComment(lessonComment, 40)}
+      </div>
+    </div>
+  )}
+</div>
+
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>)
+                </div>
+              )
             })}
           </div>
         )}

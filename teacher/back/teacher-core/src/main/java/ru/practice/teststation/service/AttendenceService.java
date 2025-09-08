@@ -1,4 +1,3 @@
-// AttendenceService.java
 package ru.practice.teststation.service;
 
 import lombok.RequiredArgsConstructor;

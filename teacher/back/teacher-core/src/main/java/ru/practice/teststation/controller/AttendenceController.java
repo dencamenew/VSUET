@@ -1,4 +1,3 @@
-// AttendenceController.java
 package ru.practice.teststation.controller;
 
 import lombok.RequiredArgsConstructor;
