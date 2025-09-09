@@ -42,7 +42,7 @@ def load_from_file(filename):
 def check_db_connection():
     try:
         conn = psycopg2.connect(
-            host="localhost",
+            host="postgres",
             port=5432,
             database="db",
             user="admin",

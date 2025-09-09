@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': 'postgres',
     'database': 'db',
     'user': 'admin',
     'password': 'admin',
