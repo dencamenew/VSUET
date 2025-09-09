@@ -8,5 +8,6 @@ import java.util.List;
 @Builder
 public class TimetableWithAttendanceDto {
     private String zachNumber;
+    private String date;
     private List<LessonWithAttendanceDto> timetable;
 }

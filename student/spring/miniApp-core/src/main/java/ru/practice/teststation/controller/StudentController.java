@@ -19,29 +19,11 @@ public class StudentController {
 
     private final StudentService studentService;
 
-    // Сначала специфичные эндпоинты
-    @GetMapping("/info/{zachNumber}")
-    public ResponseEntity<?> getStudentInfo(@PathVariable String zachNumber) {
-        return ResponseEntity.ok(studentService.getStudentInfo(zachNumber));
-    }
-
     @GetMapping("/timetable/{zachNumber}")
-    public ResponseEntity<?> getTimetable(@PathVariable String zachNumber) {
+    public ResponseEntity<TimetableWithAttendanceDto> getTimetable(@PathVariable String zachNumber) {
         return ResponseEntity.ok(studentService.getTimetable(zachNumber));
     }
 
-    @GetMapping("/ratings/{zachNumber}")
-    public ResponseEntity<?> getRatings(@PathVariable String zachNumber) {
-        return ResponseEntity.ok(studentService.getRatings(zachNumber));
-    }
-
-    @GetMapping("/debug/{zachNumber}")
-    public ResponseEntity<List<FullTimetable>> getDebugTimetable(@PathVariable String zachNumber) {
-        List<FullTimetable> entries = studentService.getDebugTimetable(zachNumber);
-        return ResponseEntity.ok(entries);
-    }
-
-    // Общие эндпоинты с параметрами в конце
     @GetMapping("/{date}/{zachNumber}")
     public ResponseEntity<TimetableWithAttendanceDto> getTimetableWithAttendance(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -50,7 +32,12 @@ public class StudentController {
         return ResponseEntity.ok(response);
     }
 
-    // Эндпоинт для обновления комментария
+    @GetMapping("/debug/{zachNumber}")
+    public ResponseEntity<List<FullTimetable>> getDebugTimetable(@PathVariable String zachNumber) {
+        List<FullTimetable> entries = studentService.getDebugTimetable(zachNumber);
+        return ResponseEntity.ok(entries);
+    }
+
     @PatchMapping("/comment/{id}")
     public ResponseEntity<?> updateComment(
             @PathVariable Long id,
@@ -60,7 +47,6 @@ public class StudentController {
         return ResponseEntity.ok().build();
     }
 
-    // Эндпоинт для обновления посещаемости и комментария
     @PatchMapping("/attendance/{id}")
     public ResponseEntity<?> updateAttendance(
             @PathVariable Long id,

@@ -24,34 +24,6 @@ services:
     volumes:
       - redis_data:/data
 
-  sbj_urls:
-    container_name: sbj_urls
-    build:
-      context: ./parsers/sbj_urls
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  timetable:
-    container_name: timetable
-    build:
-      context: ./parsers/timetable
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-  
   teacher_timetable:
     container_name: teacher_timetable
     build:
@@ -60,50 +32,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-   
-  raiting:
-    container_name: raiting
-    build:
-      context: ./parsers/raiting
-      dockerfile: Dockerfile
-    depends_on:
-      sbj_urls:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  zach:
-    container_name: zach
-    build:
-      context: ./parsers/zach
-      dockerfile: Dockerfile
-    depends_on:
-      sbj_urls:
-        condition: service_completed_successfully
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  timetable_with_zach:
-    container_name: timetable_with_zach
-    build: 
-      context: ./parsers/timetable_with_zach
-      dockerfile: Dockerfile
-    depends_on:
-      zach:
-        condition: service_completed_successfully
-      timetable:
-        condition: service_completed_successfully
     environment:
       DB_HOST: postgres
       DB_USER: admin
@@ -132,7 +60,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      timetable_with_zach:
+      full_timetable:
+        condition: service_completed_successfully
+
+  students_info:
+    container_name: students_info
+    build:
+      context: ./parsers/students_info
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      full_timetable:
         condition: service_completed_successfully
 
   student_backend:
@@ -160,7 +99,7 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  student_frontend:
+student_frontend:
     container_name: student_frontend
     build:
       context: student/front
@@ -175,8 +114,6 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-
-
 
 volumes:
   postgres_data:
