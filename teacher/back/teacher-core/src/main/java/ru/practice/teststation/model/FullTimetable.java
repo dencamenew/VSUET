@@ -1,12 +1,9 @@
 package ru.practice.teststation.model;
 
-
 import java.time.LocalDate;
 import java.time.LocalTime;
-
 import jakarta.persistence.*;
 import lombok.Data;
-
 
 @Data
 @Entity
@@ -20,7 +17,7 @@ public class FullTimetable {
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
-    @Column(name = "group_name", nullable = false)
+    @Column(name = "group_name")
     private String groupName;
     
     @Column(name = "zach_number", nullable = false)
@@ -32,8 +29,14 @@ public class FullTimetable {
     @Column(name = "subject", nullable = false)
     private String subject;
     
+    @Column(name = "type_subject")
+    private String typeSubject;
+    
     @Column(name = "teacher")
     private String teacher;
+    
+    @Column(name = "audience")
+    private String audience;
     
     @Column(name = "turnout")
     private Boolean turnout = false;

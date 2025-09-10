@@ -11,8 +11,10 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class TeacherSchuduleDto {
     private Long id;
-    private LocalTime time;    // 3-й параметр
-    private LocalDate date;    // 4-й параметр  
+    private LocalTime time;
+    private LocalDate date;
     private String subject;
     private String groupName;
+    private String typeSubject;
+    private String audience;
 }
