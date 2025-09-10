@@ -30,7 +30,7 @@ services:
       context: ./parsers/full_timetable
       dockerfile: Dockerfile
     depends_on:
-      timetable_with_zach:
+      postgres:
         condition: service_completed_successfully
     environment:
       DB_HOST: postgres
