@@ -302,7 +302,7 @@ def populate_full_timetable_from_dicts(timetable, group_with_zach):
     conn = None
     try:
         conn = psycopg2.connect(
-            host="localhost",
+            host="postgres",
             port=5432,
             database="db",
             user="admin",
