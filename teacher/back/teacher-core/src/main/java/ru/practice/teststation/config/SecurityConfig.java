@@ -12,14 +12,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableRedisHttpSession
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -36,7 +34,7 @@ public class SecurityConfig {
             )
             .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionCreationPolicy(SessionCreationPolicy.NEVER) 
             )
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());

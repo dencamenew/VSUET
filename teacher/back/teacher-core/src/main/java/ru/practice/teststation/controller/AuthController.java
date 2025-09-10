@@ -1,20 +1,22 @@
 package ru.practice.teststation.controller;
 
 import lombok.RequiredArgsConstructor;
+
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import ru.practice.teststation.dto.requests.LoginRequest;
+import ru.practice.teststation.model.RedisSession;
+
 import ru.practice.teststation.model.TeacherInfo;
+import ru.practice.teststation.model.enums.RoleForSession;
+import ru.practice.teststation.model.enums.StatusInSession;
+import ru.practice.teststation.repository.RedisSessionRepository;
 import ru.practice.teststation.service.AuthService;
 
-import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,82 +24,80 @@ import java.util.Map;
 public class AuthController {
     
     private final AuthService authService;
+    private final RedisSessionRepository redisSessionRepository;
     
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpSession session) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             TeacherInfo teacher = authService.login(request);
             
-            session.setAttribute("teacherId", teacher.getId());
-            session.setAttribute("teacherName", teacher.getName());
-            session.setAttribute("authenticated", true);
             
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                teacher.getId(),
-                null,
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_TEACHER"))
-            );
+            // 2. Создаем новую сессию в Redis
+            RedisSession redisSession = new RedisSession();
+            redisSession.setId(generateSessionId());
+            redisSession.setUserId(teacher.getId());
+            redisSession.setRole(RoleForSession.TEACHER);
+            redisSession.setName(teacher.getName());
+            redisSession.setStatus(StatusInSession.ACTIVE);
+            redisSession.setCreatedAt(LocalDateTime.now());
             
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            redisSessionRepository.save(redisSession);
             
             return ResponseEntity.ok(Map.of(
                 "message", "Login successful",
                 "teacher", teacher,
-                "sessionId", session.getId()
+                "sessionId", redisSession.getId()
             ));
             
         } catch (RuntimeException e) {
-            session.invalidate();
-            SecurityContextHolder.clearContext();
-            
-            return ResponseEntity.status(401).body(Map.of(
-                "error", e.getMessage()
-            ));
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
+
     
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
+    public ResponseEntity<?> logout(@RequestHeader("X-Session-Id") Long sessionId) {
         try {
-            HttpSession session = request.getSession(false);
+            // Закрываем сессию в Redis
+            redisSessionRepository.findById(sessionId).ifPresent(redisSession -> {
+                redisSession.setStatus(StatusInSession.CLOSED);
+                redisSession.setExistedAt(LocalDateTime.now());
+                redisSessionRepository.save(redisSession);
+            });
             
-            if (session != null) {
-                session.invalidate();
-                SecurityContextHolder.clearContext();
-                
-                return ResponseEntity.ok(Map.of(
-                    "message", "Logout successful",
-                    "sessionInvalidated", true
-                ));
-            } else {
-                return ResponseEntity.ok(Map.of(
-                    "message", "No active session found",
-                    "sessionInvalidated", false
-                ));
-            }
+            return ResponseEntity.ok(Map.of(
+                "message", "Logout successful",
+                "sessionInvalidated", true
+            ));
             
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Logout failed: " + e.getMessage(),
-                "code", "LOGOUT_ERROR"
+                "error", "Logout failed: " + e.getMessage()
             ));
         }
     }
     
     @GetMapping("/check")
-    public ResponseEntity<?> checkSession(HttpSession session) {
-        Boolean authenticated = (Boolean) session.getAttribute("authenticated");
+    public ResponseEntity<?> checkSession(@RequestHeader("X-Session-Id") Long sessionId) {
+        // Проверяем сессию в Redis
+        RedisSession redisSession = redisSessionRepository.findById(sessionId).orElse(null);
         
-        if (authenticated != null && authenticated) {
+        if (redisSession != null && redisSession.getStatus() == StatusInSession.ACTIVE) {
+            // Обновляем время существования
+            redisSession.setExistedAt(LocalDateTime.now());
+            redisSessionRepository.save(redisSession);
+            
             return ResponseEntity.ok(Map.of(
                 "authenticated", true,
-                "teacherId", session.getAttribute("teacherId"),
-                "teacherName", session.getAttribute("teacherName")
+                "teacherName", redisSession.getName(),
+                "sessionId", redisSession.getId()
             ));
         }
         
-        return ResponseEntity.status(401).body(Map.of(
-            "authenticated", false
-        ));
+        return ResponseEntity.status(401).body(Map.of("authenticated", false));
+    }
+    
+    private Long generateSessionId() {
+        return UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
     }
 }
