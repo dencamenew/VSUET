@@ -23,11 +23,6 @@ CREATE TABLE IF NOT EXISTS full_timetable (
     UNIQUE (date, zach_number, time)
 );
 
-CREATE TABLE IF NOT EXISTS teacher_timetable (
-    id SERIAL PRIMARY KEY,
-    teacher VARCHAR(255) NOT NULL UNIQUE,
-    timetable JSONB NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS students_info (
     id SERIAL PRIMARY KEY,
@@ -35,7 +30,7 @@ CREATE TABLE IF NOT EXISTS students_info (
     password VARCHAR(255)
 );
 
--- Теперь создаем недостающую таблицу teachers_info
+
 CREATE TABLE IF NOT EXISTS teachers_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
@@ -43,13 +38,12 @@ CREATE TABLE IF NOT EXISTS teachers_info (
     groups_subjects JSONB NOT NULL
 );
 
--- Создаем индексы
 CREATE INDEX IF NOT EXISTS idx_teachers_name ON teachers_info(name);
 CREATE INDEX IF NOT EXISTS idx_full_timetable_date ON full_timetable(date);
 CREATE INDEX IF NOT EXISTS idx_full_timetable_zach ON full_timetable(zach_number);
 CREATE INDEX IF NOT EXISTS idx_full_timetable_date_zach ON full_timetable(date, zach_number);
 
--- Функции и триггеры
+
 CREATE OR REPLACE FUNCTION notify_raiting_change()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -89,7 +83,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Создаем триггеры только если они нужны
 CREATE TRIGGER raiting_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON raiting
 FOR EACH ROW EXECUTE FUNCTION notify_raiting_change();

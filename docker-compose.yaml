@@ -24,20 +24,6 @@ services:
     volumes:
       - redis_data:/data
 
-  teacher_timetable:
-    container_name: teacher_timetable
-    build:
-      context: ./parsers/teacher_timetable
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
   full_timetable:
     container_name: full_timetable
     build: 
