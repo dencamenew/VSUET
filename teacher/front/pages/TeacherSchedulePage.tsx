@@ -71,11 +71,14 @@ interface ApiScheduleItem {
   date: string
   subject: string
   groupName: string
+  typeSubject: string
+  audience: string
 }
 
 interface ApiScheduleResponse {
   schedule: ApiScheduleItem[]
   teacher: string
+  date: string
 }
 
 interface Lesson {
@@ -300,7 +303,6 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
         classDate: selectedDate,
         teacherName: teacherName
       }
-      console.log("lesson:", lesson)
 
       const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
@@ -614,59 +616,97 @@ export default function TeacherSchedulePage({
     return endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
-  // Функция для определения типа занятия по названию предмета
-  const getLessonType = (subject: string): "lecture" | "practice" | "lab" | "other" => {
-    if (subject.toLowerCase().includes('лекция') || subject.toLowerCase().includes('lecture')) {
+  // Функция для определения типа занятия по типу предмета
+  const getLessonType = (typeSubject: string): "lecture" | "practice" | "lab" | "other" => {
+    const type = typeSubject.toLowerCase()
+    if (type.includes('лекция') || type.includes('lecture')) {
       return "lecture"
-    } else if (subject.toLowerCase().includes('практические') || subject.toLowerCase().includes('practice')) {
+    } else if (type.includes('практические') || type.includes('практика') || type.includes('practice')) {
       return "practice"
-    } else if (subject.toLowerCase().includes('лабораторные') || subject.toLowerCase().includes('lab')) {
+    } else if (type.includes('лабораторные') || type.includes('лабораторная') || type.includes('lab')) {
       return "lab"
     } else {
       return "other"
     }
   }
 
+  // Функция для группировки занятий по времени и предмету
+  // Функция для группировки занятий по времени, предмету и аудитории
+  const groupLessonsByTimeAndSubject = (lessons: ApiScheduleItem[]): Lesson[] => {
+    const grouped: Record<string, ApiScheduleItem[]> = {}
+    
+    lessons.forEach(lesson => {
+      // Ключ включает время, предмет и аудиторию
+      const key = `${lesson.time}_${lesson.subject}_${lesson.audience}`
+      if (!grouped[key]) {
+        grouped[key] = []
+      }
+      grouped[key].push(lesson)
+    })
+    
+    return Object.values(grouped).map(group => {
+      const firstLesson = group[0]
+      
+      // Объединяем группы через "/" если их несколько
+      const groups = group.map(l => l.groupName).join('/')
+      
+      return {
+        id: firstLesson.id,
+        subject: firstLesson.subject,
+        time: formatTime(firstLesson.time),
+        endTime: calculateEndTime(formatTime(firstLesson.time)),
+        room: firstLesson.audience,
+        group: groups,
+        type: getLessonType(firstLesson.typeSubject)
+      }
+    })
+  }
+
+  // Функция для получения расписания с API
   // Функция для получения расписания с API
   const fetchSchedule = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8081/api/schudule/teacher?teacher=${encodeURIComponent(teacherName)}`, {
-        credentials: 'include'
-      });
       
-      if (!response.ok) {
-        throw new Error('Ошибка при загрузке расписания')
+      // Создаем даты с 1 сентября до 31 декабря
+      const startDate = new Date(2025, 8, 1) // 1 сентября 2025
+      const endDate = new Date(2025, 11, 31) // 31 декабря 2025
+      
+      const allSchedule: Record<string, Lesson[]> = {}
+      
+      // Запрашиваем расписание для каждого дня
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateString = getLocalDateString(date)
+        
+        try {
+          // Форматируем дату для URL в формате YYYY-MM-DD
+          const formattedDate = dateString;
+          
+          // Кодируем имя преподавателя для URL
+          const encodedTeacherName = encodeURIComponent(teacherName);
+          
+          const response = await fetch(
+            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`, 
+            {
+              credentials: 'include'
+            }
+          );
+          
+          if (response.ok) {
+            const data: ApiScheduleResponse = await response.json();
+            
+            if (data.schedule && data.schedule.length > 0) {
+              // Группируем занятия по времени и предмету
+              const groupedLessons = groupLessonsByTimeAndSubject(data.schedule)
+              allSchedule[dateString] = groupedLessons
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching schedule for ${dateString}:`, error)
+        }
       }
       
-      const data: ApiScheduleResponse = await response.json()
-      
-      // Преобразуем данные API в формат, который ожидает приложение
-      const formattedSchedule: Record<string, Lesson[]> = {}
-      
-      data.schedule.forEach(item => {
-        const dateKey = item.date
-        const formattedTime = formatTime(item.time)
-        const endTime = calculateEndTime(formattedTime)
-        
-        const lesson: Lesson = {
-          id: item.id,
-          subject: item.subject,
-          time: formattedTime,
-          endTime: endTime,
-          room: "Аудитория не указана", // В API нет информации об аудитории
-          group: item.groupName,
-          type: getLessonType(item.subject)
-        }
-        
-        if (!formattedSchedule[dateKey]) {
-          formattedSchedule[dateKey] = []
-        }
-        
-        formattedSchedule[dateKey].push(lesson)
-      })
-      
-      setSchedule(formattedSchedule)
+      setSchedule(allSchedule)
       
     } catch (error) {
       console.error('Error fetching schedule:', error)
@@ -686,25 +726,23 @@ export default function TeacherSchedulePage({
         ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
         : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    const today = new Date()
-    const startDate = new Date(today)
-    startDate.setDate(today.getDate() - 14)
-
-    const endDate = new Date(today)
-    endDate.setDate(today.getDate() + 60)
+    // Устанавливаем период с 1 сентября по 31 декабря 2025 года
+    const startDate = new Date(2025, 8, 1) // 1 сентября 2025
+    const endDate = new Date(2025, 11, 31) // 31 декабря 2025
 
     const generatedDates: DateItem[] = []
     const currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
       const dateKey = getLocalDateString(currentDate)
+      const today = new Date()
       const isToday = getLocalDateString(currentDate) === getLocalDateString(today)
       const dayIndex = currentDate.getDay()
 
       generatedDates.push({
         date: currentDate.getDate(),
         day: daysOfWeek[dayIndex],
-        month: months[currentDate.getMonth()],
+        month: months[currentDate.getMonth()], // Добавляем сокращенное название месяца
         isToday,
         fullDate: new Date(currentDate),
         key: dateKey,
@@ -765,24 +803,24 @@ export default function TeacherSchedulePage({
   const getCardStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
-        return "bg-card border border-border border-l-4 border-l-emerald-500 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+        return "bg-card border border-border border-l-4 border-l-blue-500 shadow-sm hover:shadow-md"
       case "practice":
-        return "bg-card border border-border border-l-4 border-l-orange-500 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+        return "bg-card border border-border border-l-4 border-l-red-500 shadow-sm hover:shadow-md"
       case "lab":
-        return "bg-card border border-border border-l-4 border-l-blue-500 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+        return "bg-card border border-border border-l-4 border-l-green-500 shadow-sm hover:shadow-md"
       default:
-        return "bg-card border border-border border-l-4 border-l-purple-500 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+        return "bg-card border border-border border-l-4 border-l-purple-500 shadow-sm hover:shadow-md"
     }
   }
 
   const getTypeStyles = (type: "lecture" | "practice" | "lab" | "other") => {
     switch (type) {
       case "lecture":
-        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-      case "practice":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800"
-      case "lab":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+      case "practice":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800"
+      case "lab":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800"
       default:
         return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
     }
@@ -909,16 +947,18 @@ export default function TeacherSchedulePage({
               <button
                 key={dateItem.key}
                 onClick={() => setSelectedDateKey(dateItem.key)}
-                className={`flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all duration-200 ${
+                className={`flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all ${
                   dateItem.isToday
-                    ? "gradient-primary text-white shadow-soft-lg"
+                    ? "bg-primary text-primary-foreground" // ← ВЫДЕЛЕНИЕ СЕГОДНЯШНЕЙ ДАТЫ
                     : selectedDateKey === dateItem.key
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "hover:bg-muted hover:scale-105"
+                      ? "bg-muted"
+                      : "hover:bg-muted"
                 }`}
               >
+                {/* Добавляем месяц над числом */}
+                <span className="text-xs text-muted-foreground mb-1">{dateItem.month}</span>
                 <span className="text-lg font-semibold">{dateItem.date}</span>
-                <span className="text-sm">{dateItem.day}</span>
+                <span className="text-xs">{dateItem.day}</span>
               </button>
             ))}
           </div>
@@ -936,7 +976,9 @@ export default function TeacherSchedulePage({
 
       {/* Selected Date */}
       <div className="px-4 mb-4">
-        <p className="text-muted-foreground">{selectedDateInfo}</p>
+        <p className="text-muted-foreground">
+          {selectedDateInfo}
+        </p>
       </div>
 
       {/* Lessons List */}

@@ -69,6 +69,10 @@ export const translations = {
     // Добавленные ключи
     comment: "Комментарий",
     close: "Закрыть",
+
+    numerator: "Числитель",
+    denominator: "Знаменатель",
+    week: "Неделя"
   },
   en: {
     // Auth
@@ -80,6 +84,9 @@ export const translations = {
     invalidCredentials: "Invalid credentials",
     connectionError: "Connection error",
 
+    numerator: "Numerator",
+    denominator: "Denominator",
+    week: "Week",
     // Navigation
     schedule: "Schedule",
     rating: "Grades",

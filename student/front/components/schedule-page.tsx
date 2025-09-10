@@ -806,7 +806,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Модальное окно для полного комментария */}
-      {/* Модальное окно для полного комментария */}
       {selectedComment && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
