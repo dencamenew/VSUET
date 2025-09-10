@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { User, Moon, Sun, LogOut, X, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { translations, type Language } from "@/lib/translations"
+import { useSession } from '@/hooks/useSession'
 
 interface TeacherProfilePageProps {
   teacherName: string
@@ -31,6 +32,7 @@ export default function TeacherProfilePage({
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState("")
+  const { sessionId, clearSession } = useSession()
 
   const t = translations[language] || translations.en
 
@@ -77,8 +79,8 @@ export default function TeacherProfilePage({
     try {
       const response = await fetch("http://localhost:8081/api/auth/logout", {
         method: "POST",
-        credentials: "include", // Важно! Отправляем куки с сессией
         headers: {
+          'X-Session-Id': sessionId || '',
           "Content-Type": "application/json",
         },
       })
@@ -90,9 +92,10 @@ export default function TeacherProfilePage({
       }
 
       if (data.sessionInvalidated || data.message === "Logout successful") {
+        clearSession()
         onLogout()
       } else if (data.message === "No active session found") {
-        // Если сессии нет, все равно считаем что выход выполнен
+        clearSession()
         onLogout()
       } else {
         setLogoutError(data.message || t.logoutError || "Logout failed")
@@ -163,7 +166,7 @@ export default function TeacherProfilePage({
                       }`}
                     />
                     <Sun
-                      className={`absolute left-2 w-4 h-4 transition-colors ${
+                      className={`absolute left-2 w-4 transition-colors ${
                         !isDarkMode ? "text-yellow-500" : "text-muted-foreground/70"
                       }`}
                     />

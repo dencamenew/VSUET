@@ -32,32 +32,38 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
                                 FilterChain filterChain) 
                                 throws ServletException, IOException {
         
-        String sessionIdHeader = request.getHeader("X-Session-Id");
+        String path = request.getRequestURI();
         
-        if (sessionIdHeader != null) {
-            try {
-                Long sessionId = Long.parseLong(sessionIdHeader);
-                RedisSession redisSession = redisSessionRepository.findById(sessionId).orElse(null);
-                
-                if (redisSession != null && redisSession.getStatus() == StatusInSession.ACTIVE) {
-                    
-                   
-                    redisSession.setExistedAt(LocalDateTime.now());
-                    redisSessionRepository.save(redisSession);
-                    
-                    Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        redisSession.getId(),
-                        null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + redisSession.getRole()))
-                    );
-                    
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } catch (NumberFormatException e) {
-                // ignore
-            }
+        // Пропускаем запросы аутентификации и OPTIONS
+        if (path.startsWith("/api/auth/") || "OPTIONS".equals(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
         }
         
-        filterChain.doFilter(request, response);
+        String sessionIdHeader = request.getHeader("X-Session-Id");
+        
+        if (sessionIdHeader != null && !sessionIdHeader.isEmpty()) {
+            RedisSession redisSession = redisSessionRepository.findById(sessionIdHeader).orElse(null);
+            
+            if (redisSession != null && redisSession.getStatus() == StatusInSession.ACTIVE) {
+                redisSession.setExistedAt(LocalDateTime.now());
+                redisSessionRepository.save(redisSession);
+                
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    redisSession.getName(),
+                    null,
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + redisSession.getRole()))
+                );
+                
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                filterChain.doFilter(request, response);
+            } else {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Session not found or inactive");
+            }
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Session ID header is required");
+        }
     }
 }

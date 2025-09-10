@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { translations, type Language } from "@/lib/translations"
 import { GraduationCap } from "lucide-react"
 import type { GroupSubjects } from "../app/page"
+import { useSession } from '@/hooks/useSession'
 
 interface TeacherAuthPageProps {
   onLogin: (teacherName: string, sessionId: string, groupsSubjects: GroupSubjects) => void
@@ -30,6 +31,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const { saveSession } = useSession()
 
   const t = translations[language] || translations.en
 
@@ -50,7 +52,6 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
           name: fullName.trim(),
           password: password.trim()
         }),
-        credentials: 'include' // ← КРИТИЧЕСКИ ВАЖНО!
       })
 
       if (!response.ok) {
@@ -60,6 +61,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
       const data: LoginResponse = await response.json()
 
       if (data.message === "Login successful") {
+        saveSession(data.sessionId)
         onLogin(data.teacher.name, data.sessionId, data.teacher.groupsSubjects)
       } else {
         setError(t.invalidCredentials)

@@ -16,7 +16,6 @@ import ru.practice.teststation.service.AuthService;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,7 +33,6 @@ public class AuthController {
             
             // 2. Создаем новую сессию в Redis
             RedisSession redisSession = new RedisSession();
-            redisSession.setId(generateSessionId());
             redisSession.setUserId(teacher.getId());
             redisSession.setRole(RoleForSession.TEACHER);
             redisSession.setName(teacher.getName());
@@ -56,9 +54,8 @@ public class AuthController {
 
     
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader("X-Session-Id") Long sessionId) {
+    public ResponseEntity<?> logout(@RequestHeader("X-Session-Id") String sessionId) {
         try {
-            // Закрываем сессию в Redis
             redisSessionRepository.findById(sessionId).ifPresent(redisSession -> {
                 redisSession.setStatus(StatusInSession.CLOSED);
                 redisSession.setExistedAt(LocalDateTime.now());
@@ -78,12 +75,10 @@ public class AuthController {
     }
     
     @GetMapping("/check")
-    public ResponseEntity<?> checkSession(@RequestHeader("X-Session-Id") Long sessionId) {
-        // Проверяем сессию в Redis
+    public ResponseEntity<?> checkSession(@RequestHeader("X-Session-Id") String sessionId) {
         RedisSession redisSession = redisSessionRepository.findById(sessionId).orElse(null);
         
         if (redisSession != null && redisSession.getStatus() == StatusInSession.ACTIVE) {
-            // Обновляем время существования
             redisSession.setExistedAt(LocalDateTime.now());
             redisSessionRepository.save(redisSession);
             
@@ -95,9 +90,5 @@ public class AuthController {
         }
         
         return ResponseEntity.status(401).body(Map.of("authenticated", false));
-    }
-    
-    private Long generateSessionId() {
-        return UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
     }
 }

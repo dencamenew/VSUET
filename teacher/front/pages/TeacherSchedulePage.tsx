@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "../components/ui/button"
@@ -13,16 +15,19 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
+  QrCode
 } from "lucide-react"
 import { translations, type Language } from "../lib/translations"
 import { Textarea } from "../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
+import { useSession } from '@/hooks/useSession'
 
 interface TeacherSchedulePageProps {
   teacherName: string
   onNavigate: (page: "schedule" | "rating" | "attendance") => void
   onShowProfile: () => void
   language: Language
+  getAuthHeaders: () => HeadersInit
 }
 
 interface DateItem {
@@ -53,6 +58,7 @@ interface QRModalProps {
   language: Language
   selectedDate: string
   teacherName: string
+  getAuthHeaders: () => HeadersInit
 }
 
 interface ViewCommentModalProps {
@@ -216,7 +222,7 @@ function CommentModal({
   )
 }
 
-function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName }: QRModalProps) {
+function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName, getAuthHeaders }: QRModalProps) {
   const [currentQrData, setCurrentQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -303,12 +309,10 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
         classDate: selectedDate,
         teacherName: teacherName
       }
-
+      
       const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request),
         credentials: 'include'
       })
@@ -350,12 +354,10 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName 
         classDate: selectedDate,
         teacherName: teacherName
       }
-
+      
       const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request),
         credentials: 'include'
       })
@@ -561,6 +563,7 @@ export default function TeacherSchedulePage({
   onNavigate,
   onShowProfile,
   language,
+  getAuthHeaders
 }: TeacherSchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
@@ -663,7 +666,6 @@ export default function TeacherSchedulePage({
   }
 
   // Функция для получения расписания с API
-  // Функция для получения расписания с API
   const fetchSchedule = async () => {
     try {
       setLoading(true)
@@ -686,10 +688,11 @@ export default function TeacherSchedulePage({
           const encodedTeacherName = encodeURIComponent(teacherName);
           
           const response = await fetch(
-            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`, 
+            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
             {
-              credentials: 'include'
+              headers: getAuthHeaders(),
             }
+            
           );
           
           if (response.ok) {
@@ -957,8 +960,8 @@ export default function TeacherSchedulePage({
               >
                 {/* Добавляем месяц над числом */}
                 <span className="text-xs text-muted-foreground mb-1">{dateItem.month}</span>
-                <span className="text-lg font-semibold">{dateItem.date}</span>
-                <span className="text-xs">{dateItem.day}</span>
+                                  <span className="text-lg font-semibold">{dateItem.date}</span>
+                <span className="text-xs mt-1">{dateItem.day}</span>
               </button>
             ))}
           </div>
@@ -974,104 +977,79 @@ export default function TeacherSchedulePage({
         </div>
       </div>
 
-      {/* Selected Date */}
-      <div className="px-4 mb-4">
-        <p className="text-muted-foreground">
-          {selectedDateInfo}
-        </p>
-      </div>
+      {/* Schedule */}
+      <div className="px-4 pb-20">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold">{selectedDateInfo}</h2>
+        </div>
 
-      {/* Lessons List */}
-      <div className="flex-1 px-4 pb-20">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">{t.loadingSchedule}</p>
+          <div className="flex justify-center items-center h-40">
+            <p className="text-muted-foreground">{t.loading}</p>
           </div>
         ) : currentSchedule.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">{t.noClasses}</p>
+          <div className="flex justify-center items-center h-40">
+            <p className="text-muted-foreground">{t.noLessons}</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {currentSchedule.map((lesson, index) => {
+          <div className="space-y-3">
+            {currentSchedule.map((lesson) => {
               const commentKey = getCommentKey(lesson)
-              const lessonComment = lessonComments[commentKey]
-
+              const comment = lessonComments[commentKey]
               return (
-                <div key={index} className={`${getCardStyles(lesson.type)} rounded-xl p-4 transition-all duration-200`}>
-                  <div className="flex items-start justify-between gap-4">
+                <div
+                  key={`${lesson.id}-${lesson.time}`}
+                  className={getCardStyles(lesson.type) + " p-4 rounded-xl transition-all"}
+                >
+                  <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-foreground font-semibold text-lg">{lesson.subject}</h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(lesson.type)}`}>
-                          {getTypeLabel(lesson.type)}
-                        </span>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                            {t.timeLabel}
-                          </div>
-                          <span className="text-primary font-semibold bg-primary/10 px-3 py-1.5 rounded-lg text-sm">
-                            {lesson.time} - {lesson.endTime}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                            {t.roomLabel}
-                          </div>
-                          <span className="text-foreground font-medium bg-muted px-3 py-1.5 rounded-lg text-sm">
-                            {lesson.room}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                            {t.groupLabel}
-                          </div>
-                          <span className="text-primary font-semibold bg-primary/10 px-3 py-1.5 rounded-lg text-sm">
-                            {lesson.group}
-                          </span>
-                        </div>
-                      </div>
+                      <h3 className="font-semibold text-foreground">{lesson.subject}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {lesson.time} - {lesson.endTime} • {lesson.room}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{lesson.group}</p>
                     </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(lesson.type)}`}
+                    >
+                      {getTypeLabel(lesson.type)}
+                    </span>
+                  </div>
 
-                    <div className="flex flex-col items-end gap-3 min-w-0 flex-1">
-  <div className="flex gap-2">
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => openQRModal(lesson)}
-      className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
-    >
-      <QRCodeSVG className="w-4 h-4" />
-    </Button>
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => openCommentModal(lesson, !!lessonComment)}
-      className="border-muted-foreground/30 text-muted-foreground hover:bg-muted hover:text-foreground hover:border-foreground/50 transition-colors"
-    >
-      <MessageSquare className="w-4 h-4" />
-    </Button>
-  </div>
-
-  {lessonComment && (
-    <div className="w-full max-w-[280px]">
-      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 text-right">
-        {t.comment || "Комментарий"}
-      </div>
-      <div
-        className="bg-muted/50 px-3 py-2 rounded-lg text-sm text-foreground cursor-pointer hover:bg-muted/70 transition-colors text-right whitespace-nowrap overflow-hidden text-ellipsis"
-        onClick={() => openViewCommentModal(lessonComment, lesson)}
-        title={lessonComment}
-      >
-        {truncateComment(lessonComment, 40)}
-      </div>
-    </div>
-  )}
-</div>
-
-                        </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => openQRModal(lesson)}
+                      >
+                        <QRCodeSVG className="w-4 h-4 mr-1" />
+                        QR
+                      </Button>
+                      {comment ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-blue-500 hover:text-blue-600"
+                          onClick={() => openViewCommentModal(comment, lesson)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          {truncateComment(comment)}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                          onClick={() => openCommentModal(lesson)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          {t.comment}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -1079,7 +1057,27 @@ export default function TeacherSchedulePage({
         )}
       </div>
 
-      {/* Comment Modal */}
+      {/* Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around">
+        <Button variant="ghost" onClick={() => onNavigate("schedule")} className="flex-1 mx-1">
+          <Calendar className="w-5 h-5 mr-2" />
+          {t.schedule}
+        </Button>
+        <Button variant="ghost" onClick={() => onNavigate("attendance")} className="flex-1 mx-1">
+          <Users className="w-5 h-5 mr-2" />
+          {t.attendance}
+        </Button>
+        <Button variant="ghost" onClick={() => onNavigate("rating")} className="flex-1 mx-1">
+          <GraduationCap className="w-5 h-5 mr-2" />
+          {t.rating}
+        </Button>
+        <Button variant="ghost" onClick={onShowProfile} className="flex-1 mx-1">
+          <User className="w-5 h-5 mr-2" />
+          {t.profile}
+        </Button>
+      </div>
+
+      {/* Modals */}
       <CommentModal
         isOpen={commentModal.isOpen}
         onClose={closeCommentModal}
@@ -1092,7 +1090,6 @@ export default function TeacherSchedulePage({
         isEditMode={commentModal.isEditMode}
       />
 
-      {/* QR Modal */}
       <QRModal
         isOpen={qrModal.isOpen}
         onClose={closeQRModal}
@@ -1100,9 +1097,9 @@ export default function TeacherSchedulePage({
         language={language}
         selectedDate={selectedDateKey}
         teacherName={teacherName}
+        getAuthHeaders={getAuthHeaders}
       />
 
-      {/* View Comment Modal */}
       <ViewCommentModal
         isOpen={viewCommentModal.isOpen}
         onClose={closeViewCommentModal}
@@ -1112,39 +1109,6 @@ export default function TeacherSchedulePage({
         onEditComment={handleEditCommentFromView}
         onDeleteComment={handleDeleteCommentFromView}
       />
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-        <div className="flex justify-around items-center py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-foreground hover:bg-muted"
-            onClick={() => onNavigate("schedule")}
-          >
-            <Calendar className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("rating")}
-          >
-            <GraduationCap className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("attendance")}
-          >
-            <Users className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
-            <User className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

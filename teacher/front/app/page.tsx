@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import TeacherAuthPage from "../pages/TeacherAuthPage"
 import TeacherSchedulePage from "../pages/TeacherSchedulePage"
@@ -6,12 +7,11 @@ import TeacherRatingPage from "../pages/TeacherRatingPage"
 import TeacherAttendancePage from "../pages/TeacherAttendancePage"
 import TeacherProfilePage from "../pages/TeacherProfilePage"
 import type { Language } from "../lib/translations"
+import { useSession } from '@/hooks/useSession'
 
-// Добавьте интерфейс для данных групп и предметов
+// Интерфейс для данных групп и предметов
 export interface GroupSubjects {
-  [groupName: string]: {
-    [subjectName: string]: string[]
-  }
+  [groupName: string]: string[]
 }
 
 function App() {
@@ -32,6 +32,12 @@ function App() {
       localStorage.setItem("language", "ru")
     }
 
+    // Проверка активной сессии при загрузке
+    const savedSessionId = localStorage.getItem("sessionId")
+    if (savedSessionId) {
+      checkSessionValidity(savedSessionId)
+    }
+
     // Установка темы
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme === "dark" || savedTheme === null) {
@@ -44,26 +50,82 @@ function App() {
     }
   }, [])
 
-  const handleLogin = (name: string, sessionId: string, groupsData: GroupSubjects) => {
+  const checkSessionValidity = async (sessionIdToCheck: string) => {
+    try {
+      const response = await fetch('http://localhost:8081/api/auth/check', {
+        headers: {
+          'X-Session-Id': sessionIdToCheck
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.authenticated) {
+          // Сессия валидна, восстанавливаем состояние
+          setTeacherName(data.teacherName)
+          setSessionId(sessionIdToCheck)
+          setIsAuthenticated(true)
+          
+          // Можно также загрузить группы и предметы если они возвращаются в check
+          if (data.groupsSubjects) {
+            setGroupsSubjects(data.groupsSubjects)
+          }
+        } else {
+          // Сессия невалидна, очищаем
+          localStorage.removeItem("sessionId")
+        }
+      }
+    } catch (error) {
+      console.error('Session check failed:', error)
+      localStorage.removeItem("sessionId")
+    }
+  }
+
+  const handleLogin = (name: string, newSessionId: string, groupsData: GroupSubjects) => {
     setTeacherName(name)
-    setSessionId(sessionId)
+    setSessionId(newSessionId)
     setGroupsSubjects(groupsData)
     setIsAuthenticated(true)
+    
+    // Сохраняем sessionId в localStorage
+    localStorage.setItem("sessionId", newSessionId)
   }
 
   const handleLogout = () => {
+    // Очищаем сессию на сервере
+    logoutFromServer()
+    
+    // Очищаем локальное состояние
     setIsAuthenticated(false)
     setTeacherName("")
     setSessionId("")
     setGroupsSubjects({})
     setCurrentPage("schedule")
     setShowProfile(false)
+    
+    // Очищаем localStorage
+    localStorage.removeItem("sessionId")
+    
+    // Сбрасываем настройки к дефолтным (опционально)
     resetSettingsToDefault()
   }
 
+  const logoutFromServer = async () => {
+    try {
+      await fetch("http://localhost:8081/api/auth/logout", {
+        method: "POST",
+        headers: {
+          'X-Session-Id': sessionId,
+          "Content-Type": "application/json",
+        },
+      })
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
+
   const resetSettingsToDefault = () => {
-    setLanguage("ru")
-    localStorage.setItem("language", "ru")
+    // Язык оставляем как был, только сбрасываем тему
     document.documentElement.classList.add("dark")
     localStorage.setItem("theme", "dark")
   }
@@ -71,6 +133,16 @@ function App() {
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage)
     localStorage.setItem("language", newLanguage)
+  }
+
+  // Функция для получения заголовков аутентификации
+  const getAuthHeaders = (): HeadersInit => {
+    if (!sessionId) return { 'Content-Type': 'application/json' }
+    
+    return {
+      'X-Session-Id': sessionId,
+      'Content-Type': 'application/json'
+    }
   }
 
   if (!isAuthenticated) {
@@ -85,6 +157,8 @@ function App() {
           onNavigate={setCurrentPage}
           onShowProfile={() => setShowProfile(true)}
           language={language}
+          sessionId={sessionId}
+          getAuthHeaders={getAuthHeaders}
         />
       )}
       {currentPage === "rating" && (
@@ -93,6 +167,8 @@ function App() {
           onNavigate={setCurrentPage}
           onShowProfile={() => setShowProfile(true)}
           language={language}
+          sessionId={sessionId}
+          getAuthHeaders={getAuthHeaders}
         />
       )}
       {currentPage === "attendance" && (
@@ -102,6 +178,8 @@ function App() {
           onNavigate={setCurrentPage}
           onShowProfile={() => setShowProfile(true)}
           language={language}
+          sessionId={sessionId}
+          getAuthHeaders={getAuthHeaders}
         />
       )}
       {showProfile && (
@@ -111,6 +189,7 @@ function App() {
           onClose={() => setShowProfile(false)}
           onLanguageChange={handleLanguageChange}
           language={language}
+          sessionId={sessionId}
         />
       )}
     </div>

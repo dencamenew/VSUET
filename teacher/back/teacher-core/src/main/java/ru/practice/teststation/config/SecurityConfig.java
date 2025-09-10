@@ -34,7 +34,7 @@ public class SecurityConfig {
             )
             .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.NEVER) 
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) 
             )
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());

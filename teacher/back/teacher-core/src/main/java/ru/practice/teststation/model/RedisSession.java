@@ -1,6 +1,7 @@
 package ru.practice.teststation.model;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.data.redis.core.RedisHash;
 import jakarta.persistence.Id;
@@ -9,10 +10,10 @@ import ru.practice.teststation.model.enums.RoleForSession;
 import ru.practice.teststation.model.enums.StatusInSession;
 
 @Data
-@RedisHash("session")
+@RedisHash("teacherSession")
 public class RedisSession {
     @Id
-    private Long id;
+    private String id = UUID.randomUUID().toString();
     private RoleForSession role;
     private Long userId; // из teacher_info
     private String name;

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, User, GraduationCap, Users, Check, X, Loader2 } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import type { GroupSubjects } from "../app/page"
+import { useSession } from '@/hooks/useSession'
 
 interface TeacherAttendancePageProps {
   teacherName: string
@@ -52,6 +53,7 @@ export default function TeacherAttendancePage({
   const [dates, setDates] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
+  const { getAuthHeaders } = useSession()
 
   const t = translations[language] || translations.en
 
@@ -87,7 +89,7 @@ export default function TeacherAttendancePage({
       const response = await fetch(
         `http://localhost:8081/api/attendance/vedomost?teacher=${encodeURIComponent(teacherName)}&subject=${encodeURIComponent(selectedSubject)}&groupName=${encodeURIComponent(selectedGroup)}`,
         {
-          credentials: 'include'
+          headers: getAuthHeaders(),
         }
       )
       
@@ -148,14 +150,11 @@ export default function TeacherAttendancePage({
     try {
       const response = await fetch('http://localhost:8081/api/attendance/update-attendance', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           id: recordId,
           turnout: turnout
         }),
-        credentials: 'include'
       })
 
       if (!response.ok) {
