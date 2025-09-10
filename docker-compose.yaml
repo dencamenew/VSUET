@@ -60,47 +60,6 @@ services:
       full_timetable:
         condition: service_completed_successfully
 
-  student_backend:
-    container_name: student_backend
-    build:
-      context: student/spring
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/db
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: admin
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_PROFILES_ACTIVE: docker
-      CORS_ALLOWED_ORIGINS: https://vsuetstudent.cloudpub.ru
-
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_SESSION_STORE_TYPE: redis
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:  
-        condition: service_started
-    restart: unless-stopped
-
-  student_frontend:
-      container_name: student_frontend
-      build:
-        context: student/front
-        dockerfile: Dockerfile
-      ports:
-        - "3000:3000"
-      environment:
-        - NEXT_PUBLIC_API_URL=https://studentback.cloudpub.ru/api
-        - NEXT_PUBLIC_WS_URL=ws://studentback.cloudpub.ru/ws
-        - NEXT_PUBLIC_SOCKET_URL=https://studentback.cloudpub.ru/ws
-      depends_on:
-        postgres:
-          condition: service_healthy
-      restart: unless-stopped
-
 volumes:
   postgres_data:
   redis_data:
