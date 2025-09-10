@@ -12,13 +12,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        String allowedOrigin = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (allowedOrigin == null || allowedOrigin.isEmpty()) {
-            allowedOrigin = "https://vsuetstudent.cloudpub.ru";
+        String[] allowedOrigins;
+        
+        String envOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (envOrigins != null && !envOrigins.isEmpty()) {
+            allowedOrigins = envOrigins.split(",");
+        } else {
+            allowedOrigins = new String[]{
+                "https://vsuetstudent.cloudpub.ru",
+                "http://localhost:3000", 
+                "http://127.0.0.1:3000"
+            };
         }
 
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigin.split(","))
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
     }
 

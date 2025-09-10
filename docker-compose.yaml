@@ -99,21 +99,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
-student_frontend:
-    container_name: student_frontend
-    build:
-      context: student/front
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=https://studentback.cloudpub.ru/api
-      - NEXT_PUBLIC_WS_URL=ws://studentback.cloudpub.ru/ws
-      - NEXT_PUBLIC_SOCKET_URL=https://studentback.cloudpub.ru/ws
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
+  student_frontend:
+      container_name: student_frontend
+      build:
+        context: student/front
+        dockerfile: Dockerfile
+      ports:
+        - "3000:3000"
+      environment:
+        - NEXT_PUBLIC_API_URL=https://studentback.cloudpub.ru/api
+        - NEXT_PUBLIC_WS_URL=ws://studentback.cloudpub.ru/ws
+        - NEXT_PUBLIC_SOCKET_URL=https://studentback.cloudpub.ru/ws
+      depends_on:
+        postgres:
+          condition: service_healthy
+      restart: unless-stopped
 
 volumes:
   postgres_data:

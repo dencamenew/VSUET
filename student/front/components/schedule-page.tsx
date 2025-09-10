@@ -255,36 +255,89 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: TimetableResponse = await response.json()
+      const data = await response.json()
       
-      // Преобразуем данные в формат Lesson
-      const lessons: Lesson[] = data.timetable.map(lesson => {
+      // Преобразуем данные в формат Lesson (updated for new structure)
+      const lessons: Lesson[] = data.timetable.map((lesson: any) => {
         const hasPassed = hasLessonPassed(lesson.date, lesson.time)
 
-        const str = lesson.subject;
+        // Extract subject name (remove type if present)
+        let subject = lesson.subject;
         const separator = ":";
-
-        let subject = "";
-        const index = str.indexOf(separator);
+        const index = subject.indexOf(separator);
 
         if (index !== -1) {
-          subject = str.slice(index + 1).trim();
-        } else {
-          subject =str;
+          subject = subject.slice(index + 1).trim();
         }
 
+        // Determine lesson type from typeSubject field
+        let type: "lecture" | "practice" | "lab" | "other" = "other";
+        if (lesson.typeSubject) {
+          const lowerType = lesson.typeSubject.toLowerCase();
+          if (lowerType.includes("лекция") || lowerType.includes("lecture")) {
+            type = "lecture";
+          } else if (lowerType.includes("практика") || lowerType.includes("practice")) {
+            type = "practice";
+          } else if (lowerType.includes("лабораторная") || lowerType.includes("lab")) {
+            type = "lab";
+          }
+        } else {
+          // Fallback to determining from subject name if typeSubject is not available
+          type = determineLessonType(lesson.subject);
+        }
+        
+        // Обработка специальных случаев
+        let teacher = lesson.teacher;
+        let audience = lesson.audience;
+        
+        // 1. Для "Общая физическая подготовка" убираем преподавателя
+        if (subject.includes("Общая физическая") || subject.includes("Физическая культура")) {
+          teacher = "-";
+        }
+        
+        // 2. Для иностранных языков обрабатываем несколько преподавателей и аудиторий
+        if (subject.includes("Иностранный язык") || subject.includes("Иностранный язык")) {
+          const withoutPrefix = subject.replace("Иностранный язык ", "");
+          const parts = withoutPrefix.split(' ');
+
+          const name = parts.slice(0, -1).join(' ');
+          const group = parts[parts.length - 1]; 
+
+          teacher = teacher + "/" + name
+          audience = audience + "/" + group
+          const lastSpaceIndex = subject.lastIndexOf(' ');
+          const secondLastSpaceIndex = subject.lastIndexOf(' ', lastSpaceIndex - 1);
+          const thirdLastSpaceIndex = subject.lastIndexOf(' ', secondLastSpaceIndex - 1);
+
+          // Берем часть строки до третьего пробела с конца
+          const result = subject.substring(0, thirdLastSpaceIndex);
+
+          subject = result
+        }
+        
+        // 3. Убираем тип занятия из названия предмета (если еще остался)
+        const typePatterns = [
+          "Лекция:", "Практика:", "Лабораторная:",
+          "Lecture:", "Practice:", "Lab:"
+        ];
+        
+        typePatterns.forEach(pattern => {
+          if (subject.includes(pattern)) {
+            subject = subject.replace(pattern, '').trim();
+          }
+        });
         
         return {
           date: lesson.date,
           time: lesson.time,
           endTime: calculateEndTime(lesson.time),
           subject: subject,
-          room: lesson.audience,
-          audience: lesson.audience,
-          teacher: lesson.teacher,
-          type: determineLessonType(lesson.subject),
+          room: audience,
+          audience: audience,
+          teacher: teacher,
+          type: type,
           turnout: lesson.turnout,
-          comment: lesson.comment, // Добавляем комментарий
+          comment: lesson.comment,
           attendance: lesson.turnout ? "present" : hasPassed ? "absent" : undefined,
           hasPassed
         }

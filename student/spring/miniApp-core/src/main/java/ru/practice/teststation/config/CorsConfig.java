@@ -13,16 +13,22 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                String[] allowedOrigins = {
+                    "https://vsuetstudent.cloudpub.ru",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000"
+                };
+                
                 registry.addMapping("/api/**")
-                        .allowedOrigins("https://vsuetstudent.cloudpub.ru")
+                        .allowedOrigins(allowedOrigins)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
                         .allowedHeaders("*")
                         .allowCredentials(true)
-                        .maxAge(3600); // Добавьте maxAge для кэширования preflight
+                        .maxAge(3600);
 
                 // Добавьте для всех endpoints на всякий случай
                 registry.addMapping("/**")
-                        .allowedOrigins("https://vsuetstudent.cloudpub.ru")
+                        .allowedOrigins(allowedOrigins)
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);
