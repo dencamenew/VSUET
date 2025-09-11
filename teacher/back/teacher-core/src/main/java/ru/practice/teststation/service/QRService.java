@@ -32,7 +32,7 @@ public class QRService {
 
         qrCodeRepository.save(qrCode);
 
-        String qrUrl = "https://teacherbackend.cloudpub.ru//api/qr/scan?qr_id=" + qrCode.getQrUUID() + "&token=" + qrCode.getToken();
+        String qrUrl = "https://studentback.cloudpub.ru/api/qr/scan?qr_id=" + qrCode.getQrUUID() + "&token=" + qrCode.getToken();
         
         // Формирование ответа
         return new QRGenerationResponse(
