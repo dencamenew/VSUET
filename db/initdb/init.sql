@@ -44,6 +44,19 @@ CREATE INDEX IF NOT EXISTS idx_full_timetable_zach ON full_timetable(zach_number
 CREATE INDEX IF NOT EXISTS idx_full_timetable_date_zach ON full_timetable(date, zach_number);
 
 
+
+CREATE TABLE IF NOT EXISTS qr (
+    qrUUID VARCHAR(255) NOT NULL UNIQUE,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    subject VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    teacher VARCHAR(255) NOT NULL,
+    student VARCHAR(255),
+    status  VARCHAR(255) NOT NULL
+);
+
+
 CREATE OR REPLACE FUNCTION notify_raiting_change()
 RETURNS TRIGGER AS $$
 DECLARE

@@ -223,8 +223,8 @@ function CommentModal({
 }
 
 function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName, getAuthHeaders }: QRModalProps) {
-  const [currentQrData, setCurrentQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
-  const [nextQrData, setNextQrData] = useState<{qr_url: string, expires_at: string} | null>(null)
+  const [currentQrUrl, setCurrentQrUrl] = useState<string>("")
+  const [nextQrUrl, setNextQrUrl] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
   const [timer, setTimer] = useState<number>(120) 
@@ -236,8 +236,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
     if (isOpen && lesson) {
       generateQRCodeForLesson()
     } else {
-      setCurrentQrData(null)
-      setNextQrData(null)
+      setCurrentQrUrl("")
+      setNextQrUrl("")
       setError("")
       setTimer(120)
       setIsSwitching(false)
@@ -253,7 +253,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   }, [isOpen, lesson, selectedDate])
 
   useEffect(() => {
-    if (currentQrData && timer > 0) {
+    if (currentQrUrl && timer > 0) {
       timerRef.current = setInterval(() => {
         setTimer(prev => prev - 1)
       }, 1000)
@@ -264,10 +264,10 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
         clearInterval(timerRef.current)
       }
     }
-  }, [currentQrData, timer])
+  }, [currentQrUrl, timer])
 
   useEffect(() => {
-    if (timer === 0 && timerRef.current && currentQrData) {
+    if (timer === 0 && timerRef.current && currentQrUrl) {
       clearInterval(timerRef.current)
       timerRef.current = null
       
@@ -277,38 +277,38 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       // Генерируем следующий QR-код
       generateNextQRCode()
     }
-  }, [timer, currentQrData])
+  }, [timer, currentQrUrl])
 
   useEffect(() => {
-  if (nextQrData && isSwitching) {
-    // Плавно переключаем на новый QR-код
-    switchRef.current = setTimeout(() => {
-      setCurrentQrData(nextQrData)
-      setNextQrData(null)
-      setIsSwitching(false)
-      setTimer(120) 
-    }, 200)
-  }
-
-  return () => {
-    if (switchRef.current) {
-      clearTimeout(switchRef.current)
+    if (nextQrUrl && isSwitching) {
+      // Плавно переключаем на новый QR-код
+      switchRef.current = setTimeout(() => {
+        setCurrentQrUrl(nextQrUrl)
+        setNextQrUrl("")
+        setIsSwitching(false)
+        setTimer(120) 
+      }, 200)
     }
-  }
-}, [nextQrData, isSwitching])
+
+    return () => {
+      if (switchRef.current) {
+        clearTimeout(switchRef.current)
+      }
+    }
+  }, [nextQrUrl, isSwitching])
 
   const generateNextQRCode = async () => {
     if (!lesson) return
     
     try {
       const request = {
-        subject: lesson.subject,
-        groupName: lesson.group,
-        startLessonTime: lesson.time,
-        endLessonTime: lesson.endTime,
-        classDate: selectedDate,
-        teacherName: teacherName
-      }
+      subject: lesson.subject,
+      groupName: lesson.group,
+      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
+      endLessonTime: lesson.endTime,
+      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
+      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
+    }
       
       const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
@@ -321,12 +321,12 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
         throw new Error('Ошибка при создании QR-кода')
       }
 
-      const newQrData = await response.json()
+      const qrUrl = await response.text() // Теперь получаем просто строку с URL
       
-      if (newQrData && newQrData.qr_url) {
-        setNextQrData(newQrData)
+      if (qrUrl) {
+        setNextQrUrl(qrUrl)
       } else {
-        throw new Error('Неверный формат ответа сервера')
+        throw new Error('Пустой ответ от сервера')
       }
       
     } catch (err) {
@@ -347,13 +347,13 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
     
     try {
       const request = {
-        subject: lesson.subject,
-        groupName: lesson.group,
-        startLessonTime: lesson.time,
-        endLessonTime: lesson.endTime,
-        classDate: selectedDate,
-        teacherName: teacherName
-      }
+      subject: lesson.subject,
+      groupName: lesson.group,
+      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
+      endLessonTime: lesson.endTime,
+      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
+      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
+    }
       
       const response = await fetch('http://localhost:8081/api/qr/generate', {
         method: 'POST',
@@ -366,12 +366,12 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
         throw new Error('Ошибка при создании QR-кода')
       }
 
-      const qrData = await response.json()
+      const qrUrl = await response.text() // Теперь получаем просто строку с URL
       
-      if (qrData && qrData.qr_url) {
-        setCurrentQrData(qrData)
+      if (qrUrl) {
+        setCurrentQrUrl(qrUrl)
       } else {
-        throw new Error('Неверный формат ответа сервера')
+        throw new Error('Пустой ответ от сервера')
       }
       
     } catch (err) {
@@ -429,7 +429,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
         </div>
 
         <div className="flex flex-col items-center space-y-4">
-          {loading && !currentQrData ? (
+          {loading && !currentQrUrl ? (
             <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
               <p className="text-muted-foreground">
                 {language === "ru" ? "Загрузка..." : "Loading..."}
@@ -441,7 +441,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
                 {error}
               </p>
             </div>
-          ) : currentQrData ? (
+          ) : currentQrUrl ? (
             <div className="flex flex-col items-center">
               <div className="bg-white p-4 border-2 border-border w-48 h-48 flex items-center justify-center">
                 {/* Анимация только opacity без scale */}
@@ -449,7 +449,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
                   isSwitching ? 'opacity-0' : 'opacity-100'
                 }`}>
                   <QRCodeSVG
-                    value={currentQrData.qr_url}
+                    value={currentQrUrl}
                     size={192}
                     level="H"
                     includeMargin

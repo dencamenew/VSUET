@@ -1,5 +1,8 @@
 package ru.practice.teststation.dto.requests;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,9 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class QRGenerationRequest {
     private String subject;
-    private String startLessonTime;
-    private String endLessonTime;
-    private String classDate; 
-    private String groupName;
-    private String teacherName;
+    private LocalTime time;
+    private LocalDate date; 
+    private String teacher;
 }

@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QRGenerationResponse {
-    private String qr_uuid;
     private String qr_url;
 }

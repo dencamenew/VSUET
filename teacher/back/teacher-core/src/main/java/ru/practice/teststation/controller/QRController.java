@@ -8,7 +8,6 @@ import ru.practice.teststation.dto.requests.QRGenerationRequest;
 import ru.practice.teststation.dto.response.QRGenerationResponse;
 import ru.practice.teststation.service.QRService;
 
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/qr")

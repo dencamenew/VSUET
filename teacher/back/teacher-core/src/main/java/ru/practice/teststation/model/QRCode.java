@@ -1,30 +1,31 @@
 package ru.practice.teststation.model;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
+
 import jakarta.persistence.*;
 import lombok.Data;
+import ru.practice.teststation.model.enums.QrStatus;
 
 
 
 @Data
 @Entity
-@Table(name = "qr_codes")
+@Table(name = "qr")
 public class QRCode {
-    
     @Id
-    private String qrUUID;
+    private String qrUUID = UUID.randomUUID().toString();
+    private String token = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+    @Enumerated(EnumType.STRING) 
+    private QrStatus status = QrStatus.PENDING; // pending, scanned, expired
     
-    private String token;
-    private String status; // pending, scanned, expired
-    
-
     // передаётся с фронта учителя
     private String subject;
-    private String startLessonTime;
-    private String endLessonTime;
-    private String classDate; 
-    private String groupName;
-    private String teacherName;
+    private LocalTime time;
+    private LocalDate date; 
+    private String teacher;
     
     // Кто отсканировал 
-    private String studentWhoScan;
+    private String student;
 }
