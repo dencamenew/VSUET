@@ -57,6 +57,8 @@ export default function TeacherAttendancePage({
 
   const t = translations[language] || translations.en
 
+  const URL = "https://teacherbackend.cloudpub.ru/api"
+
   // Получаем список групп
   const groups = Object.keys(groupsSubjects || {}).map(groupName => ({ 
     id: groupName, 
@@ -87,7 +89,7 @@ export default function TeacherAttendancePage({
     setError("")
     try {
       const response = await fetch(
-        `http://localhost:8081/api/attendance/vedomost?teacher=${encodeURIComponent(teacherName)}&subject=${encodeURIComponent(selectedSubject)}&groupName=${encodeURIComponent(selectedGroup)}`,
+        `${URL}/attendance/vedomost?teacher=${encodeURIComponent(teacherName)}&subject=${encodeURIComponent(selectedSubject)}&groupName=${encodeURIComponent(selectedGroup)}`,
         {
           headers: getAuthHeaders(),
         }
@@ -148,7 +150,7 @@ export default function TeacherAttendancePage({
 
   const updateAttendance = async (recordId: number, turnout: boolean) => {
     try {
-      const response = await fetch('http://localhost:8081/api/attendance/update-attendance', {
+      const response = await fetch(`${URL}/attendance/update-attendance`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({

@@ -232,6 +232,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
 
+  const URL = "https://teacherbackend.cloudpub.ru/api"
+
   useEffect(() => {
     if (isOpen && lesson) {
       generateQRCodeForLesson()
@@ -310,7 +312,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
     }
       
-      const response = await fetch('http://localhost:8081/api/qr/generate', {
+      const response = await fetch(`${URL}/qr/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(request),
@@ -355,7 +357,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
     }
       
-      const response = await fetch('http://localhost:8081/api/qr/generate', {
+      const response = await fetch(`${URL}/qr/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(request),
@@ -598,6 +600,8 @@ export default function TeacherSchedulePage({
 
   const t = translations[language] || translations.en
 
+  const URL = "https://teacherbackend.cloudpub.ru/api"
+
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -688,7 +692,7 @@ export default function TeacherSchedulePage({
           const encodedTeacherName = encodeURIComponent(teacherName);
           
           const response = await fetch(
-            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
+            `https://teacherbackend.cloudpub.ru/api/${formattedDate}/${encodedTeacherName}`,
             {
               headers: getAuthHeaders(),
             }

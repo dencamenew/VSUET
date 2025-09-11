@@ -36,6 +36,8 @@ export default function TeacherProfilePage({
 
   const t = translations[language] || translations.en
 
+  const URL = process.env.NEXT_PUBLIC_API_URL
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme) {
@@ -77,7 +79,7 @@ export default function TeacherProfilePage({
     setLogoutError("")
 
     try {
-      const response = await fetch("http://localhost:8081/api/auth/logout", {
+      const response = await fetch(`${URL}/auth/logout`, {
         method: "POST",
         headers: {
           'X-Session-Id': sessionId || '',

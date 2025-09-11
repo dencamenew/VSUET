@@ -612,27 +612,45 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
 
   const handleScannedQRCode = (qrData: string) => {
     try {
-      // Парсим данные QR-кода (ожидаем JSON)
-      const qrDataObj = JSON.parse(qrData)
-      
-      // Проверяем, что QR-код содержит нужные данные
-      if (qrDataObj.subject && qrDataObj.date && qrDataObj.time) {
+      // Обрабатываем формат "QR scanned successfully: {uuid}, token: {token}"
+      if (qrData.startsWith("QR scanned successfully:")) {
+        // Извлекаем UUID и token из строки
+        const parts = qrData.split(', ');
+        const uuidPart = parts[0]; // "QR scanned successfully: {uuid}"
+        const tokenPart = parts[1]; // "token: {token}"
+        
+        const uuid = uuidPart.replace("QR scanned successfully: ", "").trim();
+        const token = tokenPart.replace("token: ", "").trim();
+        
+        console.log("Extracted UUID:", uuid);
+        console.log("Extracted token:", token);
+        
         // Отправляем данные на сервер для отметки посещения
-        markAttendance(qrDataObj.subject, qrDataObj.date, qrDataObj.time)
+        markAttendanceWithQR(uuid, token);
       } else {
-        toast.error(t.invalidQRCode)
+        // Пробуем парсить как JSON (старый формат)
+        try {
+          const qrDataObj = JSON.parse(qrData);
+          if (qrDataObj.subject && qrDataObj.date && qrDataObj.time) {
+            markAttendance(qrDataObj.subject, qrDataObj.date, qrDataObj.time);
+          } else {
+            toast.error(t.invalidQRCode);
+          }
+        } catch (jsonError) {
+          toast.error(t.invalidQRCode);
+        }
       }
     } catch (error) {
-      console.error("Error parsing QR code data:", error)
-      toast.error(t.invalidQRCode)
+      console.error("Error parsing QR code data:", error);
+      toast.error(t.invalidQRCode);
     }
     
-    stopQRScanner()
-  }
+    stopQRScanner();
+  };
 
   const markAttendance = async (subject: string, date: string, time: string) => {
     try {
-      setIsUpdating(true)
+      setIsUpdating(true);
       
       const response = await fetch(`${URL}/attendance`, {
         method: "POST",
@@ -646,15 +664,15 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
           time,
           status: "present"
         }),
-      })
+      });
       
       if (response.ok) {
-        toast.success(t.attendanceMarked)
+        toast.success(t.attendanceMarked);
         
         // Обновляем локальное состояние
         setSchedule(prev => {
-          const newSchedule = { ...prev }
-          const dateKey = getLocalDateString(new Date(date))
+          const newSchedule = { ...prev };
+          const dateKey = getLocalDateString(new Date(date));
           
           if (newSchedule[dateKey]) {
             newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
@@ -663,24 +681,24 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                   ...lesson,
                   turnout: true,
                   attendance: "present"
-                }
+                };
               }
-              return lesson
-            })
+              return lesson;
+            });
           }
           
-          return newSchedule
-        })
+          return newSchedule;
+        });
       } else {
-        throw new Error("Failed to mark attendance")
+        throw new Error("Failed to mark attendance");
       }
     } catch (error) {
-      console.error("Error marking attendance:", error)
-      toast.error(t.attendanceError)
+      console.error("Error marking attendance:", error);
+      toast.error(t.attendanceError);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   // Проверка статуса разрешения камеры при загрузке
   useEffect(() => {

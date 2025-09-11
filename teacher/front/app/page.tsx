@@ -23,6 +23,8 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [language, setLanguage] = useState<Language>("ru")
 
+  const URL = "https://teacherbackend.cloudpub.ru/api"
+
   useEffect(() => {
     // Загрузка сохраненного языка
     const savedLanguage = localStorage.getItem("language") as Language
@@ -52,7 +54,7 @@ function App() {
 
   const checkSessionValidity = async (sessionIdToCheck: string) => {
     try {
-      const response = await fetch('http://localhost:8081/api/auth/check', {
+      const response = await fetch(`${URL}/auth/check`, {
         headers: {
           'X-Session-Id': sessionIdToCheck
         }
@@ -112,7 +114,7 @@ function App() {
 
   const logoutFromServer = async () => {
     try {
-      await fetch("http://localhost:8081/api/auth/logout", {
+      await fetch(`${URL}/auth/logout`, {
         method: "POST",
         headers: {
           'X-Session-Id': sessionId,
