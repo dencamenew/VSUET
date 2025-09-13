@@ -14,6 +14,7 @@ import java.util.List;
 
 @Repository
 public interface FullTimetableRepository extends JpaRepository<FullTimetable, Long> {
+
     
     @Query("SELECT new ru.practice.teststation.dto.AttendanceDto(" +
            "f.id, f.studentId, f.time, f.date, f.turnout) " +
@@ -38,4 +39,5 @@ public interface FullTimetableRepository extends JpaRepository<FullTimetable, Lo
     List<TeacherSchuduleDto> getTeacherSchuduleByDate(
             @Param("teacher") String teacher,
             @Param("date") LocalDate date);
+            
 }

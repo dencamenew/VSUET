@@ -9,6 +9,7 @@ import ru.practice.teststation.model.FullTimetable;
 import ru.practice.teststation.service.StudentService;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,26 @@ import java.util.Map;
 public class StudentController {
 
     private final StudentService studentService;
+
+    @GetMapping("/info/{zachNumber}")
+    public ResponseEntity<Map<String, Object>> getStudentInfo(@PathVariable String zachNumber) {
+        // Получаем базовую информацию о студенте
+        List<FullTimetable> entries = studentService.getDebugTimetable(zachNumber);
+        
+        if (entries.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        FullTimetable firstEntry = entries.get(0);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("zachNumber", zachNumber);
+        response.put("groupName", firstEntry.getGroupName());
+        response.put("studentName", "Студент"); 
+        
+        return ResponseEntity.ok(response);
+    }
+
 
     @GetMapping("/timetable/{zachNumber}")
     public ResponseEntity<TimetableWithAttendanceDto> getTimetable(@PathVariable String zachNumber) {
