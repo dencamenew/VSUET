@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Button } from "../../components/ui/button"
+import { Button } from "../components/ui/button"
 import {
   Calendar,
   User,
@@ -17,11 +17,21 @@ import {
   Trash2,
   QrCode
 } from "lucide-react"
-import { translations, type Language } from "../../lib/translations"
-import { Textarea } from "../../components/ui/textarea"
+import { translations, type Language } from "../lib/translations"
+import { Textarea } from "../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
 import { useSession } from '@/hooks/useSession'
-import BottomNavigation from "../../components/ui/BottomNavigation"
+import BottomNavigation from "../components/ui/BottomNavigation"
+
+interface CachedSchedule {
+  data: Record<string, Lesson[]>;
+  timestamp: number;
+  teacherName: string;
+}
+
+const CACHE_DURATION = 30 * 60 * 1000; // 30 минут в миллисекундах
+const CACHE_KEY = 'teacher_schedule_cache';
+
 
 interface TeacherSchedulePageProps {
   teacherName: string
@@ -30,6 +40,7 @@ interface TeacherSchedulePageProps {
   language: Language
   getAuthHeaders: () => HeadersInit
 }
+
 
 interface DateItem {
   date: number
@@ -97,6 +108,40 @@ interface Lesson {
   group: string
   type: "lecture" | "practice" | "lab" | "other"
 }
+
+// Функция для получения кешированных данных
+const getCachedSchedule = (teacherName: string): Record<string, Lesson[]> | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+
+    const cachedData: CachedSchedule = JSON.parse(cached);
+    
+    // Проверяем актуальность кеша и соответствие преподавателя
+    const isCacheValid = 
+      Date.now() - cachedData.timestamp < CACHE_DURATION && 
+      cachedData.teacherName === teacherName;
+    
+    return isCacheValid ? cachedData.data : null;
+  } catch (error) {
+    console.error('Error reading cache:', error);
+    return null;
+  }
+};
+
+// Функция для сохранения данных в кеш
+const saveToCache = (data: Record<string, Lesson[]>, teacherName: string) => {
+  try {
+    const cacheData: CachedSchedule = {
+      data,
+      timestamp: Date.now(),
+      teacherName
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Error saving to cache:', error);
+  }
+};
 
 function CommentModal({ 
   isOpen, 
@@ -268,6 +313,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       }
     }
   }, [currentQrUrl, timer])
+
+  
 
   useEffect(() => {
     if (timer === 0 && timerRef.current && currentQrUrl) {
@@ -670,60 +717,64 @@ export default function TeacherSchedulePage({
     })
   }
 
-  // Функция для получения расписания с API
-  const fetchSchedule = async () => {
-    try {
-      setLoading(true)
-      
-      // Создаем даты с 1 сентября до 31 декабря
-      const startDate = new Date(2025, 8, 1) // 1 сентября 2025
-      const endDate = new Date(2025, 11, 31) // 31 декабря 2025
-      
-      const allSchedule: Record<string, Lesson[]> = {}
-      
-      // Запрашиваем расписание для каждого дня
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateString = getLocalDateString(date)
-        
-        try {
-          // Форматируем дату для URL в формате YYYY-MM-DD
-          const formattedDate = dateString;
-          
-          // Кодируем имя преподавателя для URL
-          const encodedTeacherName = encodeURIComponent(teacherName);
-          
-          const response = await fetch(
-            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
-            {
-              headers: getAuthHeaders(),
-            }
-            
-          );
-          
-          if (response.ok) {
-            const data: ApiScheduleResponse = await response.json();
-            
-            if (data.schedule && data.schedule.length > 0) {
-              // Группируем занятия по времени и предмету
-              const groupedLessons = groupLessonsByTimeAndSubject(data.schedule)
-              allSchedule[dateString] = groupedLessons
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching schedule for ${dateString}:`, error)
-        }
-      }
-      
-      setSchedule(allSchedule)
-      
-    } catch (error) {
-      console.error('Error fetching schedule:', error)
-      // В случае ошибки используем пустое расписание
-      setSchedule({})
-    } finally {
-      setLoading(false)
+// Функция для получения расписания с API
+const fetchSchedule = async () => {
+  try {
+    setLoading(true);
+    
+    // Проверяем кеш перед запросом к API
+    const cachedData = getCachedSchedule(teacherName);
+    if (cachedData) {
+      setSchedule(cachedData);
+      setLoading(false);
+      return;
     }
+
+    // Создаем даты с 1 сентября до 31 декабря
+    const startDate = new Date(2025, 8, 1);
+    const endDate = new Date(2025, 11, 31);
+    
+    const allSchedule: Record<string, Lesson[]> = {};
+    
+    // Запрашиваем расписание для каждого дня
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      const dateString = getLocalDateString(date);
+      
+      try {
+        const formattedDate = dateString;
+        const encodedTeacherName = encodeURIComponent(teacherName);
+        
+        const response = await fetch(
+          `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
+          {
+            headers: getAuthHeaders(),
+          }
+        );
+        
+        if (response.ok) {
+          const data: ApiScheduleResponse = await response.json();
+          
+          if (data.schedule && data.schedule.length > 0) {
+            const groupedLessons = groupLessonsByTimeAndSubject(data.schedule);
+            allSchedule[dateString] = groupedLessons;
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching schedule for ${dateString}:`, error);
+      }
+    }
+    
+    setSchedule(allSchedule);
+    // Сохраняем в кеш
+    saveToCache(allSchedule, teacherName);
+    
+  } catch (error) {
+    console.error('Error fetching schedule:', error);
+    setSchedule({});
+  } finally {
+    setLoading(false);
   }
+};
 
   const generateAllDates = () => {
     const daysOfWeek =
@@ -927,6 +978,23 @@ export default function TeacherSchedulePage({
       closeViewCommentModal()
     }
   }
+
+  useEffect(() => {
+  const allDates = generateAllDates();
+  setDates(allDates);
+  
+  // Загружаем расписание с API (с учетом кеша)
+  fetchSchedule();
+  
+  // Добавляем интервал для автоматического обновления кеша
+  const intervalId = setInterval(() => {
+    // Очищаем кеш и загружаем свежие данные
+    localStorage.removeItem(CACHE_KEY);
+    fetchSchedule();
+  }, CACHE_DURATION); // Обновляем каждые 30 минут
+
+  return () => clearInterval(intervalId); // Очищаем интервал при размонтировании
+}, [language, teacherName]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
