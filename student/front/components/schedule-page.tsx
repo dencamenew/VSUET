@@ -107,16 +107,19 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   }
 
   // Проверка, прошло ли уже занятие
+  // Проверка, прошло ли уже занятие
   const hasLessonPassed = (lessonDate: string, lessonTime: string): boolean => {
     try {
-      const now = new Date()
-      const [hours, minutes] = lessonTime.split(':').map(Number)
-      const lessonDateTime = new Date(lessonDate)
-      lessonDateTime.setHours(hours, minutes, 0, 0)
+      const now = new Date();
+      const [hours, minutes] = lessonTime.split(':').map(Number);
+      const lessonDateTime = new Date(lessonDate);
+      lessonDateTime.setHours(hours, minutes, 0, 0);
       
-      return now > lessonDateTime
-    } catch {
-      return false
+      console.log(`Now: ${now}, Lesson: ${lessonDateTime}, Has passed: ${now > lessonDateTime}`);
+      return now > lessonDateTime;
+    } catch (error) {
+      console.error("Error in hasLessonPassed:", error);
+      return false;
     }
   }
 
@@ -610,59 +613,115 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     setCurrentQRTime("");
   }
 
-  const handleScannedQRCode = (qrData: string) => {
+
+
+  const markAttendanceWithQR = async (qrUUID: string, token: string) => {
     try {
-      // Обрабатываем формат "QR scanned successfully: {uuid}, token: {token}"
-      if (qrData.startsWith("QR scanned successfully:")) {
-        // Извлекаем UUID и token из строки
-        const parts = qrData.split(', ');
-        const uuidPart = parts[0]; // "QR scanned successfully: {uuid}"
-        const tokenPart = parts[1]; // "token: {token}"
-        
-        const uuid = uuidPart.replace("QR scanned successfully: ", "").trim();
-        const token = tokenPart.replace("token: ", "").trim();
-        
-        console.log("Extracted UUID:", uuid);
-        console.log("Extracted token:", token);
-        
-        // Отправляем данные на сервер для отметки посещения
-        markAttendanceWithQR(uuid, token);
-      } else {
-        // Пробуем парсить как JSON (старый формат)
-        try {
-          const qrDataObj = JSON.parse(qrData);
-          if (qrDataObj.subject && qrDataObj.date && qrDataObj.time) {
-            markAttendance(qrDataObj.subject, qrDataObj.date, qrDataObj.time);
-          } else {
-            toast.error(t.invalidQRCode);
-          }
-        } catch (jsonError) {
-          toast.error(t.invalidQRCode);
-        }
+      setIsUpdating(true);
+      console.log("Marking attendance with UUID:", qrUUID, "Token:", token);
+      
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+      if (!API_BASE_URL) {
+        throw new Error("API URL is not defined");
       }
+      
+      // Отправляем POST запрос на проверку QR-кода
+      const qrCheckResponse = await fetch(`${API_BASE_URL}/qr/qrcheck`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Student-Number": studentId,
+        },
+        body: JSON.stringify({
+          qrUUID: qrUUID,
+          token: token
+        }),
+      });
+
+      if (!qrCheckResponse.ok) {
+        throw new Error(`QR check error! status: ${qrCheckResponse.status}`);
+      }
+
+      const qrCheckData = await qrCheckResponse.json();
+      console.log("QR check response:", qrCheckData);
+      
+      if (!qrCheckData.valid) {
+        toast.error(qrCheckData.message || t.invalidQRCode);
+        return;
+      }
+
+
+      toast.success(`${t.attendanceMarked}: ${qrCheckData.subject}`);
+
+      setSchedule(prev => {
+        const newSchedule = { ...prev };
+        const dateKey = getLocalDateString(new Date(qrCheckData.date));
+        
+        if (newSchedule[dateKey]) {
+          newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
+            if (lesson.subject === qrCheckData.subject && 
+                lesson.date === qrCheckData.date && 
+                lesson.time === qrCheckData.time) {
+              return {
+                ...lesson,
+                turnout: true,
+                attendance: "present",
+                teacher: qrCheckData.teacher
+              };
+            }
+            return lesson;
+          });
+        }
+        
+        return newSchedule;
+      });
+
     } catch (error) {
-      console.error("Error parsing QR code data:", error);
-      toast.error(t.invalidQRCode);
+      console.error("Error processing QR code:", error);
+      toast.error(t.attendanceError);
+    } finally {
+      setIsUpdating(false);
+      stopQRScanner();
     }
-    
-    stopQRScanner();
   };
 
   const markAttendance = async (subject: string, date: string, time: string) => {
     try {
       setIsUpdating(true);
       
-      const response = await fetch(`${URL}/attendance`, {
-        method: "POST",
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+      if (!API_BASE_URL) {
+        throw new Error("API URL is not defined");
+      }
+      
+      // Сначала получаем ID занятия через debug endpoint
+      const debugResponse = await fetch(`${API_BASE_URL}/api/debug/${studentId}`);
+      if (!debugResponse.ok) {
+        throw new Error("Failed to get timetable data");
+      }
+      
+      const debugData = await debugResponse.json();
+      
+      // Находим ID занятия по subject, date и time
+      const lesson = debugData.find((entry: any) => 
+        entry.subject === subject && 
+        entry.date === date && 
+        entry.time === time
+      );
+      
+      if (!lesson || !lesson.id) {
+        throw new Error("Lesson not found");
+      }
+      
+      // Обновляем посещаемость через PATCH /api/attendance/{id}
+      const response = await fetch(`${API_BASE_URL}/api/attendance/${lesson.id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          studentId,
-          subject,
-          date,
-          time,
-          status: "present"
+          turnout: true,
+          comment: null
         }),
       });
       
@@ -699,6 +758,73 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       setIsUpdating(false);
     }
   };
+    
+
+
+  const handleScannedQRCode = async (qrData: string) => {
+    try {
+      console.log("Raw QR data:", qrData);
+
+      let finalUUID: string;
+      let token: string;
+
+      // Пробуем парсить как JSON (основной случай)
+      try {
+        const qrDataObj = JSON.parse(qrData);
+        console.log("Parsed QR data as JSON:", qrDataObj);
+        
+        if (qrDataObj.qrUUID && qrDataObj.token) {
+          finalUUID = qrDataObj.qrUUID;
+          token = qrDataObj.token;
+          console.log("Extracted from JSON - UUID:", finalUUID, "Token:", token);
+        } else {
+          throw new Error("Missing qrUUID or token in JSON");
+        }
+      } catch (jsonError) {
+        console.log("Not a JSON format, trying URL parsing");
+        
+        // Если не JSON, пробуем парсить как URL
+        if (qrData.includes('studentback.cloudpub.ru/api/qr/scan')) {
+          try {
+            let urlString = qrData;
+            if (!qrData.startsWith('http')) {
+              urlString = 'https://' + qrData;
+            }
+            
+            const url = new window.URL(urlString);
+            finalUUID = url.searchParams.get('qr_id') || '';
+            token = url.searchParams.get('token') || '';
+            
+            if (finalUUID && token) {
+              console.log("Extracted from URL - UUID:", finalUUID, "Token:", token);
+            } else {
+              throw new Error("Missing qr_id or token in URL");
+            }
+          } catch (urlError) {
+            console.error("Error parsing URL:", urlError);
+            throw new Error("Invalid QR code format");
+          }
+        } else {
+          throw new Error("Unknown QR code format");
+        }
+      }
+
+      if (!finalUUID || !token) {
+        throw new Error("Failed to extract UUID and token from QR code");
+      }
+
+      console.log("Final UUID:", finalUUID, "Token:", token);
+      
+      // Отправляем на проверку QR-кода
+      await markAttendanceWithQR(finalUUID, token);
+      
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      toast.error(t.invalidQRCode);
+      stopQRScanner();
+    }
+  };
+    
 
   // Проверка статуса разрешения камеры при загрузке
   useEffect(() => {
@@ -978,7 +1104,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                 </div>
 
                 {/* Кнопка QR-сканера */}
-                {lesson.hasPassed && !lesson.turnout && (
+                {true && ( 
                   <Button
                     variant="ghost"
                     size="icon"
@@ -989,7 +1115,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                     <QrCode className="h-4 w-4" />
                   </Button>
                 )}
-
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 pr-8">
                     <div className="flex items-center gap-2 mb-3">

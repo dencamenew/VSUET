@@ -100,7 +100,6 @@ export const translations = {
     qrNotFound: "QR-код не найден", 
     cameraAccessDenied: "Доступ к камере запрещен",
     cameraNotAvailable: "Камера недоступна",
-
   },
   en: {
 

@@ -4,10 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class QRGenerationResponse {
-    private String qr_url;
+    private String qrUUID;
+    private String token;
+    private String qrUrl;
 }
