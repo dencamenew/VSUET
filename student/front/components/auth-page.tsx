@@ -2,9 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { translations, type Language } from "@/lib/translations"
 
@@ -24,10 +23,15 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
   const [studentId, setStudentId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [isMounted, setIsMounted] = useState(false)
 
   const t = translations[language]
 
   const URL = process.env.NEXT_PUBLIC_API_URL
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const checkStudentExists = async (id: string): Promise<boolean> => {
     try {
@@ -38,17 +42,14 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
         },
       })
 
-      // Network errors (server not reachable)
       if (response.status === 0) {
         throw new Error('Network error: Cannot connect to server')
       }
 
-      // If status 404 - student not found
       if (response.status === 404) {
         return false
       }
 
-      // Other server errors
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -62,12 +63,11 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
     } catch (error) {
       console.error("Error checking student:", error)
       
-      // More specific error handling
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         throw new Error('Cannot connect to server. Please make sure the backend is running.')
       }
       
-      throw error // Re-throw to handle in the calling function
+      throw error
     }
   }
 
@@ -95,6 +95,35 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
     }
   }
 
+  // Пока компонент не смонтирован, показываем упрощенную версию
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border-border">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-foreground">{t.welcome}</CardTitle>
+            <CardDescription className="text-muted-foreground">{t.enterStudentId}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {/* Пустой инпут для SSR */}
+                </div>
+              </div>
+              <button
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full opacity-50"
+                disabled
+              >
+                {t.login}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-card border-border">
@@ -105,7 +134,7 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Input
+              <input
                 type="text"
                 placeholder={t.studentIdPlaceholder}
                 value={studentId}
@@ -113,7 +142,7 @@ export default function AuthPage({ onLogin, language }: AuthPageProps) {
                   setStudentId(e.target.value)
                   setError("") 
                 }}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               />
               {error && (

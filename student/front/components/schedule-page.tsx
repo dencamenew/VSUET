@@ -567,7 +567,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       
       qrScannerRef.current.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 60, qrbox: { width: 250, height: 250 } },
         (decodedText: string, decodedResult: any) => {
           console.log(`QR Code detected: ${decodedText}`, decodedResult);
           handleScannedQRCode(decodedText);
