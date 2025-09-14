@@ -1,1 +1,1 @@
-# tg_app
+# Teacher full app(db+front+back)
