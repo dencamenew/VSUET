@@ -920,32 +920,39 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   }
 
   // Функция для отображения индикатора посещаемости
+  // Функция для отображения индикатора посещаемости
   const renderAttendanceIndicator = (lesson: Lesson) => {
-    if (!lesson.hasPassed) {
-      // Занятие еще не прошло - белый кружок
+    const now = new Date();
+    const lessonDate = new Date(lesson.date);
+    const [hours, minutes] = lesson.time.split(':').map(Number);
+    lessonDate.setHours(hours, minutes, 0, 0);
+    
+    // Занятие в будущем - белый кружок с часами
+    if (now < lessonDate) {
       return (
         <div className="w-6 h-6 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
           <Clock className="w-3 h-3 text-gray-400" />
         </div>
-      )
+      );
     }
-
+    
+    // Занятие прошло
     if (lesson.turnout) {
       // Посещено - зеленый кружок
       return (
         <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-          <Check className="w-4 w-4 text-white" />
+          <Check className="w-4 h-4 text-white" />
         </div>
-      )
+      );
     } else {
       // Не посещено - красный кружок
       return (
         <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-          <X className="w-4 w-4 text-white" />
+          <X className="w-4 h-4 text-white" />
         </div>
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
