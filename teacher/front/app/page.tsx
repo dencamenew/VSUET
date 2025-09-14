@@ -23,7 +23,7 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [language, setLanguage] = useState<Language>("ru")
 
-  const URL = "https://teacherbackend.cloudpub.ru/api"
+  const URL = "http://localhost:8081/api"
 
   useEffect(() => {
     // Загрузка сохраненного языка
