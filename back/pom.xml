@@ -21,6 +21,7 @@
     <modules>
         <module>teacher-core</module>
         <module>teacher-api</module>
+        <module>demo</module>
     </modules>
     
     <properties>
