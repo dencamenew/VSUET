@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import TeacherAuthPage from "../pages/TeacherAuthPage"
-import TeacherSchedulePage from "../pages/TeacherSchedulePage"
+import TeacherSchedulePage from "../pages/Schedule/TeacherSchedulePage"
 import TeacherRatingPage from "../pages/TeacherRatingPage"
 import TeacherAttendancePage from "../pages/TeacherAttendancePage"
 import TeacherProfilePage from "../pages/TeacherProfilePage"

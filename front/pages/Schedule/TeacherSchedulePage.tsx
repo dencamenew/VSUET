@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Button } from "../components/ui/button"
+import { Button } from "../../components/ui/button"
 import {
   Calendar,
   User,
@@ -17,10 +17,11 @@ import {
   Trash2,
   QrCode
 } from "lucide-react"
-import { translations, type Language } from "../lib/translations"
-import { Textarea } from "../components/ui/textarea"
+import { translations, type Language } from "../../lib/translations"
+import { Textarea } from "../../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
 import { useSession } from '@/hooks/useSession'
+import BottomNavigation from "../../components/ui/BottomNavigation"
 
 interface TeacherSchedulePageProps {
   teacherName: string
@@ -1062,24 +1063,12 @@ export default function TeacherSchedulePage({
       </div>
 
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around">
-        <Button variant="ghost" onClick={() => onNavigate("schedule")} className="flex-1 mx-1">
-          <Calendar className="w-5 h-5 mr-2" />
-          {t.schedule}
-        </Button>
-        <Button variant="ghost" onClick={() => onNavigate("attendance")} className="flex-1 mx-1">
-          <Users className="w-5 h-5 mr-2" />
-          {t.attendance}
-        </Button>
-        <Button variant="ghost" onClick={() => onNavigate("rating")} className="flex-1 mx-1">
-          <GraduationCap className="w-5 h-5 mr-2" />
-          {t.rating}
-        </Button>
-        <Button variant="ghost" onClick={onShowProfile} className="flex-1 mx-1">
-          <User className="w-5 h-5 mr-2" />
-          {t.profile}
-        </Button>
-      </div>
+      <BottomNavigation
+        onNavigate={onNavigate}
+        onShowProfile={onShowProfile}
+        language={language}
+        currentPage="schedule"
+      />
 
       {/* Modals */}
       <CommentModal
