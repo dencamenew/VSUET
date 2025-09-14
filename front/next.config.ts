@@ -8,10 +8,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://teacherbackend.cloudpub.ru/api',
   },
   publicRuntimeConfig: {
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api',
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://teacherbackend.cloudpub.ru/api',
   }
 }
 

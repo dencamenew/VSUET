@@ -35,7 +35,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
 
   const t = translations[language] || translations.en
 
-  const URL = "http://localhost:8081/api"
+  const URL = "http://teacherbackend.cloudpub.ru/api"
 
 
 
@@ -47,7 +47,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
     setError("")
 
     try {
-      const response = await fetch("http://localhost:8081/api/auth/login", {
+      const response = await fetch("http://teacherbackend.cloudpub.ru/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
