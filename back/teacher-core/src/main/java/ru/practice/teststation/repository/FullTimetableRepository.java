@@ -5,12 +5,16 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
 import ru.practice.teststation.model.FullTimetable;
 import ru.practice.teststation.dto.AttendanceDto;
 import ru.practice.teststation.dto.TeacherSchuduleDto;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FullTimetableRepository extends JpaRepository<FullTimetable, Long> {
@@ -39,5 +43,40 @@ public interface FullTimetableRepository extends JpaRepository<FullTimetable, Lo
     List<TeacherSchuduleDto> getTeacherSchuduleByDate(
             @Param("teacher") String teacher,
             @Param("date") LocalDate date);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE FullTimetable f SET f.comment = :comment " +
+           "WHERE f.subject = :subject AND f.groupName = :groupName " +
+           "AND f.time = :time AND f.date = :date AND f.teacher = :teacher")
+    int updateComment(
+            @Param("subject") String subject,
+            @Param("groupName") String groupName,
+            @Param("time") LocalTime time,
+            @Param("date") LocalDate date,
+            @Param("teacher") String teacher,
+            @Param("comment") String comment);
+
+    @Query(value = "SELECT comment FROM full_timetable WHERE teacher = :teacher AND subject = :subject AND time = :time AND date = :date AND group_name = :groupName LIMIT 1", 
+           nativeQuery = true)
+    Optional<String> findComment(@Param("teacher") String teacher,
+                                @Param("subject") String subject,
+                                @Param("time") LocalTime time,
+                                @Param("date") LocalDate date,
+                                @Param("groupName") String groupName);
+
+    @Transactional                            
+    @Modifying
+    @Query("DELETE FROM FullTimetable f " +
+           "WHERE f.subject = :subject AND f.groupName = :groupName " +
+           "AND f.time = :time AND f.date = :date AND f.teacher = :teacher " +
+           "AND f.comment IS NOT NULL")
+    int deleteComment(
+            @Param("subject") String subject,
+            @Param("groupName") String groupName,
+            @Param("time") LocalTime time,
+            @Param("date") LocalDate date,
+            @Param("teacher") String teacher);
+
             
 }
