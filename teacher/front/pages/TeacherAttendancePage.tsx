@@ -58,11 +58,7 @@ export default function TeacherAttendancePage({
 
   const t = translations[language] || translations.en
 
-<<<<<<< HEAD
-  const URL = "http://localhost:8081/api"
-=======
-  const URL = "https://teacherbackend1.cloudpub.ru/api"
->>>>>>> teacher
+  const URL = "https://teacherbackend.cloudpub.ru/api"
 
   // Получаем список групп
   const groups = Object.keys(groupsSubjects || {}).map(groupName => ({ 

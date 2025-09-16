@@ -14,7 +14,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 String[] allowedOrigins = {
-                    "https://vsuetstudent1.cloudpub.ru",
+                    "https://vsuetstudent.cloudpub.ru",
                     "http://localhost:3000",
                     "http://127.0.0.1:3000"
                 };

@@ -51,7 +51,7 @@ export default function RatingPage({ studentId, onNavigate, onShowProfile, langu
   const [stompClient, setStompClient] = useState<Client | null>(null)
   const t = translations[language]
   const URL = process.env.NEXT_PUBLIC_API_URL
-  const WS_URL = process.env.WS_URL
+  const WS_URL = "wss://studentback.cloudpub/ws"
 
   // Process and update ratings data
   const updateRatings = useCallback((update: RatingUpdate) => {

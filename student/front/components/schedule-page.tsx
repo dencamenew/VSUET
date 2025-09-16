@@ -9,6 +9,7 @@ import SockJS from "sockjs-client"
 import { toast } from "sonner"
 import { Html5Qrcode } from "html5-qrcode"
 
+
 interface SchedulePageProps {
   studentId: string
   onNavigate: (page: "schedule" | "rating") => void
@@ -100,8 +101,30 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const t = translations[language] || translations.en
 
-  const URL = process.env.NEXT_PUBLIC_API_URL || 'https://studentback1.cloudpub.ru/api'
-  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://studentback1.cloudpub.ru/ws'
+  const URL = process.env.NEXT_PUBLIC_API_URL || 'https://studentback.cloudpub.ru/api'
+  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://studentback.cloudpub.ru/ws'
+
+
+  const isHardRefresh = useRef(false);
+  const [isPageRefresh, setIsPageRefresh] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(false);
+
+  useEffect(() => {
+    // Проверяем, было ли обновление страницы
+    const wasRefreshed = sessionStorage.getItem('page_was_refreshed') === 'true';
+    const forceRefreshFlag = sessionStorage.getItem('force_refresh') === 'true';
+    
+    if (wasRefreshed) {
+      setIsPageRefresh(true);
+      sessionStorage.removeItem('page_was_refreshed');
+    }
+    
+    if (forceRefreshFlag) {
+      setForceRefresh(true);
+      sessionStorage.removeItem('force_refresh');
+    }
+  }, []);
+
 
   // Функция для получения локальной даты в формате YYYY-MM-DD
   const getLocalDateString = (date: Date): string => {
@@ -422,64 +445,114 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   }
 
   // Загрузка всего расписания
+  
   const fetchFullTimetable = async () => {
-    setLoading(true)
-    setError(null)
-    
+    setLoading(true);
+    setError(null);
+
     try {
       // Проверяем кеш перед загрузкой
       const cachedSchedule = getScheduleFromCache();
-      if (cachedSchedule) {
+      
+      // Используем кеш если: есть кеш И нет принудительного обновления И не было обновления страницы
+      if (cachedSchedule && !forceRefresh && !isPageRefresh) {
         console.log("Используем кешированное расписание");
         setSchedule(cachedSchedule);
         
-        const todayKey = getLocalDateString(new Date())
-        const newSelectedDateKey = cachedSchedule[todayKey] ? todayKey : Object.keys(cachedSchedule)[0] || ""
-        setSelectedDateKey(newSelectedDateKey)
+        const todayKey = getLocalDateString(new Date());
+        const newSelectedDateKey = cachedSchedule[todayKey] ? todayKey : Object.keys(cachedSchedule)[0] || "";
+        setSelectedDateKey(newSelectedDateKey);
         
         setLoading(false);
         return;
       }
 
-      console.log("Загрузка расписания для studentId:", studentId)
+      console.log("Загрузка свежего расписания", 
+        forceRefresh ? "(принудительное обновление)" : 
+        isPageRefresh ? "(обновление страницы)" : 
+        "(первая загрузка)");
       
-      const startDate = new Date(2025, 8, 1)
-      const endDate = new Date(2025, 11, 31)
+      const startDate = new Date(2025, 8, 1);
+      const endDate = new Date(2025, 11, 31);
       
-      const allSchedule: Record<string, Lesson[]> = {}
-      const currentDate = new Date(startDate)
+      const allSchedule: Record<string, Lesson[]> = {};
+      const currentDate = new Date(startDate);
       
+      // Создаем массив промисов для параллельной загрузки
+      const datePromises: Promise<{dateKey: string, lessons: Lesson[]}>[] = [];
+  
       while (currentDate <= endDate) {
-        const dateKey = getLocalDateString(currentDate)
+        const dateKey = getLocalDateString(currentDate);
         
+        // Загружаем только рабочие дни (не воскресенье)
         if (currentDate.getDay() !== 0) {
-          const lessons = await fetchTimetableForDate(dateKey)
-          
-          if (lessons.length > 0) {
-            allSchedule[dateKey] = lessons
-          }
+          datePromises.push(
+            fetchTimetableForDate(dateKey)
+              .then(lessons => ({ dateKey, lessons }))
+              .catch(error => {
+                console.error(`Ошибка загрузки ${dateKey}:`, error);
+                return { dateKey, lessons: [] };
+              })
+          );
         }
         
-        currentDate.setDate(currentDate.getDate() + 1)
+        currentDate.setDate(currentDate.getDate() + 1);
       }
+
+      // Ожидаем завершения всех запросов
+      const results = await Promise.all(datePromises);
       
-      setSchedule(allSchedule)
-      // Сохраняем в кеш
+      // Собираем результаты
+      results.forEach(({ dateKey, lessons }) => {
+        if (lessons.length > 0) {
+          allSchedule[dateKey] = lessons;
+        }
+      });
+      
+      setSchedule(allSchedule);
+      
+    // Сохраняем в кеш
       saveScheduleToCache(allSchedule);
       
-      const todayKey = getLocalDateString(new Date())
-      const newSelectedDateKey = allSchedule[todayKey] ? todayKey : Object.keys(allSchedule)[0] || ""
-      setSelectedDateKey(newSelectedDateKey)
+      // Сбрасываем флаги после успешной загрузки
+      if (isPageRefresh) {
+        setIsPageRefresh(false);
+      }
+      if (forceRefresh) {
+        setForceRefresh(false);
+      }
+      
+      // Устанавливаем выбранную дату
+      const todayKey = getLocalDateString(new Date());
+      const newSelectedDateKey = allSchedule[todayKey] ? todayKey : Object.keys(allSchedule)[0] || "";
+      setSelectedDateKey(newSelectedDateKey);
       
     } catch (err) {
-      console.error("❌ Ошибка загрузки расписания:", err)
-      setError(t.scheduleLoadError)
+      console.error("❌ Ошибка загрузки расписания:", err);
+      
+      // Пробуем использовать кеш даже при ошибке
+      const cachedSchedule = getScheduleFromCache();
+      if (cachedSchedule) {
+        console.log("Используем кеш из-за ошибки загрузки");
+        setSchedule(cachedSchedule);
+        
+        const todayKey = getLocalDateString(new Date());
+        const newSelectedDateKey = cachedSchedule[todayKey] ? todayKey : Object.keys(cachedSchedule)[0] || "";
+        setSelectedDateKey(newSelectedDateKey);
+      } else {
+        setError(t.scheduleLoadError);
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
+  const refreshData = () => {
+    sessionStorage.setItem('force_refresh', 'true');
+    window.location.reload();
+  };
   // Настройка WebSocket
+
   const setupWebSocket = useCallback(() => {
     const socket = new SockJS(`${SOCKET_URL}`)
     const client = new Client({
@@ -508,6 +581,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                 case "SCHEDULE_CHANGED":
                   // При изменении расписания очищаем кеш и загружаем заново
                   clearScheduleCache();
+                  sessionStorage.setItem('force_refresh', 'true');
+                  setForceRefresh(true);
                   fetchFullTimetable()
                   toast.info(t.scheduleUpdated)
                   break
@@ -541,6 +616,25 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       }
     }
   }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated, clearScheduleCache])
+
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        // Помечаем, что страница будет обновлена
+        sessionStorage.setItem('page_was_refreshed', 'true');
+      } catch (error) {
+        console.log("Ошибка при сохранении флага обновления:", error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
 
   // Генерация всех дат
   const generateAllDates = () => {
@@ -688,6 +782,84 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     setCurrentQRTime("");
   }
 
+  const markAttendance = async (subject: string, date: string, time: string) => {
+    try {
+      setIsUpdating(true);
+      
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+      if (!API_BASE_URL) {
+        throw new Error("API URL is not defined");
+      }
+      
+      // Сначала получаем ID занятия через debug endpoint
+      const debugResponse = await fetch(`${API_BASE_URL}/api/debug/${studentId}`);
+      if (!debugResponse.ok) {
+        throw new Error("Failed to get timetable data");
+      }
+      
+      const debugData = await debugResponse.json();
+      
+      // Находим ID занятия по subject, date и time
+      const lesson = debugData.find((entry: any) => 
+        entry.subject === subject && 
+        entry.date === date && 
+        entry.time === time
+      );
+      
+      if (!lesson || !lesson.id) {
+        throw new Error("Lesson not found");
+      }
+      
+      // Обновляем посещаемость через PATCH /api/attendance/{id}
+      const response = await fetch(`${API_BASE_URL}/api/attendance/${lesson.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          turnout: true,
+          comment: null
+        }),
+      });
+    
+      if (response.ok) {
+        toast.success(t.attendanceMarked);
+        
+        // Обновляем локальное состояние и кеш
+        setSchedule(prev => {
+          const newSchedule = { ...prev };
+          const dateKey = getLocalDateString(new Date(date));
+          
+          if (newSchedule[dateKey]) {
+            newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
+              if (lesson.subject === subject && lesson.date === date && lesson.time === time) {
+                return {
+                  ...lesson,
+                  turnout: true,
+                  attendance: "present"
+                };
+              }
+              return lesson;
+            });
+          }
+          
+          // Сохраняем обновленный кеш
+          saveScheduleToCache(newSchedule);
+          
+          return newSchedule;
+        });
+      } else {
+        throw new Error("Failed to mark attendance");
+      }
+    } catch (error) {
+      console.error("Error marking attendance:", error);
+      toast.error(t.attendanceError);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+
   const markAttendanceWithQR = async (qrUUID: string, token: string) => {
     try {
       setIsUpdating(true);
@@ -831,82 +1003,26 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   };
 
 
-  const markAttendance = async (subject: string, date: string, time: string) => {
+  const refreshScheduleData = useCallback(async () => {
     try {
-      setIsUpdating(true);
+      // Очищаем кеш
+      clearScheduleCache();
+      // Устанавливаем флаг принудительного обновления
+      sessionStorage.setItem('force_refresh', 'true');
+      setForceRefresh(true);
       
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-      if (!API_BASE_URL) {
-        throw new Error("API URL is not defined");
-      }
+      // Показываем уведомление о загрузке
+      toast.info(t.refreshingData);
       
-      // Сначала получаем ID занятия через debug endpoint
-      const debugResponse = await fetch(`${API_BASE_URL}/api/debug/${studentId}`);
-      if (!debugResponse.ok) {
-        throw new Error("Failed to get timetable data");
-      }
+      // Загружаем данные заново
+      await fetchFullTimetable();
       
-      const debugData = await debugResponse.json();
-      
-      // Находим ID занятия по subject, date и time
-      const lesson = debugData.find((entry: any) => 
-        entry.subject === subject && 
-        entry.date === date && 
-        entry.time === time
-      );
-      
-      if (!lesson || !lesson.id) {
-        throw new Error("Lesson not found");
-      }
-      
-      // Обновляем посещаемость через PATCH /api/attendance/{id}
-      const response = await fetch(`${API_BASE_URL}/api/attendance/${lesson.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          turnout: true,
-          comment: null
-        }),
-      });
-      
-      if (response.ok) {
-        toast.success(t.attendanceMarked);
-        
-        // Обновляем локальное состояние
-        setSchedule(prev => {
-          const newSchedule = { ...prev };
-          const dateKey = getLocalDateString(new Date(date));
-          
-          if (newSchedule[dateKey]) {
-            newSchedule[dateKey] = newSchedule[dateKey].map(lesson => {
-              if (lesson.subject === subject && lesson.date === date && lesson.time === time) {
-                return {
-                  ...lesson,
-                  turnout: true,
-                  attendance: "present"
-                };
-              }
-              return lesson;
-            });
-          }
-          
-          // Обновляем кеш
-          saveScheduleToCache(newSchedule);
-          
-          return newSchedule;
-        });
-      } else {
-        throw new Error("Failed to mark attendance");
-      }
+      toast.success(t.dataRefreshed);
     } catch (error) {
-      console.error("Error marking attendance:", error);
-      toast.error(t.attendanceError);
-    } finally {
-      setIsUpdating(false);
+      console.error("Ошибка при обновлении данных:", error);
+      toast.error(t.refreshError);
     }
-  };
+  }, [clearScheduleCache, t]);
 
   // Проверка статуса разрешения камеры при загрузке
   useEffect(() => {
