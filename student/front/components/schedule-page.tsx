@@ -74,6 +74,11 @@ interface ScheduleUpdate {
 
 type WebSocketMessage = GradeUpdate | AttendanceUpdate | ScheduleUpdate
 
+// Ключи для localStorage
+const SCHEDULE_CACHE_KEY = 'schedule_cache';
+const SCHEDULE_TIMESTAMP_KEY = 'schedule_timestamp';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 минут в миллисекундах
+
 export default function SchedulePage({ studentId, onNavigate, onShowProfile, language }: SchedulePageProps) {
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
@@ -95,8 +100,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const t = translations[language] || translations.en
 
-  const URL = process.env.NEXT_PUBLIC_API_URL
-  const SOCKET_URL = process.env.SOCKET_URL
+  const URL = process.env.NEXT_PUBLIC_API_URL || 'https://studentback1.cloudpub.ru/api'
+  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://studentback1.cloudpub.ru/ws'
 
   // Функция для получения локальной даты в формате YYYY-MM-DD
   const getLocalDateString = (date: Date): string => {
@@ -106,7 +111,53 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     return `${year}-${month}-${day}`
   }
 
-  // Проверка, прошло ли уже занятие
+  // Сохранение расписания в кеш
+  const saveScheduleToCache = useCallback((scheduleData: Record<string, Lesson[]>) => {
+    try {
+      localStorage.setItem(`${SCHEDULE_CACHE_KEY}_${studentId}`, JSON.stringify(scheduleData));
+      localStorage.setItem(`${SCHEDULE_TIMESTAMP_KEY}_${studentId}`, Date.now().toString());
+    } catch (error) {
+      console.error("Ошибка сохранения в кеш:", error);
+    }
+  }, [studentId]);
+
+  // Получение расписания из кеша
+  const getScheduleFromCache = useCallback((): Record<string, Lesson[]> | null => {
+    try {
+      const cachedData = localStorage.getItem(`${SCHEDULE_CACHE_KEY}_${studentId}`);
+      const timestamp = localStorage.getItem(`${SCHEDULE_TIMESTAMP_KEY}_${studentId}`);
+      
+      if (!cachedData || !timestamp) {
+        return null;
+      }
+      
+      const currentTime = Date.now();
+      const cacheTime = parseInt(timestamp, 10);
+      
+      // Проверяем, не устарел ли кеш
+      if (currentTime - cacheTime > CACHE_DURATION) {
+        localStorage.removeItem(`${SCHEDULE_CACHE_KEY}_${studentId}`);
+        localStorage.removeItem(`${SCHEDULE_TIMESTAMP_KEY}_${studentId}`);
+        return null;
+      }
+      
+      return JSON.parse(cachedData);
+    } catch (error) {
+      console.error("Ошибка чтения из кеша:", error);
+      return null;
+    }
+  }, [studentId]);
+
+  // Очистка кеша расписания
+  const clearScheduleCache = useCallback(() => {
+    try {
+      localStorage.removeItem(`${SCHEDULE_CACHE_KEY}_${studentId}`);
+      localStorage.removeItem(`${SCHEDULE_TIMESTAMP_KEY}_${studentId}`);
+    } catch (error) {
+      console.error("Ошибка очистки кеша:", error);
+    }
+  }, [studentId]);
+
   // Проверка, прошло ли уже занятие
   const hasLessonPassed = (lessonDate: string, lessonTime: string): boolean => {
     try {
@@ -187,6 +238,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
             })
           }
 
+          // Обновляем кеш
+          saveScheduleToCache(newSchedule);
+
           return newSchedule
         })
 
@@ -195,7 +249,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         setIsUpdating(false)
       }
     },
-    [t.gradeUpdated],
+    [t.gradeUpdated, saveScheduleToCache],
   )
 
   // Функция обработки обновления посещаемости
@@ -220,6 +274,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
             })
           }
 
+          // Обновляем кеш
+          saveScheduleToCache(newSchedule);
+
           return newSchedule
         })
 
@@ -228,7 +285,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         setIsUpdating(false)
       }
     },
-    [t],
+    [t, saveScheduleToCache],
   )
 
   // Определение типа занятия на основе названия
@@ -370,6 +427,20 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     setError(null)
     
     try {
+      // Проверяем кеш перед загрузкой
+      const cachedSchedule = getScheduleFromCache();
+      if (cachedSchedule) {
+        console.log("Используем кешированное расписание");
+        setSchedule(cachedSchedule);
+        
+        const todayKey = getLocalDateString(new Date())
+        const newSelectedDateKey = cachedSchedule[todayKey] ? todayKey : Object.keys(cachedSchedule)[0] || ""
+        setSelectedDateKey(newSelectedDateKey)
+        
+        setLoading(false);
+        return;
+      }
+
       console.log("Загрузка расписания для studentId:", studentId)
       
       const startDate = new Date(2025, 8, 1)
@@ -393,6 +464,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       }
       
       setSchedule(allSchedule)
+      // Сохраняем в кеш
+      saveScheduleToCache(allSchedule);
       
       const todayKey = getLocalDateString(new Date())
       const newSelectedDateKey = allSchedule[todayKey] ? todayKey : Object.keys(allSchedule)[0] || ""
@@ -433,6 +506,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                   handleAttendanceUpdate(update)
                   break
                 case "SCHEDULE_CHANGED":
+                  // При изменении расписания очищаем кеш и загружаем заново
+                  clearScheduleCache();
                   fetchFullTimetable()
                   toast.info(t.scheduleUpdated)
                   break
@@ -465,7 +540,7 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         client.deactivate()
       }
     }
-  }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated])
+  }, [studentId, handleGradeChange, handleAttendanceUpdate, t.scheduleUpdated, clearScheduleCache])
 
   // Генерация всех дат
   const generateAllDates = () => {
@@ -567,14 +642,16 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       
       qrScannerRef.current.start(
         { facingMode: "environment" },
-        { fps: 60, qrbox: { width: 250, height: 250 } },
-        (decodedText: string, decodedResult: any) => {
-          console.log(`QR Code detected: ${decodedText}`, decodedResult);
+        { fps: 10, qrbox: { width: 250, height: 250 } }, // Уменьшил FPS для производительности
+        (decodedText: string) => {
+          console.log(`QR Code detected: ${decodedText}`);
           handleScannedQRCode(decodedText);
-          stopQRScanner();
         },
         (errorMessage: string) => {
-          // Игнорируем ошибки сканирования
+          // Игнорируем ошибки сканирования, кроме фатальных
+          if (!errorMessage.includes("No MultiFormat Readers")) {
+            console.debug("QR scanning:", errorMessage);
+          }
         }
       ).catch((error: Error) => {
         console.error("Error starting QR scanner:", error);
@@ -589,11 +666,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
   }
 
   const stopQRScanner = () => {
-    if (qrScannerRef.current) {
+    if (qrScannerRef.current && qrScannerRef.current.isScanning) {
       qrScannerRef.current.stop().then(() => {
-        if (qrScannerRef.current) {
-          qrScannerRef.current.clear();
-        }
+        qrScannerRef.current?.clear();
         qrScannerRef.current = null;
       }).catch((error: Error) => {
         console.error("Failed to stop QR scanner", error);
@@ -612,8 +687,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
     setCurrentQRDate("");
     setCurrentQRTime("");
   }
-
-
 
   const markAttendanceWithQR = async (qrUUID: string, token: string) => {
     try {
@@ -639,7 +712,8 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       });
 
       if (!qrCheckResponse.ok) {
-        throw new Error(`QR check error! status: ${qrCheckResponse.status}`);
+        const errorText = await qrCheckResponse.text();
+        throw new Error(`QR check error! status: ${qrCheckResponse.status}, response: ${errorText}`);
       }
 
       const qrCheckData = await qrCheckResponse.json();
@@ -649,7 +723,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
         toast.error(qrCheckData.message || t.invalidQRCode);
         return;
       }
-
 
       toast.success(`${t.attendanceMarked}: ${qrCheckData.subject}`);
 
@@ -666,12 +739,15 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
                 ...lesson,
                 turnout: true,
                 attendance: "present",
-                teacher: qrCheckData.teacher
+                teacher: qrCheckData.teacher || lesson.teacher
               };
             }
             return lesson;
           });
         }
+        
+        // Обновляем кеш
+        saveScheduleToCache(newSchedule);
         
         return newSchedule;
       });
@@ -684,6 +760,76 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       stopQRScanner();
     }
   };
+
+  const handleScannedQRCode = async (qrData: string) => {
+    try {
+      console.log("Raw QR data:", qrData);
+
+      let finalUUID: string;
+      let token: string;
+
+      // Пробуем парсить как JSON (основной случай)
+      try {
+        const qrDataObj = JSON.parse(qrData);
+        console.log("Parsed QR data as JSON:", qrDataObj);
+        
+        if (qrDataObj.qrUUID && qrDataObj.token) {
+          finalUUID = qrDataObj.qrUUID;
+          token = qrDataObj.token;
+          console.log("Extracted from JSON - UUID:", finalUUID, "Token:", token);
+        } else {
+          throw new Error("Missing qrUUID or token in JSON");
+        }
+      } catch (jsonError) {
+        console.log("Not a JSON format, trying URL parsing");
+        
+        // Если не JSON, пробуем парсить как URL
+        try {
+          let urlString = qrData;
+          if (!qrData.startsWith('http')) {
+            urlString = 'https://' + qrData;
+          }
+          
+          const url = new URL(urlString);
+          finalUUID = url.searchParams.get('qr_id') || url.searchParams.get('qrUUID') || '';
+          token = url.searchParams.get('token') || '';
+          
+          if (finalUUID && token) {
+            console.log("Extracted from URL - UUID:", finalUUID, "Token:", token);
+          } else {
+            // Пробуем извлечь из пути
+            const pathParts = url.pathname.split('/');
+            const qrIndex = pathParts.findIndex(part => part === 'qr');
+            if (qrIndex !== -1 && pathParts.length > qrIndex + 2) {
+              finalUUID = pathParts[qrIndex + 1];
+              token = pathParts[qrIndex + 2];
+              console.log("Extracted from path - UUID:", finalUUID, "Token:", token);
+            } else {
+              throw new Error("Missing qr_id or token in URL");
+            }
+          }
+        } catch (urlError) {
+          console.error("Error parsing URL:", urlError);
+          throw new Error("Invalid QR code format");
+        }
+      }
+
+      if (!finalUUID || !token) {
+        throw new Error("Failed to extract UUID and token from QR code");
+      }
+
+      console.log("Final UUID:", finalUUID, "Token:", token);
+      
+      // Отправляем на проверку QR-кода
+      await markAttendanceWithQR(finalUUID, token);
+      
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      toast.error(t.invalidQRCode);
+      stopQRScanner();
+    }
+  };
+
 
   const markAttendance = async (subject: string, date: string, time: string) => {
     try {
@@ -746,6 +892,9 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
             });
           }
           
+          // Обновляем кеш
+          saveScheduleToCache(newSchedule);
+          
           return newSchedule;
         });
       } else {
@@ -758,73 +907,6 @@ export default function SchedulePage({ studentId, onNavigate, onShowProfile, lan
       setIsUpdating(false);
     }
   };
-    
-
-
-  const handleScannedQRCode = async (qrData: string) => {
-    try {
-      console.log("Raw QR data:", qrData);
-
-      let finalUUID: string;
-      let token: string;
-
-      // Пробуем парсить как JSON (основной случай)
-      try {
-        const qrDataObj = JSON.parse(qrData);
-        console.log("Parsed QR data as JSON:", qrDataObj);
-        
-        if (qrDataObj.qrUUID && qrDataObj.token) {
-          finalUUID = qrDataObj.qrUUID;
-          token = qrDataObj.token;
-          console.log("Extracted from JSON - UUID:", finalUUID, "Token:", token);
-        } else {
-          throw new Error("Missing qrUUID or token in JSON");
-        }
-      } catch (jsonError) {
-        console.log("Not a JSON format, trying URL parsing");
-        
-        // Если не JSON, пробуем парсить как URL
-        if (qrData.includes('studentback.cloudpub.ru/api/qr/scan')) {
-          try {
-            let urlString = qrData;
-            if (!qrData.startsWith('http')) {
-              urlString = 'https://' + qrData;
-            }
-            
-            const url = new window.URL(urlString);
-            finalUUID = url.searchParams.get('qr_id') || '';
-            token = url.searchParams.get('token') || '';
-            
-            if (finalUUID && token) {
-              console.log("Extracted from URL - UUID:", finalUUID, "Token:", token);
-            } else {
-              throw new Error("Missing qr_id or token in URL");
-            }
-          } catch (urlError) {
-            console.error("Error parsing URL:", urlError);
-            throw new Error("Invalid QR code format");
-          }
-        } else {
-          throw new Error("Unknown QR code format");
-        }
-      }
-
-      if (!finalUUID || !token) {
-        throw new Error("Failed to extract UUID and token from QR code");
-      }
-
-      console.log("Final UUID:", finalUUID, "Token:", token);
-      
-      // Отправляем на проверку QR-кода
-      await markAttendanceWithQR(finalUUID, token);
-      
-    } catch (error) {
-      console.error("Error processing QR code:", error);
-      toast.error(t.invalidQRCode);
-      stopQRScanner();
-    }
-  };
-    
 
   // Проверка статуса разрешения камеры при загрузке
   useEffect(() => {
