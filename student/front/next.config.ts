@@ -8,14 +8,12 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://studentback.cloudpub.ru/api',
-    NEXT_PUBLIC_WS_URL: process.env.WS_URL || 'ws://studentback.cloudpub.ru/ws',
-    NEXT_PUBLIC_SOCKET_URL: process.env.SOCKET_URL || 'https://studentback.cloudpub.ru/ws',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://studentback1.cloudpub.ru/api',
+    NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL || 'https://studentback1.cloudpub.ru/ws',
   },
   publicRuntimeConfig: {
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://studentback.cloudpub.ru/api',
-    wsUrl: process.env.WS_URL || 'ws://studentback.ru/ws',
-    socketUrl: process.env.SOCKET_URL || 'https://studentback.cloudpub.ru/ws',
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://studentback1.cloudpub.ru/api',
+    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || 'https://studentback1.cloudpub.ru/ws',
   }
 }
 
