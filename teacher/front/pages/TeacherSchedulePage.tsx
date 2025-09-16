@@ -21,6 +21,17 @@ import { translations, type Language } from "../lib/translations"
 import { Textarea } from "../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
 import { useSession } from '@/hooks/useSession'
+import BottomNavigation from "../components/ui/BottomNavigation"
+
+interface CachedSchedule {
+  data: Record<string, Lesson[]>;
+  timestamp: number;
+  teacherName: string;
+}
+
+const CACHE_DURATION = 30 * 60 * 1000; // 30 минут в миллисекундах
+const CACHE_KEY = 'teacher_schedule_cache';
+
 
 interface TeacherSchedulePageProps {
   teacherName: string
@@ -29,6 +40,7 @@ interface TeacherSchedulePageProps {
   language: Language
   getAuthHeaders: () => HeadersInit
 }
+
 
 interface DateItem {
   date: number
@@ -96,6 +108,60 @@ interface Lesson {
   group: string
   type: "lecture" | "practice" | "lab" | "other"
 }
+
+interface CommentResponse {
+  success: boolean;
+  comment?: string;
+  exists?: boolean;
+  message?: string;
+  error?: string;
+  updatedRows?: number;
+  deletedRows?: number;
+}
+
+interface CommentRequest {
+  subject: string;
+  groupName: string;
+  time: string;
+  date: string;
+  teacher: string;
+  comment: string;
+}
+
+
+// Функция для получения кешированных данных
+const getCachedSchedule = (teacherName: string): Record<string, Lesson[]> | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+
+    const cachedData: CachedSchedule = JSON.parse(cached);
+    
+    // Проверяем актуальность кеша и соответствие преподавателя
+    const isCacheValid = 
+      Date.now() - cachedData.timestamp < CACHE_DURATION && 
+      cachedData.teacherName === teacherName;
+    
+    return isCacheValid ? cachedData.data : null;
+  } catch (error) {
+    console.error('Error reading cache:', error);
+    return null;
+  }
+};
+
+// Функция для сохранения данных в кеш
+const saveToCache = (data: Record<string, Lesson[]>, teacherName: string) => {
+  try {
+    const cacheData: CachedSchedule = {
+      data,
+      timestamp: Date.now(),
+      teacherName
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Error saving to cache:', error);
+  }
+};
 
 function CommentModal({ 
   isOpen, 
@@ -232,7 +298,11 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
 
+<<<<<<< HEAD
   const URL = "http://localhost:8081/api"
+=======
+  const URL = "https://teacherbackend1.cloudpub.ru/api"
+>>>>>>> teacher
 
   useEffect(() => {
     if (isOpen && lesson) {
@@ -267,6 +337,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       }
     }
   }, [currentQrUrl, timer])
+
+  
 
   useEffect(() => {
     if (timer === 0 && timerRef.current && currentQrUrl) {
@@ -599,8 +671,13 @@ export default function TeacherSchedulePage({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const t = translations[language] || translations.en
+<<<<<<< HEAD
 
   const URL = "http://localhost:8081/api"
+=======
+  const URL = "https://teacherbackend1.cloudpub.ru/api"
+  const COMMENT_URL = "https://teacherbackend1.cloudpub.ru/api/comments"
+>>>>>>> teacher
 
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear()
@@ -608,6 +685,10 @@ export default function TeacherSchedulePage({
     const day = String(date.getDate()).padStart(2, "0")
     return `${year}-${month}-${day}`
   }
+
+  const currentScheduleData = useMemo(() => {
+    return schedule[selectedDateKey] || []
+  }, [schedule, selectedDateKey])
 
   // Функция для преобразования времени в формат "HH:MM"
   const formatTime = (timeString: string): string => {
@@ -637,13 +718,43 @@ export default function TeacherSchedulePage({
     }
   }
 
-  // Функция для группировки занятий по времени и предмету
+const COMMENT_CACHE_KEY = 'teacher_comments_cache';
+const COMMENT_CACHE_DURATION = 30 * 60 * 1000; // 30 минут
+
+// Функция для получения кешированных комментариев
+const getCachedComments = (): Record<string, string> | null => {
+  try {
+    const cached = localStorage.getItem(COMMENT_CACHE_KEY);
+    if (!cached) return null;
+
+    const cachedData = JSON.parse(cached);
+    const isCacheValid = Date.now() - cachedData.timestamp < COMMENT_CACHE_DURATION;
+    
+    return isCacheValid ? cachedData.data : null;
+  } catch (error) {
+    console.error('Error reading comments cache:', error);
+    return null;
+  }
+};
+
+// Функция для сохранения комментариев в кеш
+const saveCommentsToCache = (data: Record<string, string>) => {
+  try {
+    const cacheData = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(COMMENT_CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Error saving comments to cache:', error);
+  }
+};
+
   // Функция для группировки занятий по времени, предмету и аудитории
   const groupLessonsByTimeAndSubject = (lessons: ApiScheduleItem[]): Lesson[] => {
     const grouped: Record<string, ApiScheduleItem[]> = {}
     
     lessons.forEach(lesson => {
-      // Ключ включает время, предмет и аудиторию
       const key = `${lesson.time}_${lesson.subject}_${lesson.audience}`
       if (!grouped[key]) {
         grouped[key] = []
@@ -653,8 +764,6 @@ export default function TeacherSchedulePage({
     
     return Object.values(grouped).map(group => {
       const firstLesson = group[0]
-      
-      // Объединяем группы через "/" если их несколько
       const groups = group.map(l => l.groupName).join('/')
       
       return {
@@ -672,57 +781,61 @@ export default function TeacherSchedulePage({
   // Функция для получения расписания с API
   const fetchSchedule = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       
-      // Создаем даты с 1 сентября до 31 декабря
-      const startDate = new Date(2025, 8, 1) // 1 сентября 2025
-      const endDate = new Date(2025, 11, 31) // 31 декабря 2025
+      const cachedData = getCachedSchedule(teacherName);
+      if (cachedData) {
+        setSchedule(cachedData);
+        setLoading(false);
+        return;
+      }
+
+      const startDate = new Date(2025, 8, 1);
+      const endDate = new Date(2025, 11, 31);
       
-      const allSchedule: Record<string, Lesson[]> = {}
+      const allSchedule: Record<string, Lesson[]> = {};
       
-      // Запрашиваем расписание для каждого дня
       for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateString = getLocalDateString(date)
+        const dateString = getLocalDateString(date);
         
         try {
-          // Форматируем дату для URL в формате YYYY-MM-DD
           const formattedDate = dateString;
-          
-          // Кодируем имя преподавателя для URL
           const encodedTeacherName = encodeURIComponent(teacherName);
           
           const response = await fetch(
+<<<<<<< HEAD
             `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
+=======
+            `https://teacherbackend1.cloudpub.ru/api/${formattedDate}/${encodedTeacherName}`,
+>>>>>>> teacher
             {
               headers: getAuthHeaders(),
             }
-            
           );
           
           if (response.ok) {
             const data: ApiScheduleResponse = await response.json();
             
             if (data.schedule && data.schedule.length > 0) {
-              // Группируем занятия по времени и предмету
-              const groupedLessons = groupLessonsByTimeAndSubject(data.schedule)
-              allSchedule[dateString] = groupedLessons
+              const groupedLessons = groupLessonsByTimeAndSubject(data.schedule);
+              allSchedule[dateString] = groupedLessons;
             }
           }
         } catch (error) {
-          console.error(`Error fetching schedule for ${dateString}:`, error)
+          console.error(`Error fetching schedule for ${dateString}:`, error);
         }
       }
       
-      setSchedule(allSchedule)
+      setSchedule(allSchedule);
+      saveToCache(allSchedule, teacherName);
       
     } catch (error) {
-      console.error('Error fetching schedule:', error)
-      // В случае ошибки используем пустое расписание
-      setSchedule({})
+      console.error('Error fetching schedule:', error);
+      setSchedule({});
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const generateAllDates = () => {
     const daysOfWeek =
@@ -733,9 +846,8 @@ export default function TeacherSchedulePage({
         ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
         : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    // Устанавливаем период с 1 сентября по 31 декабря 2025 года
-    const startDate = new Date(2025, 8, 1) // 1 сентября 2025
-    const endDate = new Date(2025, 11, 31) // 31 декабря 2025
+    const startDate = new Date(2025, 8, 1)
+    const endDate = new Date(2025, 11, 31)
 
     const generatedDates: DateItem[] = []
     const currentDate = new Date(startDate)
@@ -749,7 +861,7 @@ export default function TeacherSchedulePage({
       generatedDates.push({
         date: currentDate.getDate(),
         day: daysOfWeek[dayIndex],
-        month: months[currentDate.getMonth()], // Добавляем сокращенное название месяца
+        month: months[currentDate.getMonth()],
         isToday,
         fullDate: new Date(currentDate),
         key: dateKey,
@@ -760,23 +872,85 @@ export default function TeacherSchedulePage({
 
     return generatedDates
   }
+  
+  // Функция для загрузки комментариев
+  const loadComments = async () => {
+  if (!selectedDateKey || currentScheduleData.length === 0) return;
+  
+  try {
+    // Пытаемся загрузить из кэша
+    const cachedComments = getCachedComments();
+    if (cachedComments) {
+      setLessonComments(cachedComments);
+      return;
+    }
 
-  useEffect(() => {
-    const allDates = generateAllDates()
-    setDates(allDates)
+    const commentsMap: Record<string, string> = {};
     
-    // Загружаем расписание с API
-    fetchSchedule()
-  }, [language, teacherName])
+    for (const lesson of currentScheduleData) {
+      const mainGroup = lesson.group.split('/')[0];
+      
+      const params = new URLSearchParams({
+        subject: lesson.subject,
+        groupName: mainGroup,
+        time: lesson.time,
+        date: selectedDateKey,
+        teacher: teacherName
+      });
+      
+      const response = await fetch(`${COMMENT_URL}?${params}`, {
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
 
+      if (response.ok) {
+        const result: CommentResponse = await response.json();
+        
+        if (result.success && result.comment && result.exists) {
+          const commentKey = getCommentKey(lesson);
+          commentsMap[commentKey] = result.comment;
+        }
+      }
+    }
+    
+    setLessonComments(commentsMap);
+    saveCommentsToCache(commentsMap); // Сохраняем в кэш
+    
+  } catch (error) {
+    console.error('Error loading comments:', error);
+  }
+};
+
+  // Первый useEffect - инициализация дат и загрузка расписания
   useEffect(() => {
-    // После загрузки расписания выбираем сегодняшнюю дату или первую доступную
+    const allDates = generateAllDates();
+    setDates(allDates);
+    
+    fetchSchedule();
+    
+    const intervalId = setInterval(() => {
+      localStorage.removeItem(CACHE_KEY);
+      fetchSchedule();
+    }, CACHE_DURATION);
+
+    return () => clearInterval(intervalId);
+  }, [language, teacherName]);
+
+  // Второй useEffect - загрузка комментариев при изменении даты или расписания
+  useEffect(() => {
+    loadComments();
+  }, [selectedDateKey, currentScheduleData]);
+
+  // Третий useEffect - выбор даты после загрузки расписания
+  useEffect(() => {
     if (!loading && Object.keys(schedule).length > 0) {
       const todayKey = getLocalDateString(new Date())
       const newSelectedDateKey = schedule[todayKey] ? todayKey : Object.keys(schedule)[0] || ""
       setSelectedDateKey(newSelectedDateKey)
     }
-  }, [loading, schedule])
+  }, [loading, schedule]);
+
+
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -790,9 +964,6 @@ export default function TeacherSchedulePage({
     }
   }
 
-  const currentSchedule = useMemo(() => {
-    return schedule[selectedDateKey] || []
-  }, [schedule, selectedDateKey])
 
   const selectedDateInfo = useMemo(() => {
     const selectedDateObj = dates.find((d) => d.key === selectedDateKey)
@@ -871,26 +1042,94 @@ export default function TeacherSchedulePage({
     setCommentModal({ isOpen: false, lesson: null, initialComment: "" })
   }
 
-  const handleSaveComment = (comment: string) => {
-    if (commentModal.lesson) {
-      const commentKey = getCommentKey(commentModal.lesson)
-      setLessonComments(prev => ({
-        ...prev,
-        [commentKey]: comment
-      }))
-    }
-  }
+  // Функция сохранения комментария
+  const handleSaveComment = async (comment: string) => {
+  if (commentModal.lesson) {
+    try {
+      const mainGroup = commentModal.lesson.group.split('/')[0];
+      
+      const request: CommentRequest = {
+        subject: commentModal.lesson.subject,
+        groupName: mainGroup,
+        time: commentModal.lesson.time,
+        date: selectedDateKey,
+        teacher: teacherName,
+        comment: comment
+      };
+      
+      const response = await fetch(COMMENT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify(request),
+        credentials: 'include'
+      });
 
-  const handleDeleteComment = () => {
-    if (commentModal.lesson) {
-      const commentKey = getCommentKey(commentModal.lesson)
-      setLessonComments(prev => {
-        const newComments = { ...prev }
-        delete newComments[commentKey]
-        return newComments
-      })
+      const result: CommentResponse = await response.json();
+      
+      if (response.ok && result.success) {
+        const commentKey = getCommentKey(commentModal.lesson)
+        const newComments = {
+          ...lessonComments,
+          [commentKey]: comment
+        };
+        
+        setLessonComments(newComments);
+        saveCommentsToCache(newComments); // Обновляем кэш
+        
+        
+      } else {
+        throw new Error(result.error || result.message || 'Ошибка сохранения');
+      }
+    } catch (error) {
+      console.error('Error saving comment:', error);
+      
     }
   }
+}
+
+const handleDeleteComment = async () => {
+  if (commentModal.lesson) {
+    try {
+      const mainGroup = commentModal.lesson.group.split('/')[0];
+      
+      const params = new URLSearchParams({
+        subject: commentModal.lesson.subject,
+        groupName: mainGroup,
+        time: commentModal.lesson.time,
+        date: selectedDateKey,
+        teacher: teacherName
+      });
+      
+      const response = await fetch(`${COMMENT_URL}?${params}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
+
+      const result: CommentResponse = await response.json();
+      
+      if (response.ok && result.success) {
+        const commentKey = getCommentKey(commentModal.lesson)
+        const newComments = { ...lessonComments }
+        delete newComments[commentKey]
+        
+        setLessonComments(newComments);
+        saveCommentsToCache(newComments); // Обновляем кэш
+        
+        
+        closeCommentModal();
+      } else {
+        throw new Error(result.error || result.message || 'Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+  
+    }
+  }
+}
 
   const openQRModal = (lesson: Lesson) => {
     setQrModal({ isOpen: true, lesson })
@@ -915,17 +1154,45 @@ export default function TeacherSchedulePage({
     }
   }
 
-  const handleDeleteCommentFromView = () => {
+  const handleDeleteCommentFromView = async () => {
     if (viewCommentModal.lesson) {
-      const commentKey = getCommentKey(viewCommentModal.lesson)
-      setLessonComments(prev => {
-        const newComments = { ...prev }
-        delete newComments[commentKey]
-        return newComments
-      })
-      closeViewCommentModal()
+      try {
+        const mainGroup = viewCommentModal.lesson.group.split('/')[0];
+        
+        const params = new URLSearchParams({
+          subject: viewCommentModal.lesson.subject,
+          groupName: mainGroup,
+          time: viewCommentModal.lesson.time,
+          date: selectedDateKey,
+          teacher: teacherName
+        });
+        
+        const response = await fetch(`${COMMENT_URL}?${params}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
+
+        const result: CommentResponse = await response.json();
+        
+        if (response.ok && result.success) {
+          const commentKey = getCommentKey(viewCommentModal.lesson)
+          setLessonComments(prev => {
+            const newComments = { ...prev }
+            delete newComments[commentKey]
+            return newComments
+          });
+          
+          closeViewCommentModal();
+        } else {
+          throw new Error(result.error || result.message || 'Ошибка удаления');
+        }
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+      }
     }
   }
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -991,13 +1258,13 @@ export default function TeacherSchedulePage({
           <div className="flex justify-center items-center h-40">
             <p className="text-muted-foreground">{t.loading}</p>
           </div>
-        ) : currentSchedule.length === 0 ? (
+        ) : currentScheduleData.length === 0 ? (
           <div className="flex justify-center items-center h-40">
             <p className="text-muted-foreground">{t.noLessons}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {currentSchedule.map((lesson) => {
+            {currentScheduleData.map((lesson) => {
               const commentKey = getCommentKey(lesson)
               const comment = lessonComments[commentKey]
               return (
@@ -1062,24 +1329,12 @@ export default function TeacherSchedulePage({
       </div>
 
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around">
-        <Button variant="ghost" onClick={() => onNavigate("schedule")} className="flex-1 mx-1">
-          <Calendar className="w-5 h-5 mr-2" />
-          {t.schedule}
-        </Button>
-        <Button variant="ghost" onClick={() => onNavigate("attendance")} className="flex-1 mx-1">
-          <Users className="w-5 h-5 mr-2" />
-          {t.attendance}
-        </Button>
-        <Button variant="ghost" onClick={() => onNavigate("rating")} className="flex-1 mx-1">
-          <GraduationCap className="w-5 h-5 mr-2" />
-          {t.rating}
-        </Button>
-        <Button variant="ghost" onClick={onShowProfile} className="flex-1 mx-1">
-          <User className="w-5 h-5 mr-2" />
-          {t.profile}
-        </Button>
-      </div>
+      <BottomNavigation
+        onNavigate={onNavigate}
+        onShowProfile={onShowProfile}
+        language={language}
+        currentPage="schedule"
+      />
 
       {/* Modals */}
       <CommentModal

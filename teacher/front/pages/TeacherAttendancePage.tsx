@@ -7,6 +7,7 @@ import { Calendar, User, GraduationCap, Users, Check, X, Loader2 } from "lucide-
 import { translations, type Language } from "@/lib/translations"
 import type { GroupSubjects } from "../app/page"
 import { useSession } from '@/hooks/useSession'
+import BottomNavigation from "../components/ui/BottomNavigation"
 
 interface TeacherAttendancePageProps {
   teacherName: string
@@ -57,7 +58,11 @@ export default function TeacherAttendancePage({
 
   const t = translations[language] || translations.en
 
+<<<<<<< HEAD
   const URL = "http://localhost:8081/api"
+=======
+  const URL = "https://teacherbackend1.cloudpub.ru/api"
+>>>>>>> teacher
 
   // Получаем список групп
   const groups = Object.keys(groupsSubjects || {}).map(groupName => ({ 
@@ -346,37 +351,12 @@ export default function TeacherAttendancePage({
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
-        <div className="flex justify-around items-center py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("schedule")}
-          >
-            <Calendar className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("rating")}
-          >
-            <GraduationCap className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-foreground hover:bg-muted"
-            onClick={() => onNavigate("attendance")}
-          >
-            <Users className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
-            <User className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
+      <BottomNavigation
+        onNavigate={onNavigate}
+        onShowProfile={onShowProfile}
+        language={language}
+        currentPage="attendance"
+      />
     </div>
   )
 }

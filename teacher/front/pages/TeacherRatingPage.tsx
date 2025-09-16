@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Calendar, User, GraduationCap, Users, Save } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Grade } from "@/data/mockData"
+import BottomNavigation from "../components/ui/BottomNavigation"
 
 interface TeacherRatingPageProps {
   teacherName: string
@@ -297,37 +298,12 @@ export default function TeacherRatingPage({
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-        <div className="flex justify-around items-center py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("schedule")}
-          >
-            <Calendar className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-foreground hover:bg-muted"
-            onClick={() => onNavigate("rating")}
-          >
-            <GraduationCap className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted"
-            onClick={() => onNavigate("attendance")}
-          >
-            <Users className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-muted" onClick={onShowProfile}>
-            <User className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
+      <BottomNavigation
+        onNavigate={onNavigate}
+        onShowProfile={onShowProfile}
+        language={language}
+        currentPage="rating"
+      />
     </div>
   )
 }
