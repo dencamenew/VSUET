@@ -8,10 +8,10 @@ import ru.practice.teststation.model.FullTimetable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 
 public interface FullTimetableRepository extends JpaRepository<FullTimetable, Long> {
     
-    // Добавьте эти методы обратно
     List<FullTimetable> findByZachNumber(String zachNumber);
     
     List<FullTimetable> findByDateAndZachNumber(LocalDate date, String zachNumber);
@@ -29,4 +29,11 @@ public interface FullTimetableRepository extends JpaRepository<FullTimetable, Lo
         @Param("time") LocalTime time,
         @Param("teacher") String teacher
     );
+
+    // Добавьте эти методы для получения уникальных номеров зачеток
+    @Query("SELECT DISTINCT f.zachNumber FROM FullTimetable f")
+    Set<String> findAllDistinctZachNumbers();
+    
+    @Query("SELECT DISTINCT f.zachNumber FROM FullTimetable f WHERE f.groupName = :groupName")
+    Set<String> findDistinctZachNumbersByGroupName(@Param("groupName") String groupName);
 }

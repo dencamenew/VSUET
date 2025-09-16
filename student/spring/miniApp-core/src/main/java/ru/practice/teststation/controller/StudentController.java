@@ -77,4 +77,9 @@ public class StudentController {
         studentService.updateAttendance(id, turnout, comment);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/ratings/{zachNumber}")
+    public ResponseEntity<?> getRatings(@PathVariable String zachNumber) {
+        return ResponseEntity.ok(studentService.getRatings(zachNumber));
+    }
 }
