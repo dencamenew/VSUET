@@ -20,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"}, allowCredentials = "true")
 public class AuthController {
     
     private final AuthService authService;
@@ -54,13 +55,15 @@ public class AuthController {
 
     
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader("X-Session-Id") String sessionId) {
+    public ResponseEntity<?> logout(@RequestHeader(value = "X-Session-Id", required = false) String sessionId) {
         try {
-            redisSessionRepository.findById(sessionId).ifPresent(redisSession -> {
-                redisSession.setStatus(StatusInSession.CLOSED);
-                redisSession.setExistedAt(LocalDateTime.now());
-                redisSessionRepository.save(redisSession);
-            });
+            if (sessionId != null && !sessionId.trim().isEmpty()) {
+                redisSessionRepository.findById(sessionId).ifPresent(redisSession -> {
+                    redisSession.setStatus(StatusInSession.CLOSED);
+                    redisSession.setExistedAt(LocalDateTime.now());
+                    redisSessionRepository.save(redisSession);
+                });
+            }
             
             return ResponseEntity.ok(Map.of(
                 "message", "Logout successful",

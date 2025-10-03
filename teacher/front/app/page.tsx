@@ -23,7 +23,7 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [language, setLanguage] = useState<Language>("ru")
 
-  const URL = "https://teacherbackend.cloudpub.ru/api"
+  const URL = "http://localhost:8081/api"
 
   useEffect(() => {
     // Загрузка сохраненного языка
@@ -114,15 +114,20 @@ function App() {
 
   const logoutFromServer = async () => {
     try {
-      await fetch(`${URL}/auth/logout`, {
+      const response = await fetch(`${URL}/auth/logout`, {
         method: "POST",
         headers: {
-          'X-Session-Id': sessionId,
+          'X-Session-Id': sessionId || '',
           "Content-Type": "application/json",
         },
       })
+      
+      if (!response.ok) {
+        console.warn("Logout server request failed, but continuing with local logout")
+      }
     } catch (error) {
       console.error("Logout error:", error)
+      // Продолжаем с локальным logout даже если сервер недоступен
     }
   }
 

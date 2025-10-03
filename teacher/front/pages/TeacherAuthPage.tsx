@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { translations, type Language } from "@/lib/translations"
-import { GraduationCap } from "lucide-react"
+import { GraduationCap, Eye, EyeOff } from "lucide-react"
 import type { GroupSubjects } from "../app/page"
 import { useSession } from '@/hooks/useSession'
 
@@ -31,11 +31,12 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const { saveSession } = useSession()
 
   const t = translations[language] || translations.en
 
-  const URL = "https://teacherbackend.cloudpub.ru/api"
+  const URL = "http://localhost:8081/api"
 
 
 
@@ -48,7 +49,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
 
     try {
 
-      const response = await fetch("https://teacherbackend.cloudpub.ru/api/auth/login", {
+      const response = await fetch("http://localhost:8081/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -106,16 +107,33 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
               />
             </div>
             <div>
-              <Input
-                type="password"
-                placeholder={t.passwordPlaceholder}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError("")
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t.passwordPlaceholder}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setError("")
+                  }}
+                  className="pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:text-gray-600"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                  title={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {error && <p className="text-destructive text-sm mt-2">{error}</p>}
             </div>
             <Button

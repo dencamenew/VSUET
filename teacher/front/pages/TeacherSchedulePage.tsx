@@ -14,12 +14,10 @@ import {
   Send,
   ArrowLeft,
   Edit,
-  Trash2,
-  QrCode
+  Trash2
 } from "lucide-react"
 import { translations, type Language } from "../lib/translations"
 import { Textarea } from "../components/ui/textarea"
-import { QRCodeSVG } from 'qrcode.react'
 import { useSession } from '@/hooks/useSession'
 import BottomNavigation from "../components/ui/BottomNavigation"
 
@@ -63,15 +61,6 @@ interface CommentModalProps {
   isEditMode?: boolean
 }
 
-interface QRModalProps {
-  isOpen: boolean
-  onClose: () => void
-  lesson: Lesson | null
-  language: Language
-  selectedDate: string
-  teacherName: string
-  getAuthHeaders: () => HeadersInit
-}
 
 interface ViewCommentModalProps {
   isOpen: boolean
@@ -288,276 +277,6 @@ function CommentModal({
   )
 }
 
-function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName, getAuthHeaders }: QRModalProps) {
-  const [currentQrUrl, setCurrentQrUrl] = useState<string>("")
-  const [nextQrUrl, setNextQrUrl] = useState<string>("")
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string>("")
-  const [timer, setTimer] = useState<number>(120) 
-  const [isSwitching, setIsSwitching] = useState<boolean>(false)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const switchRef = useRef<NodeJS.Timeout | null>(null)
-
-
-  const URL = "https://teacherbackend.cloudpub.ru/api"
-
-  useEffect(() => {
-    if (isOpen && lesson) {
-      generateQRCodeForLesson()
-    } else {
-      setCurrentQrUrl("")
-      setNextQrUrl("")
-      setError("")
-      setTimer(120)
-      setIsSwitching(false)
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-      if (switchRef.current) {
-        clearTimeout(switchRef.current)
-        switchRef.current = null
-      }
-    }
-  }, [isOpen, lesson, selectedDate])
-
-  useEffect(() => {
-    if (currentQrUrl && timer > 0) {
-      timerRef.current = setInterval(() => {
-        setTimer(prev => prev - 1)
-      }, 1000)
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-    }
-  }, [currentQrUrl, timer])
-
-  
-
-  useEffect(() => {
-    if (timer === 0 && timerRef.current && currentQrUrl) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-      
-      // Начинаем процесс плавной смены QR-кода
-      setIsSwitching(true)
-      
-      // Генерируем следующий QR-код
-      generateNextQRCode()
-    }
-  }, [timer, currentQrUrl])
-
-  useEffect(() => {
-    if (nextQrUrl && isSwitching) {
-      // Плавно переключаем на новый QR-код
-      switchRef.current = setTimeout(() => {
-        setCurrentQrUrl(nextQrUrl)
-        setNextQrUrl("")
-        setIsSwitching(false)
-        setTimer(120) 
-      }, 200)
-    }
-
-    return () => {
-      if (switchRef.current) {
-        clearTimeout(switchRef.current)
-      }
-    }
-  }, [nextQrUrl, isSwitching])
-
-  const generateNextQRCode = async () => {
-    if (!lesson) return
-    
-    try {
-      const request = {
-      subject: lesson.subject,
-      groupName: lesson.group,
-      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
-      endLessonTime: lesson.endTime,
-      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
-      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
-    }
-      
-      const response = await fetch(`${URL}/qr/generate`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(request),
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Ошибка при создании QR-кода')
-      }
-
-      const qrUrl = await response.text() // Теперь получаем просто строку с URL
-      
-      if (qrUrl) {
-        setNextQrUrl(qrUrl)
-      } else {
-        throw new Error('Пустой ответ от сервера')
-      }
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
-      console.error('Error generating QR:', err)
-      // Если ошибка, сбрасываем состояние переключения
-      setIsSwitching(false)
-      setTimer(10) // Перезапускаем таймер
-    }
-  }
-
-  const generateQRCodeForLesson = async () => {
-    if (!lesson) return
-    
-    setLoading(true)
-    setError("")
-    setTimer(10)
-    
-    try {
-      const request = {
-      subject: lesson.subject,
-      groupName: lesson.group,
-      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
-      endLessonTime: lesson.endTime,
-      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
-      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
-    }
-      
-      const response = await fetch(`${URL}/qr/generate`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(request),
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Ошибка при создании QR-кода')
-      }
-
-      const qrUrl = await response.text() // Теперь получаем просто строку с URL
-      
-      if (qrUrl) {
-        setCurrentQrUrl(qrUrl)
-      } else {
-        throw new Error('Пустой ответ от сервера')
-      }
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
-      console.error('Error generating QR:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (!isOpen || !lesson) return null
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
-      <div className="w-full max-w-md bg-card rounded-xl p-6 border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="sm" onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h3 className="text-lg font-semibold text-foreground">
-            QR {language === "ru" ? "Посещаемость" : "Attendance"}
-          </h3>
-          <div className="w-8" />
-        </div>
-
-        <div className="mb-6 space-y-2 text-center">
-          <p className="text-sm font-medium text-foreground">{lesson.subject}</p>
-          <p className="text-xs text-muted-foreground">
-            {lesson.time} - {lesson.endTime} • {lesson.room}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {lesson.group} • {formatDate(selectedDate)}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center space-y-4">
-          {loading && !currentQrUrl ? (
-            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
-              <p className="text-muted-foreground">
-                {language === "ru" ? "Загрузка..." : "Loading..."}
-              </p>
-            </div>
-          ) : error ? (
-            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
-              <p className="text-destructive text-center text-sm">
-                {error}
-              </p>
-            </div>
-          ) : currentQrUrl ? (
-            <div className="flex flex-col items-center">
-              <div className="bg-white p-4 border-2 border-border w-48 h-48 flex items-center justify-center">
-                {/* Анимация только opacity без scale */}
-                <div className={`transition-opacity duration-300 ${
-                  isSwitching ? 'opacity-0' : 'opacity-100'
-                }`}>
-                  <QRCodeSVG
-                    value={currentQrUrl}
-                    size={192}
-                    level="H"
-                    includeMargin
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-2 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {language === "ru" ? "Доступен еще:" : "Available for:"}
-                </p>
-                <p className="text-md font-semibold text-primary">
-                  {formatTime(timer)}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-48 h-48 flex items-center justify-center bg-white rounded-lg border-2 border-border">
-              <p className="text-muted-foreground text-center text-sm">
-                {language === "ru" ? "Генерация QR-кода..." : "Generating QR code..."}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {error && (
-          <div className="mt-4 text-center">
-            <p className="text-destructive text-sm mb-2">{error}</p>
-            <p className="text-xs text-muted-foreground">
-              {language === "ru" ? "Новый QR-код будет сгенерирован автоматически" : "New QR code will be generated automatically"}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function ViewCommentModal({ 
   isOpen, 
@@ -651,10 +370,6 @@ export default function TeacherSchedulePage({
     initialComment: "",
     isEditMode: false
   })
-  const [qrModal, setQrModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
-    isOpen: false,
-    lesson: null,
-  })
   const [viewCommentModal, setViewCommentModal] = useState<{
     isOpen: boolean
     comment: string
@@ -668,8 +383,8 @@ export default function TeacherSchedulePage({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const t = translations[language] || translations.en
-  const URL = "https://teacherbackend.cloudpub.ru/api"
-  const COMMENT_URL = "https://teacherbackend.cloudpub.ru/api/comments"
+  const URL = "http://localhost:8081/api"
+  const COMMENT_URL = "http://localhost:8081/api/comments"
 
 
   const getLocalDateString = (date: Date): string => {
@@ -797,7 +512,7 @@ const saveCommentsToCache = (data: Record<string, string>) => {
           
           const response = await fetch(
 
-            `https://teacherbackend.cloudpub.ru/api/${formattedDate}/${encodedTeacherName}`,
+            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
             {
               headers: getAuthHeaders(),
             }
@@ -1121,13 +836,6 @@ const handleDeleteComment = async () => {
   }
 }
 
-  const openQRModal = (lesson: Lesson) => {
-    setQrModal({ isOpen: true, lesson })
-  }
-
-  const closeQRModal = () => {
-    setQrModal({ isOpen: false, lesson: null })
-  }
 
   const openViewCommentModal = (comment: string, lesson: Lesson) => {
     setViewCommentModal({ isOpen: true, comment, lesson })
@@ -1279,15 +987,6 @@ const handleDeleteComment = async () => {
 
                   <div className="flex justify-between items-center mt-4">
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                        onClick={() => openQRModal(lesson)}
-                      >
-                        <QRCodeSVG className="w-4 h-4 mr-1" />
-                        QR
-                      </Button>
                       {comment ? (
                         <Button
                           variant="ghost"
@@ -1339,15 +1038,6 @@ const handleDeleteComment = async () => {
         isEditMode={commentModal.isEditMode}
       />
 
-      <QRModal
-        isOpen={qrModal.isOpen}
-        onClose={closeQRModal}
-        lesson={qrModal.lesson}
-        language={language}
-        selectedDate={selectedDateKey}
-        teacherName={teacherName}
-        getAuthHeaders={getAuthHeaders}
-      />
 
       <ViewCommentModal
         isOpen={viewCommentModal.isOpen}
