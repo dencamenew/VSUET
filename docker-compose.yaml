@@ -16,13 +16,93 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   redis:
-    container_name: radis
+    container_name: redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
+  student_timetable:
+    container_name: student_timetable
+    build:
+      context: ./parsers/students_timetable
+      dockerfile: Dockerfile
+    shm_size: '2gb'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  teacher_timetable:
+    container_name: teacher_timetable
+    build:
+      context: ./parsers/teachers_timetable
+      dockerfile: Dockerfile
+    shm_size: '2gb'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  student_info:
+    container_name: student_info
+    build:
+      context: ./parsers/students_info
+      dockerfile: Dockerfile
+    shm_size: '2gb'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  teacher_info:
+    container_name: teacher_info
+    build:
+      context: ./parsers/teacher_info
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      teacher_timetable:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  attendance:
+    container_name: attendance
+    build:
+      context: ./parsers/attendance
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      student_timetable:
+        condition: service_completed_successfully
+      student_info:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
 
 volumes:
   postgres_data:

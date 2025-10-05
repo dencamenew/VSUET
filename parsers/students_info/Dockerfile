@@ -1,17 +1,13 @@
-FROM python:3.9-slim
+FROM selenium/standalone-chrome:125.0
+
+USER root
+RUN apt-get update -y && apt-get install -y python3 python3-pip libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-        libpq-dev \
-        gcc \
-        && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-
-CMD ["python", "students_info.py"]
+CMD ["python3", "students_info.py"]

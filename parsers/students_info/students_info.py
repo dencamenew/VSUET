@@ -1,11 +1,18 @@
-import json
-import logging
 import psycopg2
-import secrets
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
+from bs4 import BeautifulSoup
+import requests
+import logging
+import os
 import string
-from psycopg2.extras import RealDictCursor
-from typing import Dict, List, Any, Set
-
+import secrets
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,103 +22,138 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def generate_password(length=12):
+    """Генерация безопасного пароля"""
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-DB_CONFIG = {
-    'host': 'postgres',
-    'database': 'db',
-    'user': 'admin',
-    'password': 'admin',
-    'port': '5432'
-}
-
-def get_db_connection():
+def insert_student_data(conn, zach_number, group_name):
+    """Вставка данных студента в таблицу students_info"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        logger.info("Успешное подключение к БД")
-        return conn
-    except Exception as e:
-        logger.error(f"Ошибка подключения к БД: {e}")
-        return None
-
-def extract_unique_zach_numbers() -> Set[str]:
-    conn = get_db_connection()
-    if not conn:
-        return set()
-    
-    zach_numbers = set()
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            query = """
-            SELECT DISTINCT zach_number
-            FROM full_timetable 
-            WHERE zach_number IS NOT NULL 
-            AND zach_number != ''
-            ORDER BY zach_number
-            """
-            
-            cur.execute(query)
-            rows = cur.fetchall()
-            
-            for row in rows:
-                zach_numbers.add(row['zach_number'])
-                    
-    except Exception as e:
-        logger.error(f"Ошибка при извлечении данных: {e}")
-    finally:
-        conn.close()
-    
-    return zach_numbers
-
-def insert_students_data(zach_numbers: Set[str]):
-    conn = get_db_connection()
-    if not conn:
-        return
-    
-    try:
-        with conn.cursor() as cur:
-            for zach_number in zach_numbers:
-                password = generate_password()
-                
-                insert_query = """
-                INSERT INTO students_info (zach_number, password)
-                VALUES (%s, %s)
-                ON CONFLICT (zach_number) 
-                DO UPDATE SET 
-                    password = EXCLUDED.password
-                """
-                
-                cur.execute(insert_query, (zach_number, password))
-                
-                logger.info(f"Обработан студент: {zach_number}")
-            
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO students_info (zach_number, group_name) VALUES (%s, %s) ON CONFLICT (zach_number) DO NOTHING",
+                (zach_number, group_name)
+            )
             conn.commit()
-            logger.info("Данные студентов успешно обновлены!")
+            logger.debug(f"Добавлен студент: {zach_number} из группы {group_name}")
+    except Exception as e:
+        logger.error(f"Ошибка при вставке студента {zach_number}: {e}")
+        conn.rollback()
+
+def process_group_data(driver, group, conn):
+    """Обработка данных группы и моментальная вставка в БД"""
+    try:
+        group_select = Select(WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbGroups"))
+        ))
+        group_select.select_by_visible_text(group)
+
+        logger.info(f"Обрабатывается группа: {group}")
+        
+        try:
+            table = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "ctl00_ContentPage_ucListVedBox_Grid"))
+            )
+
+            for link in table.find_elements(By.TAG_NAME, "a"):
+                href = link.get_attribute('href')
+                resp = requests.get(href)
+                soup = BeautifulSoup(resp.text, 'html.parser')
+
+                group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
+                table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
+                
+                
+                for row in table_rows:
+                    tds = row.find_all('td')
+                    number_zach = tds[1].text.strip()
+                    if number_zach: 
+                        insert_student_data(conn, number_zach, group_name)
+                
+                logger.info(f"Студенты из группы {group_name} обработаны и добавлены в БД")
+                break
+                    
+        except Exception as e:
+            logger.warning(f"Не удалось найти таблицу ведомостей для группы {group}: {e}")
+            return False
+        return True
             
     except Exception as e:
-        conn.rollback()
-        logger.error(f"Ошибка при вставке данных студентов: {e}")
+        logger.error(f"Ошибка при обработке группы {group}: {e}")
+        return False
+
+logger.info("🚀 Начало парсинга зачёток")
+
+# Подключение к БД
+try:
+    conn = psycopg2.connect(
+        host="postgres",
+        port=5432,
+        database="db",
+        user="admin",
+        password="admin"
+    )
+    logger.info("Успешное подключение к БД")
+    
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.page_load_strategy = 'eager'
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get("https://rating.vsuet.ru/web/Ved/Default.aspx")
+
+    try:
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbYears"))
+        )
+
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbFacultets"))
+        )
+
+        faculty_select = Select(WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbFacultets"))
+        ))
+        faculties = [opt.text for opt in faculty_select.options if opt.text and opt.text.strip()]
+
+        for faculty in faculties:
+            if faculty == "Выберите факультет":
+                continue
+                
+            faculty_select = Select(WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbFacultets"))
+            ))
+            faculty_select.select_by_visible_text(faculty)
+            
+            logger.info(f"Обрабатывается факультет: {faculty}")
+            
+            WebDriverWait(driver, 10).until(
+                lambda d: Select(d.find_element(By.ID, "ctl00_ContentPage_cmbGroups")).options[0].text != "Выберите группу"
+            )
+            
+            group_select = Select(WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbGroups"))
+            ))
+            groups = [opt.text for opt in group_select.options if opt.text and opt.text.strip() and opt.text != "Выберите группу"]
+            
+
+            for group in groups:
+                process_group_data(driver, group, conn)
+
+        logger.info("✅ Все зачётки студентов обработаны и добавлены в БД ✅")
+
+    except Exception as e:
+        logger.error(f"Ошибка при парсинге: {e}")
     finally:
+        driver.quit()
+
+except psycopg2.Error as e:
+    logger.error(f"Ошибка подключения к БД: {e}")
+except Exception as e:
+    logger.error(f"Общая ошибка: {e}")
+finally:
+    if 'conn' in locals():
         conn.close()
-
-def main():
-    logger.info("Начало обработки данных студентов...")
-    
-    logger.info("Извлечение уникальных зачётных номеров из full_timetable...")
-    zach_numbers = extract_unique_zach_numbers()
-    
-    if not zach_numbers:
-        logger.warning("Не удалось извлечь зачётные номера или данные отсутствуют")
-        return
-    
-    logger.info(f"Найдено {len(zach_numbers)} уникальных зачётных номеров")
-    
-    logger.info("Заполнение таблицы students_info...")
-    insert_students_data(zach_numbers)
-    
-    logger.info("Обработка завершена!")
-
-if __name__ == "__main__":
-    main()
