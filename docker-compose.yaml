@@ -51,7 +51,7 @@ services:
   student_info:
     container_name: student_info
     build:
-      context: ./parsers/students_info
+      context: ./parsers/student_info
       dockerfile: Dockerfile
     shm_size: '2gb'
     depends_on:

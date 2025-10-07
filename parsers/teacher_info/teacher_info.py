@@ -36,7 +36,7 @@ def get_db_connection():
 
 def extract_teachers_data() -> Dict[str, Dict[str, Any]]:
     """
-    Извлекает данные из teacher_timetable и преобразует в структуру для teachers_info
+    Извлекает данные из teacher_timetable и преобразует в структуру для teacher_info
     Возвращает словарь: {teacher_name: {'groups_subjects': {...}, 'id_timetable': id}}
     """
     conn = get_db_connection()
@@ -164,7 +164,7 @@ def clean_subject_name(subject: str) -> str:
 
 def insert_teachers_data(teachers_data: Dict[str, Dict[str, Any]]):
     """
-    Вставляет или обновляет данные в таблице teachers_info
+    Вставляет или обновляет данные в таблице teacher_info
     """
     conn = get_db_connection()
     if not conn:
@@ -183,13 +183,13 @@ def insert_teachers_data(teachers_data: Dict[str, Dict[str, Any]]):
                 groups_json = json.dumps(groups_subjects, ensure_ascii=False, indent=2)
                 temp_password = generate_password()
 
-                check_query = "SELECT id FROM teachers_info WHERE name = %s"
+                check_query = "SELECT id FROM teacher_info WHERE name = %s"
                 cur.execute(check_query, (teacher_name,))
                 existing_teacher = cur.fetchone()
                 
                 if existing_teacher:
                     update_query = """
-                    UPDATE teachers_info 
+                    UPDATE teacher_info 
                     SET groups_subjects = %s::jsonb, id_timetable = %s
                     WHERE name = %s
                     """
@@ -197,14 +197,14 @@ def insert_teachers_data(teachers_data: Dict[str, Dict[str, Any]]):
                     logger.info(f"Обновлен преподаватель: {teacher_name}")
                 else:
                     insert_query = """
-                    INSERT INTO teachers_info (name, password, groups_subjects, id_timetable)
+                    INSERT INTO teacher_info (name, password, groups_subjects, id_timetable)
                     VALUES (%s, %s, %s::jsonb, %s)
                     """
                     cur.execute(insert_query, (teacher_name, temp_password, groups_json, id_timetable))
                     logger.info(f"Добавлен новый преподаватель: {teacher_name}")
             
             conn.commit()
-            logger.info("Данные успешно обновлены в таблице teachers_info!")
+            logger.info("Данные успешно обновлены в таблице teacher_info!")
             
     except Exception as e:
         conn.rollback()
@@ -226,7 +226,7 @@ def cleanup_orphaned_teachers(active_teacher_names: List[str]):
                 placeholders = ','.join(['%s'] * len(active_teacher_names))
                 
                 delete_query = f"""
-                DELETE FROM teachers_info 
+                DELETE FROM teacher_info 
                 WHERE name NOT IN ({placeholders})
                 """
                 cur.execute(delete_query, active_teacher_names)
@@ -237,7 +237,7 @@ def cleanup_orphaned_teachers(active_teacher_names: List[str]):
                 else:
                     logger.info("Устаревшие записи не найдены")
             else:
-                delete_query = "DELETE FROM teachers_info"
+                delete_query = "DELETE FROM teacher_info"
                 cur.execute(delete_query)
                 logger.warning("Удалены все записи преподавателей (нет активных данных)")
             
@@ -275,7 +275,7 @@ def main():
             subjects = sample_data['groups_subjects'][group]
             logger.info(f"  Группа {group}: {len(subjects)} предметов")
     
-    logger.info("Заполнение таблицы teachers_info...")
+    logger.info("Заполнение таблицы teacher_info...")
     insert_teachers_data(teachers_data)
     
 

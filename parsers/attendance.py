@@ -23,7 +23,7 @@ def connect_db():
 # === Получаем всех преподавателей из teacher_info ===
 def get_all_teachers(conn):
     with conn.cursor() as cur:
-        cur.execute("SELECT name FROM teachers_info;")  # таблица из init.sql
+        cur.execute("SELECT name FROM teacher_info;")  # таблица из init.sql
         rows = cur.fetchall()
         return [r[0] for r in rows]
 
@@ -42,7 +42,7 @@ def get_teacher_timetable(conn, teacher_name):
 # === Получаем студентов группы ===
 def get_students_by_group(conn, group_name):
     with conn.cursor() as cur:
-        cur.execute("SELECT zach_number FROM students_info WHERE group_name = %s", (group_name,))
+        cur.execute("SELECT zach_number FROM student_info WHERE group_name = %s", (group_name,))
         return [r[0] for r in cur.fetchall()]
 
 

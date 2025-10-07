@@ -1,15 +1,22 @@
-CREATE TABLE IF NOT EXISTS students_info (
+--таблицы с информацией о студентах
+CREATE TABLE IF NOT EXISTS student_info (
     id SERIAL PRIMARY KEY,
     zach_number VARCHAR(20) NOT NULL UNIQUE,
     group_name VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS teachers_info (
+CREATE TABLE IF NOT EXISTS student_timetable (
+    id SERIAL PRIMARY KEY,                  
+    group_name VARCHAR(255) NOT NULL UNIQUE,
+    timetable JSONB NOT NULL
+);
+
+-- таблицы с информацией о преподавателях
+CREATE TABLE IF NOT EXISTS teacher_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     groups_subjects JSONB NOT NULL,
-    id_timetable INT,
-    password VARCHAR(255) NOT NULL
+    id_timetable INT
 );
 
 CREATE TABLE IF NOT EXISTS teacher_timetable (
@@ -18,17 +25,36 @@ CREATE TABLE IF NOT EXISTS teacher_timetable (
     timetable JSONB NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS raiting (
-    id SERIAL PRIMARY KEY,                  
-    zach_number VARCHAR(20) NOT NULL,
-    group_name VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    raiting JSONB NOT NULL,
-    ved_type VARCHAR(255) NOT NULL,
-    UNIQUE (zach_number, group_name, subject)
+--общая таблица со всеми пользователями API
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,   -- номер зачетки или ФИО
+    role VARCHAR(50) NOT NULL CHECK (role IN ('TEACHER', 'STUDENT', 'ROLE_ADMIN')),
+    passwd VARCHAR(255),
+    teacher_info_id INTEGER REFERENCES teacher_info(id) ON DELETE SET NULL,
+    student_info_id INTEGER REFERENCES student_info(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
----attandance
+--скрипт по заполнению users существующими пользователями из teacher_ & student_
+INSERT INTO users (username, passwd, role, teacher_info_id)
+SELECT
+    name AS username, 
+    '$2a$10$YhP4D2/0JHxJ0Q4l6bn0yep4GVb5mB03/JxYzKh3O2wscGoIuf8bW' AS passwd,
+    'TEACHER' AS role,
+    id AS teacher_info_id
+FROM teacher_info;
+
+
+INSERT INTO users (username, passwd, role, student_info_id)
+SELECT
+    zach_number AS username,
+    NULL AS passwd,
+    'STUDENT' AS role,
+    id AS student_info_id
+FROM student_info;
+
+--ведомости посещаемости
 CREATE TABLE IF NOT EXISTS attendance_table (
     id SERIAL PRIMARY KEY,
     teacher_name VARCHAR(255) NOT NULL,
@@ -41,32 +67,40 @@ CREATE TABLE IF NOT EXISTS attendance_table (
 );
 
 
-CREATE TABLE IF NOT EXISTS student_timetable (
-    id SERIAL PRIMARY KEY,                  
-    group_name VARCHAR(255) NOT NULL UNIQUE,
-    timetable JSONB NOT NULL
-);
 
-CREATE TABLE IF NOT EXISTS teachers_comments (
+
+---!!! пока не используется !!!---
+CREATE TABLE IF NOT EXISTS teacher_comments (
     id SERIAL PRIMARY KEY,                  
     group_name VARCHAR(255) NOT NULL UNIQUE,
     comment VARCHAR(255) NOT NULL,
     metadate TIMESTAMP NOT NULL
 );
 
-ALTER TABLE teachers_info 
+CREATE TABLE IF NOT EXISTS raiting (
+    id SERIAL PRIMARY KEY,                  
+    zach_number VARCHAR(20) NOT NULL,
+    group_name VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    raiting JSONB NOT NULL,
+    ved_type VARCHAR(255) NOT NULL,
+    UNIQUE (zach_number, group_name, subject)
+);
+
+
+ALTER TABLE teacher_info 
 ADD CONSTRAINT fk_teachers_timetable 
 FOREIGN KEY (id_timetable) REFERENCES teacher_timetable(id_timetable);
 
 ALTER TABLE raiting 
 ADD CONSTRAINT fk_raiting_student 
-FOREIGN KEY (zach_number) REFERENCES students_info(zach_number);
+FOREIGN KEY (zach_number) REFERENCES student_info(zach_number);
 
-CREATE INDEX IF NOT EXISTS idx_teachers_name ON teachers_info(name);
+CREATE INDEX IF NOT EXISTS idx_teachers_name ON teacher_info(name);
 CREATE INDEX IF NOT EXISTS idx_raiting_zach_number ON raiting(zach_number);
 CREATE INDEX IF NOT EXISTS idx_raiting_group_subject ON raiting(group_name, subject);
 CREATE INDEX IF NOT EXISTS idx_attendance_group_subject ON attendance_table(group_name, subject);
-CREATE INDEX IF NOT EXISTS idx_students_group ON students_info(group_name);
+CREATE INDEX IF NOT EXISTS idx_students_group ON student_info(group_name);
 CREATE INDEX IF NOT EXISTS idx_teachers_comments_group_name ON teachers_comments(group_name);
 CREATE INDEX IF NOT EXISTS idx_teachers_comments_metadate ON teachers_comments(metadate);
 CREATE INDEX IF NOT EXISTS idx_teachers_comments_group_metadate ON teachers_comments(group_name, metadate);

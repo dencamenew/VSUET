@@ -61,7 +61,7 @@ def populate_attendance_table():
     
     for group_name, timetable_data in groups_data:
         # Получаем зачетки студентов группы
-        query = "SELECT zach_number FROM students_info WHERE group_name = %s"
+        query = "SELECT zach_number FROM student_info WHERE group_name = %s"
         cursor.execute(query, (group_name,))
         results = cursor.fetchall()
         zach_numbers = [result[0] for result in results]
@@ -171,7 +171,7 @@ def populate_attendance_table():
     conn.close()
     print("Таблица attendance_table успешно заполнена!")
 
-# Альтернативная версия если нет таблицы students_info
+# Альтернативная версия если нет таблицы student_info
 def populate_attendance_table_without_students():
     conn = psycopg2.connect(
         host="postgres",
@@ -280,7 +280,7 @@ def populate_attendance_table_without_students():
 
 # Запускаем функцию
 if __name__ == "__main__":
-    # Используйте одну из функций в зависимости от наличия таблицы students_info
+    # Используйте одну из функций в зависимости от наличия таблицы student_info
     populate_attendance_table()
     # или
     # populate_attendance_table_without_students()

@@ -27,11 +27,11 @@ def generate_password(length=12):
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def insert_student_data(conn, zach_number, group_name):
-    """Вставка данных студента в таблицу students_info"""
+    """Вставка данных студента в таблицу student_info"""
     try:
         with conn.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO students_info (zach_number, group_name) VALUES (%s, %s) ON CONFLICT (zach_number) DO NOTHING",
+                "INSERT INTO student_info (zach_number, group_name) VALUES (%s, %s) ON CONFLICT (zach_number) DO NOTHING",
                 (zach_number, group_name)
             )
             conn.commit()
