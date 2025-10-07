@@ -28,13 +28,18 @@ CREATE TABLE IF NOT EXISTS raiting (
     UNIQUE (zach_number, group_name, subject)
 );
 
+---attandance
 CREATE TABLE IF NOT EXISTS attendance_table (
-    id SERIAL PRIMARY KEY,                  
-    group_name VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    attendance JSONB NOT NULL,
-    UNIQUE (group_name, subject)
+    id SERIAL PRIMARY KEY,
+    teacher_name VARCHAR(255) NOT NULL,
+    period VARCHAR(50) NOT NULL,
+    subject_type VARCHAR(255),
+    subject_name VARCHAR(255),
+    group_name VARCHAR(50),
+    report_json JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 CREATE TABLE IF NOT EXISTS student_timetable (
     id SERIAL PRIMARY KEY,                  

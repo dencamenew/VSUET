@@ -1,6 +1,5 @@
 import psycopg2
 import json
-import os
 from datetime import date, timedelta
 
 # === Конфигурация подключения к PostgreSQL ===
@@ -21,13 +20,22 @@ def connect_db():
     return psycopg2.connect(**DB_CONFIG)
 
 
+# === Получаем всех преподавателей из teacher_info ===
+def get_all_teachers(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT name FROM teachers_info;")  # таблица из init.sql
+        rows = cur.fetchall()
+        return [r[0] for r in rows]
+
+
 # === Получаем расписание преподавателя ===
 def get_teacher_timetable(conn, teacher_name):
     with conn.cursor() as cur:
         cur.execute("SELECT timetable FROM teacher_timetable WHERE name = %s", (teacher_name,))
         row = cur.fetchone()
         if not row:
-            raise ValueError(f"Преподаватель {teacher_name} не найден в таблице teacher_timetable")
+            print(f"⚠️ Расписание не найдено для преподавателя {teacher_name}")
+            return None
         return row[0]
 
 
@@ -38,7 +46,7 @@ def get_students_by_group(conn, group_name):
         return [r[0] for r in cur.fetchall()]
 
 
-# === Карта недель Числитель / Знаменатель ===
+# === Генерация карты недель (числитель / знаменатель) ===
 def generate_week_map():
     current = START_DATE
     week_num = 0
@@ -52,7 +60,7 @@ def generate_week_map():
     return mapping
 
 
-# === Загрузка посещаемости ===
+# === Загрузка данных посещаемости ===
 def load_attendance_json(path="attendeseVed.json"):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -68,6 +76,9 @@ def load_attendance_json(path="attendeseVed.json"):
 # === Генерация ведомостей по всем предметам преподавателя ===
 def generate_teacher_reports(conn, teacher_name, attendance_data):
     timetable = get_teacher_timetable(conn, teacher_name)
+    if not timetable:
+        return []
+
     week_map = generate_week_map()
 
     weekdays = {
@@ -86,13 +97,12 @@ def generate_teacher_reports(conn, teacher_name, attendance_data):
         for day_name, times in days.items():
             for time_slot, lessons in times.items():
                 lessons = [lessons] if isinstance(lessons, dict) else lessons
-
                 for lesson in lessons:
                     subject_type = lesson["тип"]
                     subject_name = lesson["название"].strip('.')
                     group = lesson["группа"]
 
-                    # Формируем список всех дат для этой пары
+                    # Формируем даты всех занятий
                     class_dates = [
                         str(d)
                         for d, wt in week_map.items()
@@ -117,38 +127,45 @@ def generate_teacher_reports(conn, teacher_name, attendance_data):
                         "group": group,
                         "students": students_data
                     })
-
     return reports
 
 
-# === Сохранение каждого отчёта в отдельный файл ===
-def save_reports_to_files(reports, teacher_name):
-    os.makedirs("teacher_reports", exist_ok=True)
-    for r in reports:
-        safe_subject = (
-            r["subject_name"]
-            .replace('"', '')
-            .replace('«', '')
-            .replace('»', '')
-            .replace(' ', '_')
-        )
-        safe_group = r["group"].replace('/', '-')
-        file_name = f"{teacher_name.replace(' ', '_').replace('.', '')}_{safe_subject}_{safe_group}_2025.json"
-        path = os.path.join("teacher_reports", file_name)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(r, f, ensure_ascii=False, indent=2)
-        print(f"💾 {path} сохранён")
+# === Сохраняем ведомости в таблицу teacher_reports ===
+def save_reports_to_db(conn, reports):
+    with conn.cursor() as cur:
+        for r in reports:
+            cur.execute("""
+                INSERT INTO attendance_table (teacher_name, period, subject_type, subject_name, group_name, report_json)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                r["teacher"],
+                r["period"],
+                r["subject_type"],
+                r["subject_name"],
+                r["group"],
+                json.dumps(r, ensure_ascii=False)
+            ))
+    conn.commit()
+    print(f"💾 В БД сохранено {len(reports)} ведомостей")
 
 
 # === Основной запуск ===
 if __name__ == "__main__":
     conn = connect_db()
-    teacher_name = "Денисенко В.В."
-
     attendance_data = load_attendance_json()
-    reports = generate_teacher_reports(conn, teacher_name, attendance_data)
 
-    save_reports_to_files(reports, teacher_name)
+    teachers = get_all_teachers(conn)
+    print(f"👩‍🏫 Найдено преподавателей: {len(teachers)}")
 
-    print(f"✅ Всего ведомостей создано: {len(reports)}")
+    total_reports = 0
+    for teacher_name in teachers:
+        print(f"\n📘 Обработка преподавателя: {teacher_name}")
+        reports = generate_teacher_reports(conn, teacher_name, attendance_data)
+        if reports:
+            save_reports_to_db(conn, reports)
+            total_reports += len(reports)
+        else:
+            print(f"⚠️ Для преподавателя {teacher_name} нет расписания")
+
+    print(f"\n✅ Всего ведомостей сохранено в БД: {total_reports}")
     conn.close()
