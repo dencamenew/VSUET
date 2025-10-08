@@ -8,6 +8,7 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: db
     volumes:
+      # Папка для SQL-скриптов инициализации (init.sql, fill_users.sql)
       - ./db/initdb:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -18,36 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  student_timetable:
-    container_name: student_timetable
-    build:
-      context: ./parsers/students_timetable
-      dockerfile: Dockerfile
-    shm_size: '2gb'
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
-  teacher_timetable:
-    container_name: teacher_timetable
-    build:
-      context: ./parsers/teachers_timetable
-      dockerfile: Dockerfile
-    shm_size: '2gb'
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: db
-
+  # 1. Загрузка групп и студентов (student_info должен заполнять и groups)
   student_info:
     container_name: student_info
     build:
@@ -63,6 +35,39 @@ services:
       DB_PASSWORD: admin
       DB_NAME: db
 
+  # 2. Загрузка расписания студентов (Зависит только от DB, но логически от student_info/groups)
+  student_timetable:
+    container_name: student_timetable
+    build:
+      context: ./parsers/students_timetable
+      dockerfile: Dockerfile
+    shm_size: '2gb'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  # 3. Загрузка расписания преподавателей
+  teacher_timetable:
+    container_name: teacher_timetable
+    build:
+      context: ./parsers/teachers_timetable
+      dockerfile: Dockerfile
+    shm_size: '2gb'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: db
+
+  # 4. Загрузка информации о преподавателях (Зависит от teacher_timetable)
   teacher_info:
     container_name: teacher_info
     build:
@@ -79,7 +84,8 @@ services:
       DB_PASSWORD: admin
       DB_NAME: db
 
-  attendance:
+  # 5. ПАРСЕР ПОСЕЩАЕМОСТИ (attendance.py) - Запускается ПОСЛЕ ВСЕХ ОСНОВНЫХ ДАННЫХ
+  attendance_parser:
     container_name: attendance
     build:
       context: ./parsers/attendance
@@ -87,15 +93,38 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      student_timetable:
+      student_timetable: # Нужны ID групп и расписание студентов
         condition: service_completed_successfully
-      student_info:
+      student_info: # Нужны ID групп и студенты
+        condition: service_completed_successfully
+      teacher_info: # НУЖНЫ ID ПРЕПОДАВАТЕЛЕЙ (ИСПРАВЛЕНО)
         condition: service_completed_successfully
     environment:
       DB_HOST: postgres
       DB_USER: admin
       DB_PASSWORD: admin
       DB_NAME: db
+  
+  # 6. ЗАПОЛНЕНИЕ USERS - Запускается САМЫМ ПОСЛЕДНИМ
+  fill_users:
+    container_name: fill_users
+    image: postgres:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      student_info: # Нужны student_info для создания учетных записей студентов (ИСПРАВЛЕНО)
+        condition: service_completed_successfully
+      teacher_info:  # Нужны teacher_info для создания учетных записей преподавателей
+        condition: service_completed_successfully
+      attendance_parser: # Запускается после attendance_parser, чтобы быть последним
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+    volumes:
+      # Запускает fill_users.sql, который INSERT'ит данные из student_info и teacher_info
+      - ./db/initdb/fill_users.sql:/docker-entrypoint-initdb.d/fill_users.sql
 
 volumes:
   postgres_data:

@@ -30,29 +30,29 @@ CREATE TABLE IF NOT EXISTS student_timetable (
 -- 3. ПРЕПОДАВАТЕЛИ
 -- ----------------------------------------
 
--- Расписание преподавателей 
+-- Расписание преподавателей (ИСПРАВЛЕНО: PK переименован в id_timetable)
 CREATE TABLE IF NOT EXISTS teacher_timetable (
-    id SERIAL PRIMARY KEY,
+    id_timetable SERIAL PRIMARY KEY,
     teacher_name VARCHAR(255) NOT NULL UNIQUE,
     timetable JSONB NOT NULL
 );
 
--- таблицы с информацией о преподавателях 
+-- таблицы с информацией о преподавателях (id_timetable теперь ссылается на PK)
 CREATE TABLE IF NOT EXISTS teacher_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     groups_subjects JSONB NOT NULL,
-    id_timetable INTEGER REFERENCES teacher_timetable(id)
+    id_timetable INTEGER REFERENCES teacher_timetable(id_timetable)
 );
 
 -- ----------------------------------------
 -- 4. ВЕДОМОСТИ, КОММЕНТАРИИ, РЕЙТИНГ
 -- ----------------------------------------
 
--- посещаемость 
+-- посещаемость (ИСПРАВЛЕНО: teacher_name -> teacher_info_id, group_name -> group_id)
 CREATE TABLE IF NOT EXISTS attendance_table (
     id SERIAL PRIMARY KEY,
-    teacher_info_id INTEGER NOT NULL REFERENCES teacher_info(id) ON DELETE RESTRICT, -- Ссылка на teacher_info
+    teacher_info_id INTEGER NOT NULL REFERENCES teacher_info(id) ON DELETE RESTRICT, 
     period VARCHAR(50) NOT NULL,
     subject_type VARCHAR(255),
     subject_name VARCHAR(255),
@@ -61,6 +61,26 @@ CREATE TABLE IF NOT EXISTS attendance_table (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Оценки/Рейтинг (ИСПРАВЛЕНО: group_name -> group_id)
+CREATE TABLE IF NOT EXISTS raiting (
+    id SERIAL PRIMARY KEY,
+    zach_number VARCHAR(20) NOT NULL REFERENCES student_info(zach_number) ON DELETE CASCADE, 
+    group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE RESTRICT,
+    subject_name VARCHAR(255) NOT NULL,
+    score INT NOT NULL,
+    metadate JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Комментарии преподавателей (ИСПРАВЛЕНО: group_name -> group_id)
+CREATE TABLE IF NOT EXISTS teachers_comments (
+    id SERIAL PRIMARY KEY,
+    teacher_info_id INTEGER NOT NULL REFERENCES teacher_info(id) ON DELETE RESTRICT,
+    group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE RESTRICT,
+    comment TEXT NOT NULL,
+    metadate JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ----------------------------------------
 -- 5. АУТЕНТИФИКАЦИЯ (USERS)
@@ -77,7 +97,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---скрипт по заполнению users существующими пользователями из teacher_ & student_
+-- Скрипт по заполнению users (перенесен в отдельный файл fill_users.sql для Docker Compose)
+/*
 INSERT INTO users (username, passwd, role, teacher_info_id)
 SELECT
     name AS username, 
@@ -94,10 +115,64 @@ SELECT
     'STUDENT' AS role,
     id AS student_info_id
 FROM student_info;
+*/
 
 -- ----------------------------------------
--- 6. ФУНКЦИИ И ТРИГГЕРЫ
+-- 6. ИНДЕКСЫ (ИСПРАВЛЕНО: group_name -> group_id)
 -- ----------------------------------------
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_comments_group_teacher
+ON teachers_comments (group_id, teacher_info_id); -- ИСПРАВЛЕНО
+
+CREATE INDEX IF NOT EXISTS idx_raiting_group_subject
+ON raiting (group_id, subject_name); -- ИСПРАВЛЕНО
+
+CREATE INDEX IF NOT EXISTS idx_attendance_group_subject
+ON attendance_table (group_id, subject_name); -- ИСПРАВЛЕНО
+
+CREATE INDEX IF NOT EXISTS idx_students_group
+ON student_info (group_id); -- ИСПРАВЛЕНО
+
+-- ----------------------------------------
+-- 7. ФУНКЦИИ И ТРИГГЕРЫ (ИСПРАВЛЕНО: group_name, attendance -> group_id, report_json)
+-- ----------------------------------------
+
+-- Функция-триггер для raiting
+CREATE OR REPLACE FUNCTION notify_raiting_change()
+RETURNS TRIGGER AS $$
+DECLARE
+    notification JSON;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        notification = json_build_object(
+            'eventType', TG_OP,
+            'id', OLD.id,
+            'zach_number', OLD.zach_number,
+            'group_id', OLD.group_id, -- ИСПРАВЛЕНО
+            'score', OLD.score,
+            'changed_at', NOW()
+        );
+    ELSE
+        notification = json_build_object(
+            'eventType', TG_OP,
+            'id', NEW.id,
+            'zach_number', NEW.zach_number,
+            'group_id', NEW.group_id, -- ИСПРАВЛЕНО
+            'score', NEW.score,
+            'changed_at', NOW()
+        );
+    END IF;
+
+    PERFORM pg_notify('raiting_updates', notification::text);
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- Функция-триггер для attendance_table
 CREATE OR REPLACE FUNCTION notify_attendance_table_change()
@@ -109,18 +184,18 @@ BEGIN
         notification = json_build_object(
             'eventType', TG_OP,
             'id', OLD.id,
-            'teacher_info_id', OLD.teacher_info_id, -- ИСПРАВЛЕНО (с teacher_name)
+            'teacher_info_id', OLD.teacher_info_id, -- ИСПРАВЛЕНО
             'group_id', OLD.group_id, -- ИСПРАВЛЕНО
-            'report_json', OLD.report_json, -- ИСПРАВЛЕНО (с attendance)
+            'report_json', OLD.report_json, -- ИСПРАВЛЕНО
             'changed_at', NOW()
         );
     ELSE
         notification = json_build_object(
             'eventType', TG_OP,
             'id', NEW.id,
-            'teacher_info_id', NEW.teacher_info_id, -- ИСПРАВЛЕНО (с teacher_name)
+            'teacher_info_id', NEW.teacher_info_id, -- ИСПРАВЛЕНО
             'group_id', NEW.group_id, -- ИСПРАВЛЕНО
-            'report_json', NEW.report_json, -- ИСПРАВЛЕНО (с attendance)
+            'report_json', NEW.report_json, -- ИСПРАВЛЕНО
             'changed_at', NOW()
         );
     END IF;
@@ -136,7 +211,52 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+-- Функция-триггер для teachers_comments
+CREATE OR REPLACE FUNCTION notify_teachers_comments_change()
+RETURNS TRIGGER AS $$
+DECLARE
+    notification JSON;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        notification = json_build_object(
+            'eventType', TG_OP,
+            'id', OLD.id,
+            'group_id', OLD.group_id, -- ИСПРАВЛЕНО
+            'comment', OLD.comment,
+            'metadate', OLD.metadate,
+            'changed_at', NOW()
+        );
+    ELSE
+        notification = json_build_object(
+            'eventType', TG_OP,
+            'id', NEW.id,
+            'group_id', NEW.group_id, -- ИСПРАВЛЕНО
+            'comment', NEW.comment,
+            'metadate', NEW.metadate,
+            'changed_at', NOW()
+        );
+    END IF;
+
+    PERFORM pg_notify('teachers_comments_updates', notification::text);
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
 -- Применение триггеров
+CREATE TRIGGER raiting_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON raiting
+FOR EACH ROW EXECUTE FUNCTION notify_raiting_change();
+
 CREATE TRIGGER attendance_table_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON attendance_table
 FOR EACH ROW EXECUTE FUNCTION notify_attendance_table_change();
+
+CREATE TRIGGER teachers_comments_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON teachers_comments
+FOR EACH ROW EXECUTE FUNCTION notify_teachers_comments_change();
