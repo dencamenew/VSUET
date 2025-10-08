@@ -1,29 +1,70 @@
---таблицы с информацией о студентах
+-- ----------------------------------------
+-- 1. ЦЕНТРАЛЬНЫЙ СПРАВОЧНИК
+-- ----------------------------------------
+
+-- таблица с группами (ЕДИНЫЙ ИСТОЧНИК ИСТИНЫ)
+CREATE TABLE IF NOT EXISTS groups (
+    id SERIAL PRIMARY KEY,
+    group_name VARCHAR(20) NOT NULL UNIQUE
+);
+
+-- ----------------------------------------
+-- 2. СТУДЕНТЫ
+-- ----------------------------------------
+
+-- таблицы с информацией о студентах (Использует group_id)
 CREATE TABLE IF NOT EXISTS student_info (
     id SERIAL PRIMARY KEY,
     zach_number VARCHAR(20) NOT NULL UNIQUE,
-    group_name VARCHAR(20) NOT NULL
+    group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE RESTRICT
 );
 
+-- расписание студентов (Использует group_id)
 CREATE TABLE IF NOT EXISTS student_timetable (
     id SERIAL PRIMARY KEY,                  
-    group_name VARCHAR(255) NOT NULL UNIQUE,
+    group_id INTEGER NOT NULL UNIQUE REFERENCES groups(id) ON DELETE CASCADE,
     timetable JSONB NOT NULL
 );
 
--- таблицы с информацией о преподавателях
+-- ----------------------------------------
+-- 3. ПРЕПОДАВАТЕЛИ
+-- ----------------------------------------
+
+-- Расписание преподавателей 
+CREATE TABLE IF NOT EXISTS teacher_timetable (
+    id SERIAL PRIMARY KEY,
+    teacher_name VARCHAR(255) NOT NULL UNIQUE,
+    timetable JSONB NOT NULL
+);
+
+-- таблицы с информацией о преподавателях 
 CREATE TABLE IF NOT EXISTS teacher_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     groups_subjects JSONB NOT NULL,
-    id_timetable INT
+    id_timetable INTEGER REFERENCES teacher_timetable(id)
 );
 
-CREATE TABLE IF NOT EXISTS teacher_timetable (
-    id_timetable SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    timetable JSONB NOT NULL
+-- ----------------------------------------
+-- 4. ВЕДОМОСТИ, КОММЕНТАРИИ, РЕЙТИНГ
+-- ----------------------------------------
+
+-- посещаемость 
+CREATE TABLE IF NOT EXISTS attendance_table (
+    id SERIAL PRIMARY KEY,
+    teacher_info_id INTEGER NOT NULL REFERENCES teacher_info(id) ON DELETE RESTRICT, -- Ссылка на teacher_info
+    period VARCHAR(50) NOT NULL,
+    subject_type VARCHAR(255),
+    subject_name VARCHAR(255),
+    group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE RESTRICT, 
+    report_json JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- ----------------------------------------
+-- 5. АУТЕНТИФИКАЦИЯ (USERS)
+-- ----------------------------------------
 
 --общая таблица со всеми пользователями API
 CREATE TABLE IF NOT EXISTS users (
@@ -54,94 +95,11 @@ SELECT
     id AS student_info_id
 FROM student_info;
 
---ведомости посещаемости
-CREATE TABLE IF NOT EXISTS attendance_table (
-    id SERIAL PRIMARY KEY,
-    teacher_name VARCHAR(255) NOT NULL,
-    period VARCHAR(50) NOT NULL,
-    subject_type VARCHAR(255),
-    subject_name VARCHAR(255),
-    group_name VARCHAR(50),
-    report_json JSONB NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- ----------------------------------------
+-- 6. ФУНКЦИИ И ТРИГГЕРЫ
+-- ----------------------------------------
 
-
-
-
----!!! пока не используется !!!---
-CREATE TABLE IF NOT EXISTS teacher_comments (
-    id SERIAL PRIMARY KEY,                  
-    group_name VARCHAR(255) NOT NULL UNIQUE,
-    comment VARCHAR(255) NOT NULL,
-    metadate TIMESTAMP NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS raiting (
-    id SERIAL PRIMARY KEY,                  
-    zach_number VARCHAR(20) NOT NULL,
-    group_name VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    raiting JSONB NOT NULL,
-    ved_type VARCHAR(255) NOT NULL,
-    UNIQUE (zach_number, group_name, subject)
-);
-
-
-ALTER TABLE teacher_info 
-ADD CONSTRAINT fk_teachers_timetable 
-FOREIGN KEY (id_timetable) REFERENCES teacher_timetable(id_timetable);
-
-ALTER TABLE raiting 
-ADD CONSTRAINT fk_raiting_student 
-FOREIGN KEY (zach_number) REFERENCES student_info(zach_number);
-
-CREATE INDEX IF NOT EXISTS idx_teachers_name ON teacher_info(name);
-CREATE INDEX IF NOT EXISTS idx_raiting_zach_number ON raiting(zach_number);
-CREATE INDEX IF NOT EXISTS idx_raiting_group_subject ON raiting(group_name, subject);
-CREATE INDEX IF NOT EXISTS idx_attendance_group_subject ON attendance_table(group_name, subject);
-CREATE INDEX IF NOT EXISTS idx_students_group ON student_info(group_name);
-CREATE INDEX IF NOT EXISTS idx_teachers_comments_group_name ON teachers_comments(group_name);
-CREATE INDEX IF NOT EXISTS idx_teachers_comments_metadate ON teachers_comments(metadate);
-CREATE INDEX IF NOT EXISTS idx_teachers_comments_group_metadate ON teachers_comments(group_name, metadate);
-
-CREATE OR REPLACE FUNCTION notify_raiting_change()
-RETURNS TRIGGER AS $$
-DECLARE
-    notification JSON;
-BEGIN
-    IF TG_OP = 'DELETE' THEN
-        notification = json_build_object(
-            'eventType', TG_OP,
-            'id', OLD.id,
-            'zach_number', OLD.zach_number,
-            'group_name', OLD.group_name,
-            'subject', OLD.subject,
-            'raiting', OLD.raiting,
-            'changed_at', NOW()
-        );
-    ELSE
-        notification = json_build_object(
-            'eventType', TG_OP,
-            'id', NEW.id,
-            'zach_number', NEW.zach_number,
-            'group_name', NEW.group_name,
-            'subject', NEW.subject,
-            'raiting', NEW.raiting,
-            'changed_at', NOW()
-        );
-    END IF;
-
-    PERFORM pg_notify('raiting_updates', notification::text);
-    
-    IF TG_OP = 'DELETE' THEN
-        RETURN OLD;
-    ELSE
-        RETURN NEW;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
+-- Функция-триггер для attendance_table
 CREATE OR REPLACE FUNCTION notify_attendance_table_change()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -151,18 +109,18 @@ BEGIN
         notification = json_build_object(
             'eventType', TG_OP,
             'id', OLD.id,
-            'group_name', OLD.group_name,
-            'subject', OLD.subject,
-            'attendance', OLD.attendance,
+            'teacher_info_id', OLD.teacher_info_id, -- ИСПРАВЛЕНО (с teacher_name)
+            'group_id', OLD.group_id, -- ИСПРАВЛЕНО
+            'report_json', OLD.report_json, -- ИСПРАВЛЕНО (с attendance)
             'changed_at', NOW()
         );
     ELSE
         notification = json_build_object(
             'eventType', TG_OP,
             'id', NEW.id,
-            'group_name', NEW.group_name,
-            'subject', NEW.subject,
-            'attendance', NEW.attendance,
+            'teacher_info_id', NEW.teacher_info_id, -- ИСПРАВЛЕНО (с teacher_name)
+            'group_id', NEW.group_id, -- ИСПРАВЛЕНО
+            'report_json', NEW.report_json, -- ИСПРАВЛЕНО (с attendance)
             'changed_at', NOW()
         );
     END IF;
@@ -177,49 +135,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION notify_teachers_comments_change()
-RETURNS TRIGGER AS $$
-DECLARE
-    notification JSON;
-BEGIN
-    IF TG_OP = 'DELETE' THEN
-        notification = json_build_object(
-            'eventType', TG_OP,
-            'id', OLD.id,
-            'group_name', OLD.group_name,
-            'comment', OLD.comment,
-            'metadate', OLD.metadate,
-            'changed_at', NOW()
-        );
-    ELSE
-        notification = json_build_object(
-            'eventType', TG_OP,
-            'id', NEW.id,
-            'group_name', NEW.group_name,
-            'comment', NEW.comment,
-            'metadate', NEW.metadate,
-            'changed_at', NOW()
-        );
-    END IF;
 
-    PERFORM pg_notify('teachers_comments_updates', notification::text);
-    
-    IF TG_OP = 'DELETE' THEN
-        RETURN OLD;
-    ELSE
-        RETURN NEW;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER raiting_notify_trigger
-AFTER INSERT OR UPDATE OR DELETE ON raiting
-FOR EACH ROW EXECUTE FUNCTION notify_raiting_change();
-
+-- Применение триггеров
 CREATE TRIGGER attendance_table_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON attendance_table
 FOR EACH ROW EXECUTE FUNCTION notify_attendance_table_change();
-
-CREATE TRIGGER teachers_comments_notify_trigger
-AFTER INSERT OR UPDATE OR DELETE ON teachers_comments
-FOR EACH ROW EXECUTE FUNCTION notify_teachers_comments_change();

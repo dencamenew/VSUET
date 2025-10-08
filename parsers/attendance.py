@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 # === Конфигурация подключения к PostgreSQL ===
 DB_CONFIG = {
-    "host": "localhost",
+    "host": "postgres",
     "database": "db",
     "user": "admin",
     "password": "admin"
