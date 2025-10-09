@@ -26,16 +26,50 @@ def generate_password(length=12):
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-def insert_student_data(conn, zach_number, group_name):
-    """Вставка данных студента в таблицу student_info"""
+# --- НОВАЯ ФУНКЦИЯ: Получение или создание ID группы ---
+def get_or_create_group_id(conn, group_name):
+    """Получение group_id по group_name. Если группы нет, она создается."""
     try:
         with conn.cursor() as cursor:
+            # 1. Попытка найти существующий id группы
+            cursor.execute("SELECT id FROM groups WHERE group_name = %s", (group_name,))
+            group_id = cursor.fetchone()
+            
+            if group_id:
+                return group_id[0]
+            
+            # 2. Если группа не найдена, вставить новую и получить ее id
             cursor.execute(
-                "INSERT INTO student_info (zach_number, group_name) VALUES (%s, %s) ON CONFLICT (zach_number) DO NOTHING",
-                (zach_number, group_name)
+                "INSERT INTO groups (group_name) VALUES (%s) RETURNING id",
+                (group_name,)
             )
             conn.commit()
-            logger.debug(f"Добавлен студент: {zach_number} из группы {group_name}")
+            return cursor.fetchone()[0]
+    except Exception as e:
+        logger.error(f"Ошибка при получении/создании group_id для {group_name}: {e}")
+        conn.rollback()
+        return None
+
+# --- ИЗМЕНЕННАЯ ФУНКЦИЯ: Теперь использует group_id ---
+def insert_student_data(conn, zach_number, group_name):
+    """Вставка данных студента в таблицу student_info, используя group_id"""
+    
+    # 1. Получаем group_id
+    group_id = get_or_create_group_id(conn, group_name)
+    
+    if group_id is None:
+        logger.error(f"Пропуск студента {zach_number}: не удалось получить group_id.")
+        return
+
+    try:
+        with conn.cursor() as cursor:
+            # 2. Вставляем zach_number и group_id в соответствующие колонки
+            cursor.execute(
+                "INSERT INTO student_info (zach_number, group_id) VALUES (%s, %s) ON CONFLICT (zach_number) DO NOTHING",
+                (zach_number, group_id)
+            )
+            conn.commit()
+            logger.debug(f"Добавлен студент: {zach_number} из группы {group_name} (ID: {group_id})")
     except Exception as e:
         logger.error(f"Ошибка при вставке студента {zach_number}: {e}")
         conn.rollback()
@@ -60,7 +94,8 @@ def process_group_data(driver, group, conn):
                 resp = requests.get(href)
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
-                group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip()
+                # Здесь извлекается строковое имя группы, которое затем передается
+                group_name = soup.find('a', {'id': 'ucVedBox_lblGroup'}).text.strip() 
                 table_rows = soup.find_all('tr', class_=['VedRow1', 'VedRow2'])
                 
                 
@@ -68,7 +103,8 @@ def process_group_data(driver, group, conn):
                     tds = row.find_all('td')
                     number_zach = tds[1].text.strip()
                     if number_zach: 
-                        insert_student_data(conn, number_zach, group_name)
+                        # Вызываем исправленную функцию
+                        insert_student_data(conn, number_zach, group_name) 
                 
                 logger.info(f"Студенты из группы {group_name} обработаны и добавлены в БД")
                 break
@@ -85,6 +121,7 @@ def process_group_data(driver, group, conn):
 logger.info("🚀 Начало парсинга зачёток")
 
 # Подключение к БД
+# ... (Остальной код подключения и парсинга остается без изменений)
 try:
     conn = psycopg2.connect(
         host="postgres",

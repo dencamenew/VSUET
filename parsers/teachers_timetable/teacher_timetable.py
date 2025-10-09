@@ -178,10 +178,13 @@ for teacher in teachers:
             logger.info(f"Сохранение данных для {teacher}, размер JSON: {len(json_data)} байт")
             
             cursor.execute("""
-                INSERT INTO teacher_timetable (name, timetable)
-                VALUES (%s, %s::jsonb)
-                RETURNING id_timetable
-            """, (teacher, json_data))
+                            INSERT INTO teacher_timetable (teacher_name, timetable)
+                            VALUES (%s, %s::jsonb)
+                            ON CONFLICT (teacher_name)
+                            DO UPDATE SET timetable = EXCLUDED.timetable
+                            RETURNING id;
+                        """, (teacher, json_data))
+
             
             record_id = cursor.fetchone()[0]
             conn.commit()

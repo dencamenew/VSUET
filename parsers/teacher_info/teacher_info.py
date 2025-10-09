@@ -18,7 +18,7 @@ def generate_password(length=12):
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 DB_CONFIG = {
-    'host': 'postgres',
+    'host': 'localhost',
     'database': 'db',
     'user': 'admin',
     'password': 'admin',

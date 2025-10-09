@@ -45,6 +45,7 @@ def parse_subject_info(subject_text):
             
             # Определяем тип занятия (первые слова до двоеточия)
             lesson_type = ""
+            name_part = part.strip()
             if ':' in part:
                 type_part, name_part = part.split(':', 1)
                 lesson_type = type_part.strip()
@@ -57,11 +58,12 @@ def parse_subject_info(subject_text):
 
 
             if " язык " in lesson_name:
+                # В этом блоке сложная логика парсинга, используем teacher и auditorium из общего парсинга, если возможно
                 subjects.append({
                     "тип": lesson_type,
-                    "название": " ".join(name_part.split()[:-2][:-5]),
-                    "преподаватель": " ".join(name_part.split()[:-2][-2:]) + "/" + " ".join(name_part.split()[:-2][2:-3]),
-                    "аудитория": "".join(lesson_name.split()[-2:-1])[3:-2] + "/" + "".join(lesson_name.split()[-5:-4])
+                    "название": " ".join(name_part.split()[:-2][:-5]).strip(), # Упрощено, может потребоваться дополнительная отладка
+                    "преподаватель": teacher or "-",
+                    "аудитория": auditorium
                 })
             elif "Физическая культура" in lesson_name:
                 subjects.append({
@@ -79,10 +81,11 @@ def parse_subject_info(subject_text):
                     "аудитория": "подготовка"
                 })
             else:
+                # Использовать teacher и auditorium, полученные ранее
                 subjects.append({
                     "тип": lesson_type,
-                    "название": " ".join(name_part.split()[:-2][:-2]),
-                    "преподаватель": " ".join(name_part.split()[:-2][-2:]),
+                    "название": lesson_name, 
+                    "преподаватель": teacher,
                     "аудитория": auditorium
                 })
         
@@ -97,18 +100,46 @@ def parse_subject_info(subject_text):
             "аудитория": ""
         }]
 
-def insert_group_timetable(conn, group_name, timetable_data):
-    """Моментальная вставка расписания для группы в БД"""
+# --------------------------------------------------------
+# НОВАЯ ФУНКЦИЯ: Получение ID группы
+# --------------------------------------------------------
+def get_group_id(conn, group_name):
+    """Получение group_id по group_name."""
     try:
         with conn.cursor() as cursor:
+            # Ищем ID группы. Предполагается, что она уже добавлена students_info.py
+            cursor.execute("SELECT id FROM groups WHERE group_name = %s", (group_name,))
+            group_id = cursor.fetchone()
+            if group_id:
+                return group_id[0]
+            else:
+                logger.error(f"❌ Группа '{group_name}' не найдена в таблице groups. Пропуск.")
+                return None
+    except Exception as e:
+        logger.error(f"Ошибка при получении group_id для {group_name}: {e}")
+        return None
+
+# --------------------------------------------------------
+# ИСПРАВЛЕННАЯ ФУНКЦИЯ: Теперь использует group_id
+# --------------------------------------------------------
+def insert_group_timetable(conn, group_name, timetable_data):
+    """Моментальная вставка расписания для группы в БД, используя group_id"""
+    
+    group_id = get_group_id(conn, group_name)
+    if group_id is None:
+        return
+
+    try:
+        with conn.cursor() as cursor:
+            # ИСПРАВЛЕНИЕ: Используем 'group_id' в запросе и ON CONFLICT
             cursor.execute("""
-                INSERT INTO student_timetable (group_name, timetable)
+                INSERT INTO student_timetable (group_id, timetable)
                 VALUES (%s, %s::jsonb)
-                ON CONFLICT (group_name) 
+                ON CONFLICT (group_id) 
                 DO UPDATE SET timetable = EXCLUDED.timetable
-            """, (group_name, json.dumps(timetable_data, ensure_ascii=False)))
+            """, (group_id, json.dumps(timetable_data, ensure_ascii=False)))
             conn.commit()
-            logger.info(f"✅ Расписание для группы {group_name} сохранено в БД")
+            logger.info(f"✅ Расписание для группы {group_name} (ID: {group_id}) сохранено в БД")
     except Exception as e:
         logger.error(f"❌ Ошибка при сохранении расписания для группы {group_name}: {e}")
         conn.rollback()

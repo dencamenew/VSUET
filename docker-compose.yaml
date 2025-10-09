@@ -105,26 +105,6 @@ services:
       DB_PASSWORD: admin
       DB_NAME: db
   
-  # 6. ЗАПОЛНЕНИЕ USERS - Запускается САМЫМ ПОСЛЕДНИМ
-  fill_users:
-    container_name: fill_users
-    image: postgres:latest
-    depends_on:
-      postgres:
-        condition: service_healthy
-      student_info: # Нужны student_info для создания учетных записей студентов (ИСПРАВЛЕНО)
-        condition: service_completed_successfully
-      teacher_info:  # Нужны teacher_info для создания учетных записей преподавателей
-        condition: service_completed_successfully
-      attendance_parser: # Запускается после attendance_parser, чтобы быть последним
-        condition: service_completed_successfully
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: db
-    volumes:
-      # Запускает fill_users.sql, который INSERT'ит данные из student_info и teacher_info
-      - ./db/initdb/fill_users.sql:/docker-entrypoint-initdb.d/fill_users.sql
 
 volumes:
   postgres_data:

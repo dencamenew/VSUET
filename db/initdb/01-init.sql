@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS student_timetable (
 
 -- Расписание преподавателей (ИСПРАВЛЕНО: PK переименован в id_timetable)
 CREATE TABLE IF NOT EXISTS teacher_timetable (
-    id_timetable SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     teacher_name VARCHAR(255) NOT NULL UNIQUE,
     timetable JSONB NOT NULL
 );
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS teacher_info (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     groups_subjects JSONB NOT NULL,
-    id_timetable INTEGER REFERENCES teacher_timetable(id_timetable)
+    id_timetable INTEGER REFERENCES teacher_timetable(id)
 );
 
 -- ----------------------------------------
