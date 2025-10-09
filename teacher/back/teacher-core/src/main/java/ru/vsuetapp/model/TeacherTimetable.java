@@ -1,0 +1,26 @@
+package ru.vsuetapp.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "teacher_timetable")
+public class TeacherTimetable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String teacherName;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String timetable; // В PostgreSQL потом можно заменить на jsonb
+
+    @OneToOne(mappedBy = "timetable")
+    private TeacherInfo teacherInfo;
+}

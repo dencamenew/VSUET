@@ -47,9 +47,9 @@ public class User {
     @JoinColumn(name = "student_info_id")
     private StudentInfo studentInfo;
 
-    // @OneToOne
-    // @JoinColumn(name = "teacher_info_id")
-    // private TeacherInfo teacherInfo;
+     @OneToOne
+     @JoinColumn(name = "teacher_info_id")
+     private TeacherInfo teacherInfo;
 
 
     // ----- Метаданные -----
