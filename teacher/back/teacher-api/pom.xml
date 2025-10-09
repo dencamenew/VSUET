@@ -3,55 +3,65 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>ru.vsuetapp</groupId>
         <artifactId>teacher-back</artifactId>
         <version>1.0.0</version>
     </parent>
-    
+
     <artifactId>teacher-api</artifactId>
     <name>teacher-api</name>
-    
+
     <dependencies>
+        <!-- core-модуль -->
         <dependency>
             <groupId>ru.vsuetapp</groupId>
             <artifactId>teacher-core</artifactId>
             <version>1.0.0</version>
         </dependency>
 
-        <!-- Зависимость от core модуля -->
-        <dependency>
-            <groupId>ru.practice.teststation</groupId>
-            <artifactId>teacher-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        
         <!-- Spring Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        
+
         <!-- Spring Boot Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+
+        <!-- Lombok (тот же, что в core) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Тесты -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip> <!-- Включаем только для api модуля -->
-                    <mainClass>ru.practice.teststation.ApiApplication</mainClass>
+                    <mainClass>ru.vsuetapp.ApiApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
