@@ -26,7 +26,7 @@ public class Groups {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String group_name;
+    private String groupName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "faculty_id", referencedColumnName = "id", nullable = false)

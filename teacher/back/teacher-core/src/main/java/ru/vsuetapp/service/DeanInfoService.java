@@ -39,7 +39,7 @@ public class DeanInfoService {
                 .orElseThrow(() -> new IllegalArgumentException("Декан не найден"));
 
         Groups group = Groups.builder()
-                .group_name(groupName)
+                .groupName(groupName)
                 .faculty(dean.getFaculty())
                 .build();
 
@@ -97,8 +97,8 @@ public class DeanInfoService {
         }
 
         StudentInfo student = StudentInfo.builder()
-                .student_name(studentName)
-                .zach_number(zachNumber)
+                .studentName(studentName)
+                .zachNumber(zachNumber)
                 .group(group)
                 .build();
 

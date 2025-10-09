@@ -26,7 +26,7 @@ public class DeanInfo {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String dean_name;
+    private String deanName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "faculty_id", referencedColumnName = "id", nullable = false)

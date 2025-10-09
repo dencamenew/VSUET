@@ -28,7 +28,7 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("Факультет не найден"));
 
         DeanInfo deanInfo = DeanInfo.builder()
-                .dean_name(username)
+                .deanName(username)
                 .faculty(faculty)
                 .build();
         deanInfoRepository.save(deanInfo);
@@ -49,8 +49,8 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("Группа не найдена"));
 
         StudentInfo studentInfo = StudentInfo.builder()
-                .student_name(username)
-                .zach_number(zachNumber)
+                .studentName(username)
+                .zachNumber(zachNumber)
                 .group(group)
                 .build();
         studentInfoRepository.save(studentInfo);

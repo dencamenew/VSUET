@@ -26,10 +26,10 @@ public class StudentInfo {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String student_name;
+    private String studentName;
 
     @Column(nullable = false, unique = true)
-    private String zach_number;
+    private String zachNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
