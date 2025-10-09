@@ -18,6 +18,7 @@ public class AdminService {
     private final StudentInfoRepository studentInfoRepository;
     private final TeacherInfoRepository teacherInfoRepository;
     private final TeacherTimetableRepository teacherTimetableRepository;
+    private final GroupTimetableRepository groupTimetableRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -164,4 +165,26 @@ public class AdminService {
             teacherInfoRepository.save(teacher);
         }
     }
+
+    @Transactional
+    public GroupTimetable createStudentTimetable(Long groupId, String timetableJson) {
+        Groups group = groupsRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Группа не найдена"));
+
+        GroupTimetable timetable = GroupTimetable.builder()
+                .group(group)
+                .timetable(timetableJson)
+                .build();
+
+        return groupTimetableRepository.save(timetable);
+    }
+
+    @Transactional
+    public void deleteStudentTimetable(Long groupId) {
+        GroupTimetable timetable = groupTimetableRepository.findByGroupId(groupId);
+        if (timetable != null) {
+            groupTimetableRepository.delete(timetable);
+        }
+    }
+
 }
