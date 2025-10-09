@@ -79,7 +79,7 @@ public class AdminController {
     }
 
     // =============== TEACHER TIMETABLE ===============
-    @PostMapping("/timetable_for_teacher/{teacherId}/create")
+    @PostMapping("/timetable/teacher/{teacherId}")
     public ResponseEntity<TeacherTimetable> createTeacherTimetable(
             @PathVariable Long teacherId,
             @RequestParam String timetableJson
@@ -87,13 +87,14 @@ public class AdminController {
         return ResponseEntity.ok(adminService.createTeacherTimetable(teacherId, timetableJson));
     }
 
-    @DeleteMapping("/timetable_for_teacher/{id}/delete")
+    @DeleteMapping("/timetable/teacher/{id}")
     public ResponseEntity<String> deleteTeacherTimetable(@PathVariable Long id) {
         adminService.deleteTeacherTimetable(id);
         return ResponseEntity.ok("Расписание преподавателя удалено");
     }
 
-    @PostMapping("/timetable_for_groups/{groupId}/create")
+    // =============== GROUP TIMETABLE ===============
+    @PostMapping("/timetable/groups/{groupId}")
     public ResponseEntity<GroupTimetable> createStudentTimetable(
             @PathVariable Long groupId,
             @RequestBody String timetableJson
@@ -102,7 +103,7 @@ public class AdminController {
         return ResponseEntity.ok(timetable);
     }
 
-    @DeleteMapping("/timetable_for_groups/{groupId}/delete")
+    @DeleteMapping("/timetable/groups/{groupId}")
     public ResponseEntity<String> deleteStudentTimetable(@PathVariable Long groupId) {
         adminService.deleteStudentTimetable(groupId);
         return ResponseEntity.ok("Расписание группы удалено");

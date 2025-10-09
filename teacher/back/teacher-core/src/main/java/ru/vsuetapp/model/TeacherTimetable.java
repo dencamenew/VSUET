@@ -15,12 +15,9 @@ public class TeacherTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String teacherName;
+    @OneToOne(mappedBy = "timetable")
+    private TeacherInfo teacherInfo;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String timetable; // В PostgreSQL потом можно заменить на jsonb
-
-    @OneToOne(mappedBy = "timetable")
-    private TeacherInfo teacherInfo;
 }
