@@ -1,7 +1,7 @@
 package ru.vsuetapp.model.enums;
 
 public enum RoleForSession{
-    STUDENT,
+    DEAN,
     TEACHER,
-    ADMIN
+    STUDENT
 }
