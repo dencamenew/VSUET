@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface GroupsRepository extends JpaRepository<Groups, Long> {
     Optional<Groups> findByGroupName(String groupName);
-    List<Groups> findAllByDeanInfo_Id(Long deanId);
+    List<Groups> findAllByFaculty_Id(Long facultyId);
 }

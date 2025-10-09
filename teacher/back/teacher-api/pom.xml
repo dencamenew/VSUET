@@ -13,6 +13,12 @@
     <name>teacher-api</name>
     
     <dependencies>
+        <dependency>
+            <groupId>ru.vsuetapp</groupId>
+            <artifactId>teacher-core</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Зависимость от core модуля -->
         <dependency>
             <groupId>ru.practice.teststation</groupId>
