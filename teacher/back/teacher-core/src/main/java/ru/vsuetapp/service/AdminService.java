@@ -16,7 +16,8 @@ public class AdminService {
     private final GroupsRepository groupsRepository;
     private final DeanInfoRepository deanInfoRepository;
     private final StudentInfoRepository studentInfoRepository;
-    // private final TeacherInfoRepository teacherInfoRepository;
+    private final TeacherInfoRepository teacherInfoRepository;
+    private final TeacherTimetableRepository teacherTimetableRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -65,22 +66,22 @@ public class AdminService {
         return userRepository.save(user);
     }
 
-    // @Transactional
-    // public User createTeacherUser(String username, String password) {
-    //     TeacherInfo teacherInfo = TeacherInfo.builder()
-    //             .teacher_name(username)
-    //             .build();
-    //     teacherInfoRepository.save(teacherInfo);
+     @Transactional
+     public User createTeacherUser(String username, String password) {
+         TeacherInfo teacherInfo = TeacherInfo.builder()
+                 .teacherName(username)
+                 .build();
+         teacherInfoRepository.save(teacherInfo);
 
-    //     User user = User.builder()
-    //             .username(username)
-    //             .passwd(passwordEncoder.encode(password))
-    //             .role(Role.TEACHER)
-    //             .teacherInfo(teacherInfo)
-    //             .build();
+         User user = User.builder()
+                 .username(username)
+                 .passwd(passwordEncoder.encode(password))
+                 .role(Role.TEACHER)
+                 .teacherInfo(teacherInfo)
+                 .build();
 
-    //     return userRepository.save(user);
-    // }
+         return userRepository.save(user);
+     }
 
     @Transactional
     public User createAdminUser(String username, String password) {
@@ -116,16 +117,16 @@ public class AdminService {
         userRepository.delete(user);
     }
 
-    // @Transactional
-    // public void deleteTeacherUser(Long userId) {
-    //     User user = userRepository.findById(userId)
-    //             .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+     @Transactional
+     public void deleteTeacherUser(Long userId) {
+         User user = userRepository.findById(userId)
+                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
-    //     if (user.getTeacherInfo() != null) {
-    //         teacherInfoRepository.delete(user.getTeacherInfo());
-    //     }
-    //     userRepository.delete(user);
-    // }
+         if (user.getTeacherInfo() != null) {
+             teacherInfoRepository.delete(user.getTeacherInfo());
+         }
+         userRepository.delete(user);
+     }
 
     @Transactional
     public void deleteAdminUser(Long userId) {
@@ -137,5 +138,30 @@ public class AdminService {
         }
 
         userRepository.delete(user);
+    }
+
+    @Transactional
+    public TeacherTimetable createTeacherTimetable(Long teacherId, String jsonTimetable) {
+        TeacherInfo teacher = teacherInfoRepository.findById(teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("Преподаватель не найден"));
+
+        TeacherTimetable timetable = TeacherTimetable.builder()
+                .timetable(jsonTimetable)
+                .teacherInfo(teacher)
+                .build();
+
+        return teacherTimetableRepository.save(timetable);
+    }
+
+    @Transactional
+    public void deleteTeacherTimetable(Long teacherId) {
+        TeacherInfo teacher = teacherInfoRepository.findById(teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("Преподаватель не найден"));
+
+        if (teacher.getTimetable() != null) {
+            teacherTimetableRepository.delete(teacher.getTimetable());
+            teacher.setTimetable(null);
+            teacherInfoRepository.save(teacher);
+        }
     }
 }

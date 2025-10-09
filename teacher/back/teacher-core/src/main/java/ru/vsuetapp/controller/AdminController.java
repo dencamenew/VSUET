@@ -3,6 +3,7 @@ package ru.vsuetapp.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.vsuetapp.model.TeacherTimetable;
 import ru.vsuetapp.model.User;
 import ru.vsuetapp.service.AdminService;
 
@@ -34,13 +35,13 @@ public class AdminController {
         return ResponseEntity.ok(adminService.createStudentUser(username, password, groupId, zachNumber));
     }
 
-    // @PostMapping("/teacher")
-    // public ResponseEntity<User> createTeacherUser(
-    //         @RequestParam String username,
-    //         @RequestParam String password
-    // ) {
-    //     return ResponseEntity.ok(adminService.createTeacherUser(username, password));
-    // }
+     @PostMapping("/create/teacher")
+     public ResponseEntity<User> createTeacherUser(
+             @RequestParam String username,
+             @RequestParam String password
+     ) {
+         return ResponseEntity.ok(adminService.createTeacherUser(username, password));
+     }
 
     @PostMapping("/create/admin")
     public ResponseEntity<User> createAdminUser(
@@ -64,15 +65,30 @@ public class AdminController {
         return ResponseEntity.ok("Студент и его информация успешно удалены");
     }
 
-    // @DeleteMapping("/teacher/{userId}")
-    // public ResponseEntity<String> deleteTeacherUser(@PathVariable Long userId) {
-    //     adminService.deleteTeacherUser(userId);
-    //     return ResponseEntity.ok("Преподаватель и его информация успешно удалены");
-    // }
+     @DeleteMapping("/delete/teacher/{userId}")
+     public ResponseEntity<String> deleteTeacherUser(@PathVariable Long userId) {
+         adminService.deleteTeacherUser(userId);
+         return ResponseEntity.ok("Преподаватель и его информация успешно удалены");
+     }
 
     @DeleteMapping("/delete/admin/{userId}")
     public ResponseEntity<String> deleteAdminUser(@PathVariable Long userId) {
         adminService.deleteAdminUser(userId);
         return ResponseEntity.ok("Администратор успешно удалён");
+    }
+
+    // =============== TEACHER TIMETABLE ===============
+    @PostMapping("/teacher/{teacherId}/timetable")
+    public ResponseEntity<TeacherTimetable> createTeacherTimetable(
+            @PathVariable Long teacherId,
+            @RequestParam String timetableJson
+    ) {
+        return ResponseEntity.ok(adminService.createTeacherTimetable(teacherId, timetableJson));
+    }
+
+    @DeleteMapping("/api/admin/teachers/{id}/timetable")
+    public ResponseEntity<String> deleteTeacherTimetable(@PathVariable Long id) {
+        adminService.deleteTeacherTimetable(id);
+        return ResponseEntity.ok("Расписание преподавателя удалено");
     }
 }
