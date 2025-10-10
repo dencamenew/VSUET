@@ -18,6 +18,6 @@ public class TeacherTimetable {
     @OneToOne(mappedBy = "timetable")
     private TeacherInfo teacherInfo;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String timetable; // В PostgreSQL потом можно заменить на jsonb
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private String timetable;
 }
