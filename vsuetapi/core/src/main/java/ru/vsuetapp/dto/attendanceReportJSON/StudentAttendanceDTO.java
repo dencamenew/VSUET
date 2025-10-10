@@ -14,9 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class StudentAttendanceDTO {
     private String studentId;
-
-    // Ключ — дата (строкой, например "2024-03-15")
-    // Значение — статус посещаемости
-    private Map<String, AttendanceStatus> attendance;
+    private AttendanceStatus attendance;
 }
+
 

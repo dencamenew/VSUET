@@ -87,9 +87,10 @@ public class AttendanceService {
 
                 List<StudentAttendanceDTO> students = new ArrayList<>();
                 for (var student : studentsList) {
-                    Map<String, AttendanceStatus> attendanceMap = new HashMap<>();
-                    attendanceMap.put(date.format(formatter), AttendanceStatus.ABSENT);
-                    students.add(new StudentAttendanceDTO(String.valueOf(student.getId()), attendanceMap));
+                    students.add(new StudentAttendanceDTO(
+                            String.valueOf(student.getId()),
+                            AttendanceStatus.ABSENT
+                    ));
                 }
 
                 try {
