@@ -29,7 +29,7 @@ CREATE TABLE teacher_info (
 -- 3. Teacher timetable (теперь можем ссылаться на teacher_info)
 CREATE TABLE teacher_timetable (
     id SERIAL PRIMARY KEY,
-    teacher_info_id BIGINT REFERENCES teacher_info(id) ON DELETE CASCADE,
+    teacher_info_id BIGINT NOT NULL UNIQUE REFERENCES teacher_info(id) ON DELETE CASCADE,
     timetable_json JSONB NOT NULL
 );
 

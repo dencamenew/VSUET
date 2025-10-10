@@ -1,5 +1,6 @@
 package ru.vsuetapp.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,8 +16,9 @@ public class TeacherTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "teacher_info_id", referencedColumnName = "id")
+    @OneToOne(optional = false)
+    @JoinColumn(name = "teacher_info_id", nullable = false, unique = true)
+    @JsonBackReference
     private TeacherInfo teacherInfo;
 
     @Column(nullable = false, columnDefinition = "jsonb")

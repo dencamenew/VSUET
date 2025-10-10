@@ -1,5 +1,6 @@
 package ru.vsuetapp.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -19,8 +20,7 @@ public class TeacherInfo {
     @Column(nullable = false, unique = true)
     private String teacherName;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "timetable_id", referencedColumnName = "id")
-    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @OneToOne(mappedBy = "teacherInfo", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonManagedReference
     private TeacherTimetable timetable;
 }
