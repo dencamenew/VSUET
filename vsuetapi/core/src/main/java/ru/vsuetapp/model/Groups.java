@@ -22,7 +22,7 @@ public class Groups {
     @JoinColumn(name = "faculty_id", referencedColumnName = "id", nullable = false)
     private Faculty faculty;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "timetable_id", referencedColumnName = "id")
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinColumn(name = "timetable_id")
     private GroupTimetable timetable;
 }

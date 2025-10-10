@@ -11,6 +11,8 @@ import ru.vsuetapp.model.*;
 import ru.vsuetapp.model.enums.Role;
 import ru.vsuetapp.repository.*;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -207,7 +209,6 @@ public class AdminService {
         }
 
         TeacherTimetable timetable = TeacherTimetable.builder()
-                .teacherInfo(teacher)
                 .timetableJson(timetableJson)
                 .build();
 
@@ -230,7 +231,6 @@ public class AdminService {
         }
 
         GroupTimetable timetable = GroupTimetable.builder()
-                .group(group)
                 .timetableJson(timetableJson)
                 .build();
 
@@ -257,10 +257,8 @@ public class AdminService {
      * Удаление расписания группы
      */
     @Transactional
-    public void deleteStudentTimetable(Long groupId) {
-        GroupTimetable timetable = groupTimetableRepository.findByGroupId(groupId);
-        if (timetable != null) {
-            groupTimetableRepository.delete(timetable);
-        }
+    public void deleteTimetableByGroupId(Long groupId) {
+        groupsRepository.findTimetableByGroupId(groupId)
+                .ifPresent(groupTimetableRepository::delete);
     }
 }

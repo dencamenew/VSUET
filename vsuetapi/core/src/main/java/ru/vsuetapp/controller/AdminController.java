@@ -149,7 +149,7 @@ public class AdminController {
 
     @DeleteMapping("/timetable/groups/{groupId}")
     public ResponseEntity<String> deleteStudentTimetable(@PathVariable Long groupId) {
-        adminService.deleteStudentTimetable(groupId);
+        adminService.deleteTimetableByGroupId(groupId);
         return ResponseEntity.ok("Расписание группы удалено");
     }
 }

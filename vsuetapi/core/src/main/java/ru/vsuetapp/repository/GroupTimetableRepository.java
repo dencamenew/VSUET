@@ -8,9 +8,5 @@ import ru.vsuetapp.model.GroupTimetable;
 import java.util.Optional;
 
 public interface GroupTimetableRepository extends JpaRepository<GroupTimetable, Long> {
-    GroupTimetable findByGroupId(Long groupId);
-
-    @Query("SELECT gt FROM GroupTimetable gt JOIN gt.group g WHERE g.groupName = :groupName")
-    Optional<GroupTimetable> findByGroupName(@Param("groupName") String groupName);
 }
 
