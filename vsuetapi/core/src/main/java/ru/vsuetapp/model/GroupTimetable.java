@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "student_timetable")
+@Table(name = "group_timetable")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,12 +15,11 @@ public class GroupTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
     private Groups group;
 
     @Column(nullable = false, columnDefinition = "jsonb")
-    private String timetable;
+    private String timetableJson;
 }
 

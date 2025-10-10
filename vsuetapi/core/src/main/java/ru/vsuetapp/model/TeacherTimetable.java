@@ -15,9 +15,10 @@ public class TeacherTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(mappedBy = "timetable")
+    @OneToOne
+    @JoinColumn(name = "teacher_info_id", referencedColumnName = "id")
     private TeacherInfo teacherInfo;
 
     @Column(nullable = false, columnDefinition = "jsonb")
-    private String timetable;
+    private String timetableJson;
 }

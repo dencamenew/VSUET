@@ -3,6 +3,7 @@ package ru.vsuetapp.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.vsuetapp.dto.timetableJSON.TimetableDto;
 import ru.vsuetapp.model.GroupTimetable;
 import ru.vsuetapp.model.TeacherTimetable;
 import ru.vsuetapp.model.User;
@@ -16,7 +17,6 @@ public class AdminController {
     private final AdminService adminService;
 
     // =============== CREATE USERS ===============
-
     @PostMapping("/users/create/dean")
     public ResponseEntity<User> createDeanUser(
             @RequestParam String username,
@@ -36,13 +36,13 @@ public class AdminController {
         return ResponseEntity.ok(adminService.createStudentUser(username, password, groupId, zachNumber));
     }
 
-     @PostMapping("/users/create/teacher")
-     public ResponseEntity<User> createTeacherUser(
-             @RequestParam String username,
-             @RequestParam String password
-     ) {
-         return ResponseEntity.ok(adminService.createTeacherUser(username, password));
-     }
+    @PostMapping("/users/create/teacher")
+    public ResponseEntity<User> createTeacherUser(
+            @RequestParam String username,
+            @RequestParam String password
+    ) {
+        return ResponseEntity.ok(adminService.createTeacherUser(username, password));
+    }
 
     @PostMapping("/users/create/admin")
     public ResponseEntity<User> createAdminUser(
@@ -53,7 +53,6 @@ public class AdminController {
     }
 
     // =============== DELETE USERS ===============
-
     @DeleteMapping("/users/delete/dean/{userId}")
     public ResponseEntity<String> deleteDeanUser(@PathVariable Long userId) {
         adminService.deleteDeanUser(userId);
@@ -66,25 +65,20 @@ public class AdminController {
         return ResponseEntity.ok("Студент и его информация успешно удалены");
     }
 
-     @DeleteMapping("/users/delete/teacher/{userId}")
-     public ResponseEntity<String> deleteTeacherUser(@PathVariable Long userId) {
-         adminService.deleteTeacherUser(userId);
-         return ResponseEntity.ok("Преподаватель и его информация успешно удалены");
-     }
-
-    @DeleteMapping("/users/delete/admin/{userId}")
-    public ResponseEntity<String> deleteAdminUser(@PathVariable Long userId) {
-        adminService.deleteAdminUser(userId);
-        return ResponseEntity.ok("Администратор успешно удалён");
+    @DeleteMapping("/users/delete/teacher/{userId}")
+    public ResponseEntity<String> deleteTeacherUser(@PathVariable Long userId) {
+        adminService.deleteTeacherUser(userId);
+        return ResponseEntity.ok("Преподаватель и его информация успешно удалены");
     }
+
 
     // =============== TEACHER TIMETABLE ===============
     @PostMapping("/timetable/teacher/{teacherId}")
     public ResponseEntity<TeacherTimetable> createTeacherTimetable(
             @PathVariable Long teacherId,
-            @RequestParam String timetableJson
+            @RequestBody TimetableDto timetableDto
     ) {
-        return ResponseEntity.ok(adminService.createTeacherTimetable(teacherId, timetableJson));
+        return ResponseEntity.ok(adminService.createTeacherTimetable(teacherId, timetableDto));
     }
 
     @DeleteMapping("/timetable/teacher/{id}")
@@ -97,9 +91,9 @@ public class AdminController {
     @PostMapping("/timetable/groups/{groupId}")
     public ResponseEntity<GroupTimetable> createStudentTimetable(
             @PathVariable Long groupId,
-            @RequestBody String timetableJson
+            @RequestBody TimetableDto timetableDto
     ) {
-        GroupTimetable timetable = adminService.createStudentTimetable(groupId, timetableJson);
+        GroupTimetable timetable = adminService.createStudentTimetable(groupId, timetableDto);
         return ResponseEntity.ok(timetable);
     }
 

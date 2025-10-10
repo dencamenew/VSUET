@@ -1,9 +1,12 @@
 package ru.vsuetapp.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.vsuetapp.dto.timetableJSON.TimetableDto;
 import ru.vsuetapp.model.*;
 import ru.vsuetapp.model.enums.Role;
 import ru.vsuetapp.repository.*;
@@ -22,7 +25,12 @@ public class AdminService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // =============== CREATE USERS ===============
+    // Jackson для сериализации/десериализации расписаний
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // ======================================================
+    //                      USERS
+    // ======================================================
 
     @Transactional
     public User createDeanUser(String username, String password, Long facultyId) {
@@ -67,22 +75,22 @@ public class AdminService {
         return userRepository.save(user);
     }
 
-     @Transactional
-     public User createTeacherUser(String username, String password) {
-         TeacherInfo teacherInfo = TeacherInfo.builder()
-                 .teacherName(username)
-                 .build();
-         teacherInfoRepository.save(teacherInfo);
+    @Transactional
+    public User createTeacherUser(String username, String password) {
+        TeacherInfo teacherInfo = TeacherInfo.builder()
+                .teacherName(username)
+                .build();
+        teacherInfoRepository.save(teacherInfo);
 
-         User user = User.builder()
-                 .username(username)
-                 .passwd(passwordEncoder.encode(password))
-                 .role(Role.TEACHER)
-                 .teacherInfo(teacherInfo)
-                 .build();
+        User user = User.builder()
+                .username(username)
+                .passwd(passwordEncoder.encode(password))
+                .role(Role.TEACHER)
+                .teacherInfo(teacherInfo)
+                .build();
 
-         return userRepository.save(user);
-     }
+        return userRepository.save(user);
+    }
 
     @Transactional
     public User createAdminUser(String username, String password) {
@@ -94,7 +102,9 @@ public class AdminService {
         return userRepository.save(user);
     }
 
-    // =============== DELETE USERS ===============
+    // ======================================================
+    //                  DELETE USERS
+    // ======================================================
 
     @Transactional
     public void deleteDeanUser(Long userId) {
@@ -118,16 +128,16 @@ public class AdminService {
         userRepository.delete(user);
     }
 
-     @Transactional
-     public void deleteTeacherUser(Long userId) {
-         User user = userRepository.findById(userId)
-                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+    @Transactional
+    public void deleteTeacherUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
-         if (user.getTeacherInfo() != null) {
-             teacherInfoRepository.delete(user.getTeacherInfo());
-         }
-         userRepository.delete(user);
-     }
+        if (user.getTeacherInfo() != null) {
+            teacherInfoRepository.delete(user.getTeacherInfo());
+        }
+        userRepository.delete(user);
+    }
 
     @Transactional
     public void deleteAdminUser(Long userId) {
@@ -141,44 +151,75 @@ public class AdminService {
         userRepository.delete(user);
     }
 
+    // ======================================================
+    //                  TIMETABLES
+    // ======================================================
+
+    /**
+     * Создание расписания преподавателя (TeacherTimetable)
+     */
     @Transactional
-    public TeacherTimetable createTeacherTimetable(Long teacherId, String jsonTimetable) {
+    public TeacherTimetable createTeacherTimetable(Long teacherId, TimetableDto timetableDto) {
         TeacherInfo teacher = teacherInfoRepository.findById(teacherId)
                 .orElseThrow(() -> new IllegalArgumentException("Преподаватель не найден"));
 
+        String timetableJson;
+        try {
+            timetableJson = objectMapper.writeValueAsString(timetableDto);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Ошибка сериализации расписания преподавателя", e);
+        }
+
         TeacherTimetable timetable = TeacherTimetable.builder()
-                .timetable(jsonTimetable)
                 .teacherInfo(teacher)
+                .timetableJson(timetableJson)
                 .build();
 
         return teacherTimetableRepository.save(timetable);
     }
 
+    /**
+     * Создание расписания группы (GroupTimetable)
+     */
     @Transactional
-    public void deleteTeacherTimetable(Long teacherId) {
-        TeacherInfo teacher = teacherInfoRepository.findById(teacherId)
-                .orElseThrow(() -> new IllegalArgumentException("Преподаватель не найден"));
-
-        if (teacher.getTimetable() != null) {
-            teacherTimetableRepository.delete(teacher.getTimetable());
-            teacher.setTimetable(null);
-            teacherInfoRepository.save(teacher);
-        }
-    }
-
-    @Transactional
-    public GroupTimetable createStudentTimetable(Long groupId, String timetableJson) {
+    public GroupTimetable createStudentTimetable(Long groupId, TimetableDto timetableDto) {
         Groups group = groupsRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Группа не найдена"));
 
+        String timetableJson;
+        try {
+            timetableJson = objectMapper.writeValueAsString(timetableDto);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Ошибка сериализации расписания группы", e);
+        }
+
         GroupTimetable timetable = GroupTimetable.builder()
                 .group(group)
-                .timetable(timetableJson)
+                .timetableJson(timetableJson)
                 .build();
 
         return groupTimetableRepository.save(timetable);
     }
 
+    /**
+     * Удаление расписания преподавателя
+     */
+    @Transactional
+    public void deleteTeacherTimetable(Long teacherId) {
+        TeacherInfo teacher = teacherInfoRepository.findById(teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("Преподаватель не найден"));
+
+        TeacherTimetable timetable = teacher.getTimetable();
+        if (timetable != null) {
+            teacherTimetableRepository.delete(timetable);
+            teacher.setTimetable(null);
+            teacherInfoRepository.save(teacher);
+        }
+    }
+
+    /**
+     * Удаление расписания группы
+     */
     @Transactional
     public void deleteStudentTimetable(Long groupId) {
         GroupTimetable timetable = groupTimetableRepository.findByGroupId(groupId);
@@ -186,5 +227,4 @@ public class AdminService {
             groupTimetableRepository.delete(timetable);
         }
     }
-
 }
