@@ -1,5 +1,6 @@
 package ru.vsuetapp.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,6 +126,153 @@ public class AttendanceService {
         } else {
             System.out.println("⚠️ Не найдено занятий для создания ведомости у преподавателя: " + teacherName);
         }
+    }
+
+    // 🧑‍🎓 Получение ведомости студента по номеру зачетки
+    public List<Map<String, Object>> getStudentAttendanceByZach(String zachNumber) {
+        var studentOpt = studentInfoRepository.findByZachNumber(zachNumber);
+        if (studentOpt.isEmpty()) return Collections.emptyList();
+
+        Long studentId = studentOpt.get().getId();
+        List<Attendance> attendances = attendanceRepository.findAll();
+        return extractStudentAttendance(attendances, studentId);
+    }
+
+    // 🧑‍🎓 Получение ведомости студента по имени
+    public List<Map<String, Object>> getStudentAttendanceByName(String studentName) {
+        var studentOpt = studentInfoRepository.findByStudentName(studentName);
+        if (studentOpt.isEmpty()) return Collections.emptyList();
+
+        Long studentId = studentOpt.get().getId();
+        List<Attendance> attendances = attendanceRepository.findAll();
+        return extractStudentAttendance(attendances, studentId);
+    }
+
+    // 🧩 Универсальная логика выборки посещаемости студента из JSON
+    private List<Map<String, Object>> extractStudentAttendance(List<Attendance> attendances, Long studentId) {
+        return attendances.stream()
+                .map(a -> {
+                    Map<String, Object> record = new HashMap<>();
+                    record.put("subjectName", a.getSubjectName());
+                    record.put("subjectType", a.getSubjectType());
+                    record.put("groupName", a.getGroupName());
+                    record.put("teacherName", a.getTeacherName());
+                    record.put("day", a.getDay());
+                    record.put("time", a.getTime());
+                    String status = extractStatus(a, studentId);
+                    record.put("attendance", status != null ? status : AttendanceStatus.ABSENT.name());
+                    return record;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // 🎯 Извлекает статус посещаемости конкретного студента из JSON отчета
+    private String extractStatus(Attendance attendance, Long studentId) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(attendance.getReportJson());
+            JsonNode studentsNode = root.get("students");
+
+            if (studentsNode != null && studentsNode.isArray()) {
+                for (JsonNode studentNode : studentsNode) {
+                    if (studentNode.has("studentId") &&
+                            studentNode.get("studentId").asLong() == studentId) {
+
+                        JsonNode attendanceNode = studentNode.get("attendance");
+                        // теперь это просто строка, а не объект
+                        if (attendanceNode != null && attendanceNode.isTextual()) {
+                            return attendanceNode.asText();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "UNKNOWN";
+    }
+
+
+
+    // 👩‍🏫 Получение ведомости по группе и предмету
+    public List<Map<String, Object>> getGroupAttendance(String groupName, String subjectName) {
+        List<Attendance> attendances = attendanceRepository.findByGroupAndSubject(groupName, subjectName);
+
+        if (attendances.isEmpty()) {
+            System.out.println("⚠️ Не найдено записей для группы " + groupName + " и предмета " + subjectName);
+            return Collections.emptyList();
+        }
+
+        return attendances.stream().map(a -> {
+            Map<String, Object> record = new HashMap<>();
+            record.put("teacherName", a.getTeacherName());
+            record.put("subjectName", a.getSubjectName());
+            record.put("subjectType", a.getSubjectType());
+            record.put("groupName", a.getGroupName());
+            record.put("day", a.getDay());
+            record.put("time", a.getTime());
+            record.put("attendance", parseGroupAttendance(a.getReportJson()));
+            return record;
+        }).collect(Collectors.toList());
+    }
+
+    // 👩‍🏫 Получение ведомости по конкретной паре
+    public List<Map<String, Object>> getLessonAttendance(String groupName, String subjectName, String date, String time) {
+        List<Attendance> attendances = attendanceRepository
+                .findByLesson(groupName, subjectName, date, time);
+
+        if (attendances.isEmpty()) {
+            System.out.println("⚠️ Не найдено записей по паре: " + subjectName + " (" + date + " " + time + ")");
+            return Collections.emptyList();
+        }
+
+        return attendances.stream().map(a -> {
+            Map<String, Object> record = new HashMap<>();
+            record.put("teacherName", a.getTeacherName());
+            record.put("subjectName", a.getSubjectName());
+            record.put("subjectType", a.getSubjectType());
+            record.put("groupName", a.getGroupName());
+            record.put("day", a.getDay());
+            record.put("time", a.getTime());
+            record.put("attendance", parseGroupAttendance(a.getReportJson()));
+            return record;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 🧩 Разбор JSON посещаемости группы.
+     * Возвращает список студентов с их статусом присутствия.
+     */
+    private List<Map<String, Object>> parseGroupAttendance(String reportJson) {
+        List<Map<String, Object>> studentStatuses = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(reportJson);
+            JsonNode studentsNode = root.get("students");
+
+            if (studentsNode != null && studentsNode.isArray()) {
+                for (JsonNode studentNode : studentsNode) {
+                    Map<String, Object> studentData = new HashMap<>();
+                    studentData.put("studentId", studentNode.path("studentId").asText("UNKNOWN"));
+
+                    // Теперь attendance — это простая строка, а не объект
+                    JsonNode attendanceNode = studentNode.get("attendance");
+                    if (attendanceNode != null && attendanceNode.isTextual()) {
+                        studentData.put("status", attendanceNode.asText());
+                    } else {
+                        studentData.put("status", "UNKNOW");
+                    }
+
+                    studentStatuses.add(studentData);
+                }
+            } else {
+                System.out.println("⚠️ В JSON нет массива students.");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Ошибка разбора JSON посещаемости: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return studentStatuses;
     }
 }
 
