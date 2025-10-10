@@ -2,15 +2,15 @@ package ru.vsuetapp.dto.responce;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.vsuetapp.model.User;
-import ru.vsuetapp.model.enums.Role;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class LoginResponse {
     private String username;
-    private User user;
-    private LocalDateTime loginTime;
+    private String role;
+    private String name;
+    private String groupName;
+    private String facultyName;
 }

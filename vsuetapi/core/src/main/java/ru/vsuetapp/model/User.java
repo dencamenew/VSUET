@@ -1,19 +1,9 @@
 package ru.vsuetapp.model;
 
 import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
 import ru.vsuetapp.model.enums.Role;
 
 @Entity
@@ -22,6 +12,7 @@ import ru.vsuetapp.model.enums.Role;
 @AllArgsConstructor
 @Builder
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
 
     @Id
@@ -35,24 +26,21 @@ public class User {
     private String passwd;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Role role;
 
-    // ----- Внешние ключи -----
-
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dean_info_id")
     private DeanInfo deanInfo;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_info_id")
     private StudentInfo studentInfo;
 
-     @OneToOne
-     @JoinColumn(name = "teacher_info_id")
-     private TeacherInfo teacherInfo;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_info_id")
+    private TeacherInfo teacherInfo;
 
-
-    // ----- Метаданные -----
     @Column(name = "created_at", nullable = false)
-    final LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

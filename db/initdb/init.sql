@@ -118,10 +118,10 @@ VALUES ('Иванов Иван Иванович', 1);
 
 -- Админ и декан
 INSERT INTO users (username, passwd, role, dean_info_id, created_at)
-VALUES ('dean', '{bcrypt}$2a$10$V2UE5Cw7SrVslQtbP8ePf.h6nPfEZo.ghp7sHNYmsfIYcWq8Y7pW2', 'DEAN', 1, NOW());
+VALUES ('dean', '12345', 'DEAN', 1, NOW());
 
 INSERT INTO users (username, passwd, role, created_at)
-VALUES ('admin', '{bcrypt}$2a$10$Q6JrZL4t9I3E0UjOD3luje2B4xQ.Yp1e4ObV69z6jaVb2WQzP3k4a', 'ADMIN', NOW());
+VALUES ('admin', '12345', 'ADMIN', NOW());
 
 -- Расписания групп
 INSERT INTO group_timetable (timetable_json)
@@ -195,25 +195,26 @@ VALUES
 -- Пользователи-преподаватели
 INSERT INTO users (username, passwd, role, teacher_info_id, created_at)
 VALUES
-('teacher1', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 1, NOW()),
-('teacher2', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 2, NOW()),
-('teacher3', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 3, NOW()),
-('teacher4', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 4, NOW()),
-('teacher5', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 5, NOW()),
-('teacher6', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 6, NOW()),
-('teacher7', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 7, NOW()),
-('teacher8', '{bcrypt}$2a$10$E/AfMcP9M0NYaN9G5nX72u2LZ.VcZ4HkMxkhSnSW5ciR24M8gYxK2', 'TEACHER', 8, NOW());
+('teacher1', '12345', 'TEACHER', 1, NOW()),
+('teacher2', '12345', 'TEACHER', 2, NOW()),
+('teacher3', '12345', 'TEACHER', 3, NOW()),
+('teacher4', '12345', 'TEACHER', 4, NOW()),
+('teacher5', '12345', 'TEACHER', 5, NOW()),
+('teacher6', '12345', 'TEACHER', 6, NOW()),
+('teacher7', '12345', 'TEACHER', 7, NOW()),
+('teacher8', '12345', 'TEACHER', 8, NOW());
+
 
 
 INSERT INTO users (username, passwd, role, student_info_id, created_at)
 VALUES
-('student1', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 1, NOW()),
-('student2', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 2, NOW()),
-('student3', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 3, NOW()),
-('student4', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 4, NOW()),
-('student5', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 5, NOW()),
-('student6', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 6, NOW()),
-('student7', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 7, NOW()),
-('student8', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 8, NOW()),
-('student9', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 9, NOW()),
-('student10', '{bcrypt}$2a$10$LJvK7xwB8Pn7P9eRfS0OiOd3Oiz8xPQdRS0Q8Q3EjHo7rMQtDdS6K', 'STUDENT', 10, NOW());
+('student1', '12345', 'STUDENT', 1, NOW()),
+('student2', '12345', 'STUDENT', 2, NOW()),
+('student3', '12345', 'STUDENT', 3, NOW()),
+('student4', '12345', 'STUDENT', 4, NOW()),
+('student5', '12345', 'STUDENT', 5, NOW()),
+('student6', '12345', 'STUDENT', 6, NOW()),
+('student7', '12345', 'STUDENT', 7, NOW()),
+('student8', '12345', 'STUDENT', 8, NOW()),
+('student9', '12345', 'STUDENT', 9, NOW()),
+('student10', '12345', 'STUDENT', 10, NOW());
