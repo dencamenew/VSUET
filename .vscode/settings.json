@@ -1,4 +1,3 @@
 {
-    "maven.view": "hierarchical",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "maven.view": "hierarchical"
 }
