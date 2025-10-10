@@ -2,6 +2,7 @@ package ru.vsuetapp.dto.responce;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import ru.vsuetapp.model.User;
 import ru.vsuetapp.model.enums.Role;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class LoginResponse {
     private String username;
-    private Role role;
+    private User user;
     private LocalDateTime loginTime;
 }

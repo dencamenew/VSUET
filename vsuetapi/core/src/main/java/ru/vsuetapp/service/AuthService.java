@@ -27,7 +27,7 @@ public class AuthService {
 
         return new LoginResponse(
                 user.getUsername(),
-                user.getRole(),
+                user,
                 LocalDateTime.now()
         );
     }
