@@ -1,11 +1,12 @@
 package ru.vsuetapp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 @Entity
 @Table(name = "attendance_table")
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttendanceReport {
+public class Attendance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,7 +29,12 @@ public class AttendanceReport {
 
     private String groupName;
 
-    @Column(columnDefinition = "jsonb")
-    private String reportJson; // хранится JSON со студентами и посещаемостью
-}
+    private String day;
 
+    private String time;
+
+    // Храним JSON как строку, но в БД колонка типа jsonb
+    @Type(JsonBinaryType.class)
+    @Column(name = "report_json", columnDefinition = "jsonb")
+    private String reportJson; // хранится JSON со студентами и посещаемостью в виде строки
+}

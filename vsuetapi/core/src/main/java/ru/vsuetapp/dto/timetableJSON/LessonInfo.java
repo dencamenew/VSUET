@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessonInfo {
-    private String type;        // тип
-    private String name;        // название
-    private String teacherName; // имя преподавателя
+    private String type;        // лекция, практика и т.д.
+    private String name;        // предмет
+    private String teacherName; // преподаватель
     private String classroom;   // аудитория
     private String group;       // группа
 }

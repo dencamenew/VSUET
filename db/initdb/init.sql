@@ -100,7 +100,9 @@ CREATE TABLE attendance_table (
     subject_type VARCHAR(255),
     subject_name VARCHAR(255),
     group_name VARCHAR(255),
-    report_json JSONB
+    day VARCHAR(255),
+    time VARCHAR(255),
+    report_json JSONB 
 );
 
 
@@ -126,7 +128,6 @@ VALUES ('admin', '12345', 'ADMIN', NOW());
 -- Расписания групп
 INSERT INTO group_timetable (timetable_json)
 VALUES ('{
-  "timetable": {
     "numerator": {
       "monday": {
         "schedule": {
@@ -147,7 +148,6 @@ VALUES ('{
         }
       }
     }
-  }
 }');
 
 -- Группы
@@ -168,17 +168,18 @@ VALUES
 ('Федоров Никита', 'Z009', 1),
 ('Смирнова Ольга', 'Z010', 1);
 
--- Расписания преподавателей
+
+-- Таблица расписаний преподавателей
 INSERT INTO teacher_timetable (timetable_json)
 VALUES
-('{"timetable":{"numerator":{"monday":{"schedule":{"08:00":{"type":"lecture","name":"Математика","classroom":"101","group":"ИС-21"}}}}}}'),
-('{"timetable":{"numerator":{"monday":{"schedule":{"09:50":{"type":"practice","name":"Физика","classroom":"102","group":"ИС-21"}}}}}}'),
-('{"timetable":{"numerator":{"tuesday":{"schedule":{"08:00":{"type":"lab","name":"ОС","classroom":"301","group":"ИС-21"}}}}}}'),
-('{"timetable":{"numerator":{"wednesday":{"schedule":{"08:00":{"type":"lecture","name":"Экономика","classroom":"110","group":"ИС-21"}}}}}}'),
-('{"timetable":{"numerator":{"thursday":{"schedule":{"10:40":{"type":"practice","name":"История","classroom":"111","group":"ИС-21"}}}}}}'),
-('{"timetable":{"numerator":{"friday":{"schedule":{"08:00":{"type":"lecture","name":"Программирование","classroom":"203","group":"ИС-21"}}}}}}'),
-('{"timetable":{"denominator":{"monday":{"schedule":{"11:30":{"type":"lecture","name":"Философия","classroom":"106","group":"ИС-21"}}}}}}'),
-('{"timetable":{"denominator":{"friday":{"schedule":{"08:00":{"type":"lecture","name":"Информатика","classroom":"104","group":"ИС-21"}}}}}}');
+('{"numerator":{"monday":{"08:00":{"type":"lecture","name":"Математика","classroom":"101","group":"ИС-21", "teacherName": "Алексеев Павел"}}}}'),
+('{"numerator":{"monday":{"09:50":{"type":"practice","name":"Физика","classroom":"102","group":"ИС-21", "teacherName": "Громова Елена"}}}}'),
+('{"numerator":{"tuesday":{"08:00":{"type":"lab","name":"ОС","classroom":"301","group":"ИС-21", "teacherName": "Дьячков Николай"}}}}'),
+('{"numerator":{"wednesday":{"08:00":{"type":"lecture","name":"Экономика","classroom":"110","group":"ИС-21", "teacherName": "Карасёва Инна"}}}}'),
+('{"numerator":{"thursday":{"10:40":{"type":"practice","name":"История","classroom":"111","group":"ИС-21", "teacherName": "Михайлова Оксана"}}}}'),
+('{"numerator":{"friday":{"08:00":{"type":"lecture","name":"Программирование","classroom":"203","group":"ИС-21", "teacherName": "Поляков Игорь"}}}}'),
+('{"denominator":{"monday":{"11:30":{"type":"lecture","name":"Философия","classroom":"106","group":"ИС-21", "teacherName": "Савельев Кирилл"}}}}'),
+('{"denominator":{"friday":{"08:00":{"type":"lecture","name":"Информатика","classroom":"104","group":"ИС-21", "teacherName": "Юрьева Мария"}}}}');
 
 -- Преподаватели
 INSERT INTO teacher_info (teacher_name, timetable_id)
@@ -191,6 +192,7 @@ VALUES
 ('Поляков Игорь', 6),
 ('Савельев Кирилл', 7),
 ('Юрьева Мария', 8);
+
 
 -- Пользователи-преподаватели
 INSERT INTO users (username, passwd, role, teacher_info_id, created_at)

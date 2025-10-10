@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -13,5 +12,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TimetableDto {
-    private WeekTypeTimetable timetable;
+    private Map<String, Map<String, LessonInfo>> denominator; // dayOfWeek -> time -> lesson
+    private Map<String, Map<String, LessonInfo>> numerator;   // dayOfWeek -> time -> lesson
 }
+

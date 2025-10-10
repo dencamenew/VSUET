@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.vsuetapp.service.SearchService;
 
 @RestController
-@RequestMapping("/api/public/search")
+@RequestMapping("/api/search")
 @RequiredArgsConstructor
 public class SearchController {
 
