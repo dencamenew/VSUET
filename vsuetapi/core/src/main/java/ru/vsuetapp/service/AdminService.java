@@ -29,9 +29,36 @@ public class AdminService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
+    // =============== FACULTY ===============
+    @Transactional
+    public Faculty createFaculty(String facultyName) {
+        if (facultyRepository.existsByName(facultyName)) {
+            throw new IllegalArgumentException("Факультет с таким названием уже существует.");
+        }
+
+        Faculty faculty = Faculty.builder()
+                .name(facultyName)
+                .build();
+
+        return facultyRepository.save(faculty);
+    }
+
+    @Transactional
+    public void deleteFacultyById(Long id) {
+        Faculty faculty = facultyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Факультет с таким id не найден."));
+
+        facultyRepository.delete(faculty);
+    }
+
+
     // =============== CREATE USERS ===============
     @Transactional
     public User createDeanUser(String username, String password, String deanName, Long facultyId) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Пользователь с таким username уже существует");
+        }
+
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new IllegalArgumentException("Факультет не найден"));
 
@@ -47,12 +74,15 @@ public class AdminService {
                 .role(Role.DEAN)
                 .deanInfo(deanInfo)
                 .build();
-
         return userRepository.save(user);
     }
 
     @Transactional
     public User createStudentUser(String username, String password, String studentName, Long groupId, String zachNumber) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Пользователь с таким username уже существует");
+        }
+
         Groups group = groupsRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Группа не найдена"));
 
@@ -74,7 +104,11 @@ public class AdminService {
     }
 
     @Transactional
-    public User createTeacherUser(String username, String teacherName, String password) {
+    public User createTeacherUser(String username, String password, String teacherName) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Пользователь с таким username уже существует");
+        }
+
         TeacherInfo teacherInfo = TeacherInfo.builder()
                 .teacherName(teacherName)
                 .build();
@@ -92,6 +126,10 @@ public class AdminService {
 
     @Transactional
     public User createAdminUser(String username, String password) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Пользователь с таким username уже существует");
+        }
+
         User user = User.builder()
                 .username(username)
                 .passwd(passwordEncoder.encode(password))
@@ -99,6 +137,7 @@ public class AdminService {
                 .build();
         return userRepository.save(user);
     }
+
 
     // ======================================================
     //                  DELETE USERS
