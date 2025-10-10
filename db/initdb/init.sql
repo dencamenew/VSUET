@@ -17,8 +17,16 @@ CREATE TABLE dean_info (
 CREATE TABLE groups (
     id SERIAL PRIMARY KEY,
     group_name VARCHAR(255) NOT NULL UNIQUE,
-    faculty_id BIGINT NOT NULL REFERENCES faculty(id) ON DELETE CASCADE
+    faculty_id BIGINT REFERENCES faculty(id)
 );
+
+CREATE TABLE group_timetable (
+    id SERIAL PRIMARY KEY,
+    group_id BIGINT UNIQUE REFERENCES groups(id) ON DELETE CASCADE,
+    timetable_json JSONB NOT NULL
+);
+
+
 
 -- 2. Teacher info (сначала создаём, чтобы на неё могли ссылаться)
 CREATE TABLE teacher_info (
@@ -39,12 +47,6 @@ CREATE TABLE student_info (
     student_name VARCHAR(255) UNIQUE,
     zach_number VARCHAR(255) NOT NULL UNIQUE,
     group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE
-);
-
-CREATE TABLE group_timetable (
-    id SERIAL PRIMARY KEY,
-    group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    timetable_json JSONB NOT NULL
 );
 
 CREATE TABLE attendance_table (

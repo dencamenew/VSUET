@@ -47,7 +47,7 @@ class AdminControllerTest {
                 .deanInfo(deanInfo)
                 .build();
 
-        Mockito.when(adminService.createDeanUser(anyString(), anyString(), anyLong())).thenReturn(mockUser);
+        Mockito.when(adminService.createDeanUser(anyString(), anyString(), anyString(),anyLong())).thenReturn(mockUser);
 
         mockMvc.perform(post("/api/admin/users/create/dean")
                         .param("username", "dean1")
@@ -78,7 +78,7 @@ class AdminControllerTest {
                 .studentInfo(studentInfo)
                 .build();
 
-        Mockito.when(adminService.createStudentUser(anyString(), anyString(), anyLong(), anyString())).thenReturn(mockUser);
+        Mockito.when(adminService.createStudentUser(anyString(), anyString(), anyString(), anyLong(),anyString())).thenReturn(mockUser);
 
         mockMvc.perform(post("/api/admin/users/create/student")
                         .param("username", "ivanov")

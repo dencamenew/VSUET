@@ -12,6 +12,6 @@ import ru.vsuetapp.model.TeacherTimetable;
 @Repository
 public interface TeacherTimetableRepository extends JpaRepository<TeacherTimetable, Long> {
 
-    @Query("SELECT tt FROM TeacherTimetable tt JOIN tt.teacherInfo ti WHERE ti.teacherName = :teacherName")
+    @Query("SELECT ti.timetable FROM TeacherInfo ti WHERE ti.teacherName = :teacherName")
     Optional<TeacherTimetable> findByTeacherName(@Param("teacherName") String teacherName);
 }

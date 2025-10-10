@@ -28,17 +28,15 @@ public class AdminService {
     // Jackson для сериализации/десериализации расписаний
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ======================================================
-    //                      USERS
-    // ======================================================
 
+    // =============== CREATE USERS ===============
     @Transactional
-    public User createDeanUser(String username, String password, Long facultyId) {
+    public User createDeanUser(String username, String password, String deanName, Long facultyId) {
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new IllegalArgumentException("Факультет не найден"));
 
         DeanInfo deanInfo = DeanInfo.builder()
-                .deanName(username)
+                .deanName(deanName)
                 .faculty(faculty)
                 .build();
         deanInfoRepository.save(deanInfo);
@@ -54,12 +52,12 @@ public class AdminService {
     }
 
     @Transactional
-    public User createStudentUser(String username, String password, Long groupId, String zachNumber) {
+    public User createStudentUser(String username, String password, String studentName, Long groupId, String zachNumber) {
         Groups group = groupsRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("Группа не найдена"));
 
         StudentInfo studentInfo = StudentInfo.builder()
-                .studentName(username)
+                .studentName(studentName)
                 .zachNumber(zachNumber)
                 .group(group)
                 .build();
@@ -76,9 +74,9 @@ public class AdminService {
     }
 
     @Transactional
-    public User createTeacherUser(String username, String password) {
+    public User createTeacherUser(String username, String teacherName, String password) {
         TeacherInfo teacherInfo = TeacherInfo.builder()
-                .teacherName(username)
+                .teacherName(teacherName)
                 .build();
         teacherInfoRepository.save(teacherInfo);
 
@@ -105,7 +103,6 @@ public class AdminService {
     // ======================================================
     //                  DELETE USERS
     // ======================================================
-
     @Transactional
     public void deleteDeanUser(Long userId) {
         User user = userRepository.findById(userId)

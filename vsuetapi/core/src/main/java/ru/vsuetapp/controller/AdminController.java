@@ -17,31 +17,34 @@ public class AdminController {
     private final AdminService adminService;
 
     // =============== CREATE USERS ===============
-    @PostMapping("/users/create/dean")
+    @PostMapping("/users/dean")
     public ResponseEntity<User> createDeanUser(
             @RequestParam String username,
             @RequestParam String password,
+            @RequestParam String deanName,
             @RequestParam Long facultyId
     ) {
-        return ResponseEntity.ok(adminService.createDeanUser(username, password, facultyId));
+        return ResponseEntity.ok(adminService.createDeanUser(username, password, deanName, facultyId));
     }
 
-    @PostMapping("/users/create/student")
+    @PostMapping("/users/student")
     public ResponseEntity<User> createStudentUser(
             @RequestParam String username,
             @RequestParam String password,
+            @RequestParam String studentName,
             @RequestParam Long groupId,
             @RequestParam String zachNumber
     ) {
-        return ResponseEntity.ok(adminService.createStudentUser(username, password, groupId, zachNumber));
+        return ResponseEntity.ok(adminService.createStudentUser(username, password, studentName, groupId, zachNumber));
     }
 
     @PostMapping("/users/create/teacher")
     public ResponseEntity<User> createTeacherUser(
             @RequestParam String username,
-            @RequestParam String password
+            @RequestParam String password,
+            @RequestParam String teacherName
     ) {
-        return ResponseEntity.ok(adminService.createTeacherUser(username, password));
+        return ResponseEntity.ok(adminService.createTeacherUser(username, teacherName, password));
     }
 
     @PostMapping("/users/create/admin")
@@ -53,19 +56,19 @@ public class AdminController {
     }
 
     // =============== DELETE USERS ===============
-    @DeleteMapping("/users/delete/dean/{userId}")
+    @DeleteMapping("/users/dean/{userId}")
     public ResponseEntity<String> deleteDeanUser(@PathVariable Long userId) {
         adminService.deleteDeanUser(userId);
         return ResponseEntity.ok("Декан и его информация успешно удалены");
     }
 
-    @DeleteMapping("/users/delete/student/{userId}")
+    @DeleteMapping("/users/student/{userId}")
     public ResponseEntity<String> deleteStudentUser(@PathVariable Long userId) {
         adminService.deleteStudentUser(userId);
         return ResponseEntity.ok("Студент и его информация успешно удалены");
     }
 
-    @DeleteMapping("/users/delete/teacher/{userId}")
+    @DeleteMapping("/users/teacher/{userId}")
     public ResponseEntity<String> deleteTeacherUser(@PathVariable Long userId) {
         adminService.deleteTeacherUser(userId);
         return ResponseEntity.ok("Преподаватель и его информация успешно удалены");

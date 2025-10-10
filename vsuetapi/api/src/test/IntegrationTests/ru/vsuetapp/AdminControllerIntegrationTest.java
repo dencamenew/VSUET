@@ -1,155 +1,102 @@
 package ru.vsuetapp;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import ru.vsuetapp.model.*;
+import ru.vsuetapp.model.User;
 import ru.vsuetapp.model.enums.Role;
-import ru.vsuetapp.repository.*;
+import ru.vsuetapp.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional // очищает базу после каждого теста
+@Transactional
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AdminControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private FacultyRepository facultyRepository;
-
-    @Autowired
-    private GroupsRepository groupsRepository;
-
-    // ==================== CREATE USERS ====================
+    private static final String BASE_URL = "/api/admin/users";
 
     @Test
-    @DisplayName("Интеграционный тест: создание декана с существующим факультетом")
-    void createDeanUser_shouldPersistToDatabase() throws Exception {
-        // создаём факультет
-        Faculty faculty = facultyRepository.save(Faculty.builder()
-                .name("ФКТИ")
-                .build());
+    @Order(1)
+    @DisplayName("Создание пользователя — успешный сценарий")
+    void createUser_success() throws Exception {
+        User user = User.builder()
+                .username("test_user")
+                .passwd("12345")
+                .role(Role.ADMIN)
+                .build();
 
-        // вызываем контроллер
-        mockMvc.perform(post("/api/admin/users/create/dean")
-                        .param("username", "dean_test")
-                        .param("password", "12345")
-                        .param("facultyId", faculty.getId().toString())
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("dean_test"))
-                .andExpect(jsonPath("$.role").value("DEAN"));
-
-        // проверяем в БД
-        User user = userRepository.findByUsername("dean_test").orElseThrow();
-        assertThat(user.getRole()).isEqualTo(Role.DEAN);
-        assertThat(user.getDeanInfo()).isNotNull();
-        assertThat(user.getDeanInfo().getFaculty().getName()).isEqualTo("ФКТИ");
-    }
-
-    @Test
-    @DisplayName("Интеграционный тест: создание студента с существующей группой")
-    void createStudentUser_shouldPersistToDatabase() throws Exception {
-        // создаём факультет и группу
-        Faculty faculty = facultyRepository.save(Faculty.builder()
-                .name("ФКТИ")
-                .build());
-
-        Groups group = groupsRepository.save(Groups.builder()
-                .groupName("ИС-31")
-                .faculty(faculty)
-                .build());
-
-        // вызываем контроллер
-        mockMvc.perform(post("/api/admin/users/create/student")
-                        .param("username", "student_test")
-                        .param("password", "1111")
-                        .param("groupId", group.getId().toString())
-                        .param("zachNumber", "Z999")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("student_test"))
-                .andExpect(jsonPath("$.role").value("STUDENT"));
-
-        // проверяем в БД
-        User user = userRepository.findByUsername("student_test").orElseThrow();
-        assertThat(user.getRole()).isEqualTo(Role.STUDENT);
-        assertThat(user.getStudentInfo()).isNotNull();
-        assertThat(user.getStudentInfo().getZachNumber()).isEqualTo("Z999");
-        assertThat(user.getStudentInfo().getGroup().getGroupName()).isEqualTo("ИС-31");
-    }
-
-    @Test
-    @DisplayName("Интеграционный тест: создание администратора")
-    void createAdminUser_shouldPersistToDatabase() throws Exception {
-        mockMvc.perform(post("/api/admin/users/create/admin")
-                        .param("username", "admin_test")
-                        .param("password", "root")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("admin_test"))
+        mockMvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value("test_user"))
                 .andExpect(jsonPath("$.role").value("ADMIN"));
 
-        User user = userRepository.findByUsername("admin_test").orElseThrow();
-        assertThat(user.getRole()).isEqualTo(Role.ADMIN);
+        assertThat(userRepository.findByUsername("test_user")).isPresent();
     }
 
-    // ==================== DELETE USERS ====================
-
     @Test
-    @DisplayName("Интеграционный тест: удаление студента")
-    void deleteStudentUser_shouldRemoveFromDatabase() throws Exception {
-        // создаём факультет, группу и студента
-        Faculty faculty = facultyRepository.save(Faculty.builder().name("ФКТИ").build());
-        Groups group = groupsRepository.save(Groups.builder().groupName("ИС-32").faculty(faculty).build());
-        User user = userRepository.save(User.builder()
-                .username("for_delete")
-                .passwd("123")
+    @Order(2)
+    @DisplayName("Создание пользователя — уже существует")
+    void createUser_alreadyExists() throws Exception {
+        // предварительно создать пользователя
+        userRepository.save(User.builder()
+                .username("duplicate_user")
+                .passwd("12345")
                 .role(Role.STUDENT)
                 .build());
 
-        // удаляем через контроллер
-        mockMvc.perform(delete("/api/admin/users/delete/student/" + user.getId()))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().string("Студент и его информация успешно удалены"));
+        User user = User.builder()
+                .username("duplicate_user")
+                .passwd("54321")
+                .role(Role.ADMIN)
+                .build();
 
-        // проверяем
-        assertThat(userRepository.findByUsername("for_delete")).isEmpty();
+        mockMvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("Интеграционный тест: удаление декана")
-    void deleteDeanUser_shouldRemoveFromDatabase() throws Exception {
-        Faculty faculty = facultyRepository.save(Faculty.builder().name("ФКТИ").build());
+    @Order(3)
+    @DisplayName("Удаление пользователя — успешное удаление")
+    void deleteUser_success() throws Exception {
         User user = userRepository.save(User.builder()
-                .username("dean_del")
+                .username("user_to_delete")
                 .passwd("123")
-                .role(Role.DEAN)
+                .role(Role.TEACHER)
                 .build());
 
-        mockMvc.perform(delete("/api/admin/users/delete/dean/" + user.getId()))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().string("Декан и его информация успешно удалены"));
+        mockMvc.perform(delete(BASE_URL + "/" + user.getId()))
+                .andExpect(status().isNoContent());
 
-        assertThat(userRepository.findByUsername("dean_del")).isEmpty();
+        assertThat(userRepository.findById(user.getId())).isEmpty();
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("Удаление пользователя — не найден")
+    void deleteUser_notFound() throws Exception {
+        mockMvc.perform(delete(BASE_URL + "/999999"))
+                .andExpect(status().isNotFound());
     }
 }

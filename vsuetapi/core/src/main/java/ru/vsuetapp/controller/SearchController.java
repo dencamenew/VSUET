@@ -12,14 +12,14 @@ public class SearchController {
 
     private final SearchService searchService;
 
-    @GetMapping("/teacher_timetable")
+    @GetMapping("/teacher-timetable")
     public ResponseEntity<?> getTeacherTimetable(@RequestParam String name) {
         return searchService.getTeacherTimetable(name)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/group_timetable")
+    @GetMapping("/group-timetable")
     public ResponseEntity<?> getGroupTimetable(@RequestParam String name) {
         return searchService.getGroupTimetable(name)
                 .map(ResponseEntity::ok)

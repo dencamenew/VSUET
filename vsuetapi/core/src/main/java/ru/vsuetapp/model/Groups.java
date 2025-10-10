@@ -20,4 +20,8 @@ public class Groups {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "faculty_id", referencedColumnName = "id", nullable = false)
     private Faculty faculty;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "timetable_id", referencedColumnName = "id")
+    private GroupTimetable timetable;
 }

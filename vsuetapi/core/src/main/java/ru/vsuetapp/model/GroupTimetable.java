@@ -15,11 +15,9 @@ public class GroupTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
+    @OneToOne(mappedBy = "timetable", fetch = FetchType.LAZY)
     private Groups group;
 
     @Column(nullable = false, columnDefinition = "jsonb")
     private String timetableJson;
 }
-

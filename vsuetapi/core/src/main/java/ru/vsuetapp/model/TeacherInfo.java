@@ -20,7 +20,7 @@ public class TeacherInfo {
     @Column(nullable = false, unique = true)
     private String teacherName;
 
-    @OneToOne(mappedBy = "teacherInfo", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JsonManagedReference
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "timetable_id")
     private TeacherTimetable timetable;
 }

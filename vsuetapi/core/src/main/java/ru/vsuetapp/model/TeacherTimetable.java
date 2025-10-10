@@ -16,9 +16,7 @@ public class TeacherTimetable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name = "teacher_info_id", nullable = false, unique = true)
-    @JsonBackReference
+    @OneToOne(mappedBy = "timetable")
     private TeacherInfo teacherInfo;
 
     @Column(nullable = false, columnDefinition = "jsonb")
