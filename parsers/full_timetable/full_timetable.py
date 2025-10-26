@@ -166,29 +166,6 @@ def parse_zachetki(timetable_groups):
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbYears"))
         )
-
-        try:
-            year_select = Select(WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbYears"))
-            ))
-            
-            try:
-                year_select.select_by_visible_text("2024-2025")
-                logger.info("Выбран учебный год: 2024-2025")
-            except:
-                available_years = [opt.text for opt in year_select.options if opt.text and opt.text.strip()]
-                if available_years:
-                    latest_year = available_years[-1]  
-                    year_select.select_by_visible_text(latest_year)
-                    logger.info(f"Год 2024-2025 не найден. Выбран последний доступный: {latest_year}")
-                else:
-                    logger.warning("Не найдено доступных учебных годов")
-            
-            time.sleep(2)
-            
-        except Exception as e:
-            logger.error(f"Ошибка при выборе учебного года: {e}")
-
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbFacultets"))
         )

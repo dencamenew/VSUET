@@ -72,31 +72,6 @@ else:
         EC.presence_of_element_located((By.ID, "ctl00_ContentPage_cmbYears"))
     )
 
-    # Выбираем учебный год 2024-2025
-    try:
-        year_select = Select(WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "ctl00_ContentPage_cmbYears"))
-        ))
-        
-        # Пытаемся выбрать 2024-2025
-        try:
-            year_select.select_by_visible_text("2024-2025")
-            logger.info("Выбран учебный год: 2024-2025")
-        except:
-            # Если нет опции 2024-2025, выбираем последний доступный год
-            available_years = [opt.text for opt in year_select.options if opt.text and opt.text.strip()]
-            if available_years:
-                latest_year = available_years[-1]  # Берем последний доступный год
-                year_select.select_by_visible_text(latest_year)
-                logger.info(f"Год 2024-2025 не найден. Выбран последний доступный: {latest_year}")
-            else:
-                logger.warning("Не найдено доступных учебных годов")
-        
-        # Ждем обновления страницы после выбора года
-        time.sleep(2)
-        
-    except Exception as e:
-        logger.error(f"Ошибка при выборе учебного года: {e}")
 
     # Ждем загрузки факультетов
     WebDriverWait(driver, 20).until(
@@ -176,7 +151,7 @@ else:
 # Подключение к БД
 try:
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         port=5432,
         database="db",
         user="admin",
