@@ -140,24 +140,21 @@ class RatingResponse(RatingBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Timetable DTOs
+# Timetable DTOs - ИСПРАВЛЕННАЯ СТРУКТУРА
 class LessonInfo(BaseModel):
     type: str
     name: str
-    teacherName: str  # Изменено с teacher_name на teacherName
+    teacherName: str
     classroom: str
     group: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class DaySchedule(BaseModel):
-    schedule: Dict[str, LessonInfo]
-
-
+# УБРАН DaySchedule - данные идут напрямую
 class TimetableDto(BaseModel):
-    denominator: Optional[Dict[str, DaySchedule]] = {}
-    numerator: Optional[Dict[str, DaySchedule]] = {}
+    denominator: Optional[Dict[str, Dict[str, LessonInfo]]] = {}
+    numerator: Optional[Dict[str, Dict[str, LessonInfo]]] = {}
 
     model_config = ConfigDict(from_attributes=True)
 
