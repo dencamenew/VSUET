@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 from app.models.enums import Role, AttendanceStatus
@@ -21,8 +21,7 @@ class UserResponse(UserBase):
     student_info_id: Optional[int] = None
     teacher_info_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FacultyBase(BaseModel):
@@ -36,8 +35,7 @@ class FacultyCreate(FacultyBase):
 class FacultyResponse(FacultyBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GroupsBase(BaseModel):
@@ -53,8 +51,7 @@ class GroupsResponse(GroupsBase):
     faculty_id: int
     timetable_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudentInfoBase(BaseModel):
@@ -70,8 +67,7 @@ class StudentInfoResponse(StudentInfoBase):
     id: int
     group_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TeacherInfoBase(BaseModel):
@@ -86,8 +82,7 @@ class TeacherInfoResponse(TeacherInfoBase):
     id: int
     timetable_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DeanInfoBase(BaseModel):
@@ -102,8 +97,7 @@ class DeanInfoResponse(DeanInfoBase):
     id: int
     faculty_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AttendanceBase(BaseModel):
@@ -124,8 +118,7 @@ class AttendanceResponse(AttendanceBase):
     id: int
     report_json: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RatingBase(BaseModel):
@@ -144,22 +137,29 @@ class RatingResponse(RatingBase):
     id: int
     report_json: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-# Timetable DTOs - ДОЛЖНЫ БЫТЬ ПЕРВЫМИ ИЗ DTO
+# Timetable DTOs
 class LessonInfo(BaseModel):
     type: str
     name: str
-    teacher_name: str
+    teacherName: str  # Изменено с teacher_name на teacherName
     classroom: str
     group: str
 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DaySchedule(BaseModel):
+    schedule: Dict[str, LessonInfo]
+
 
 class TimetableDto(BaseModel):
-    denominator: Dict[str, Dict[str, LessonInfo]]
-    numerator: Dict[str, Dict[str, LessonInfo]]
+    denominator: Optional[Dict[str, DaySchedule]] = {}
+    numerator: Optional[Dict[str, DaySchedule]] = {}
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # DTOs for requests and responses
@@ -191,18 +191,16 @@ class ErrorResponse(BaseModel):
     error: str
 
 
-# Timetable Response Models - ДОЛЖНЫ БЫТЬ ПОСЛЕ TimetableDto
+# Timetable Response Models
 class GroupTimetable(BaseModel):
     group_id: int
     timetable: TimetableDto
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TeacherTimetable(BaseModel):
     teacher_id: int
     timetable: TimetableDto
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

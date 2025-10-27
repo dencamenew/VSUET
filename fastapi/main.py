@@ -17,16 +17,19 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="VSUET API",
     description="FastAPI version of VSUET system",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs",  # Явно указываем URL для документации
+    redoc_url="/redoc"  # URL для Redoc
 )
 
-# Add CORS middleware
+# Add CORS middleware with comprehensive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=settings.allowed_origins if hasattr(settings, 'allowed_origins') else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"]  # Добавляем для полной совместимости
 )
 
 # Include routers
@@ -49,11 +52,18 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/cors-test")
+async def cors_test():
+    """Endpoint для тестирования CORS"""
+    return {"message": "CORS is working!", "cors_enabled": True}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=True
+        host=settings.host if hasattr(settings, 'host') else "0.0.0.0",
+        port=settings.port if hasattr(settings, 'port') else 8080,
+        reload=True,
+        log_level="info"
     )

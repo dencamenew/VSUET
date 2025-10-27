@@ -1,4 +1,3 @@
-Дима, [27.10.2025 15:48]
 -- ========================
 -- SCHEMA INIT (PostgreSQL)
 -- ========================
@@ -139,7 +138,7 @@ VALUES ('dean', '12345', 'DEAN', 1, NOW());
 INSERT INTO users (username, passwd, role, created_at)
 VALUES ('admin', '12345', 'ADMIN', NOW());
 
-Дима, [27.10.2025 15:48]
+
 -- Расписания групп
 INSERT INTO group_timetable (timetable_json)
 VALUES ('{
