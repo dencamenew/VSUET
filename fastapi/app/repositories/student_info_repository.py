@@ -32,3 +32,6 @@ class StudentInfoRepository(BaseRepository[StudentInfo]):
             .filter(StudentInfo.group.has(group_name=group_name))
             .all()
         )
+
+
+

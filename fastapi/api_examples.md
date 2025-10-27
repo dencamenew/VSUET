@@ -143,3 +143,6 @@ curl -X GET "http://localhost:8080/api/dean/1"
 ```bash
 curl -X GET "http://localhost:8080/api/dean/faculty/1"
 ```
+
+
+

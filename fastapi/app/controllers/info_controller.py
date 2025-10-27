@@ -81,3 +81,6 @@ async def get_all_groups(db: Session = Depends(get_db)):
     info_service = InfoService(db)
     groups = info_service.get_all_groups()
     return groups
+
+
+

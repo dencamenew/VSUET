@@ -14,3 +14,6 @@ class AttendanceStatus(str, Enum):
     SICK = "SICK"
     EXCUSED = "EXCUSED"
     SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY"
+
+
+

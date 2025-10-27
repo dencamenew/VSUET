@@ -23,3 +23,6 @@ class RatingRepository(BaseRepository[Rating]):
             )
             .all()
         )
+
+
+

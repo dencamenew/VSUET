@@ -142,3 +142,6 @@ python main.py
 - `port` - Порт для запуска сервера
 - `secret_key` - Секретный ключ для JWT
 - `allowed_origins` - Разрешенные CORS origins
+
+
+

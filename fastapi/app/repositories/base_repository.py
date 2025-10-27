@@ -43,3 +43,6 @@ class BaseRepository(Generic[ModelType]):
         for field, value in filters.items():
             query = query.filter(getattr(self.model, field) == value)
         return query.first() is not None
+
+
+

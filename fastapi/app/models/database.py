@@ -141,3 +141,6 @@ class TeacherTimetable(Base):
 
     # Relationships
     teacher = relationship("TeacherInfo", back_populates="timetable")
+
+
+

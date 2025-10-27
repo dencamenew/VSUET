@@ -17,72 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    container_name: redis
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-  full_timetable:
-    container_name: full_timetable
-    build:
-      context: ./parsers/full_timetable
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/full_timetable:/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-
-  students_info:
-    container_name: students_info
-    build:
-      context: ./parsers/students_info
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/students_info:/app
-    depends_on:
-      full_timetable:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-
-  teacher_info:
-    container_name: teacher_info
-    build:
-      context: ./parsers/teacher_info
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/teacher_info:/app
-    depends_on:
-      full_timetable:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-  raiting:
-    container_name: raiting
-    build:
-      context: ./parsers/raiting
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/raiting:/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+  
 
 volumes:
   postgres_data:
-  redis_data:

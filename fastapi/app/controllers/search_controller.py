@@ -38,3 +38,6 @@ async def search_groups_by_name(
     search_service = SearchService(db)
     groups = search_service.search_groups_by_name(name)
     return groups
+
+
+

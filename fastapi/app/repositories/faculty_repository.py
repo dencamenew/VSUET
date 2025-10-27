@@ -13,3 +13,6 @@ class FacultyRepository(BaseRepository[Faculty]):
 
     def exists_by_name(self, name: str) -> bool:
         return self.exists(name=name)
+
+
+

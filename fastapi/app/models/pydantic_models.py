@@ -148,6 +148,20 @@ class RatingResponse(RatingBase):
         from_attributes = True
 
 
+# Timetable DTOs - ДОЛЖНЫ БЫТЬ ПЕРВЫМИ ИЗ DTO
+class LessonInfo(BaseModel):
+    type: str
+    name: str
+    teacher_name: str
+    classroom: str
+    group: str
+
+
+class TimetableDto(BaseModel):
+    denominator: Dict[str, Dict[str, LessonInfo]]
+    numerator: Dict[str, Dict[str, LessonInfo]]
+
+
 # DTOs for requests and responses
 class LoginRequest(BaseModel):
     username: str
@@ -160,20 +174,6 @@ class LoginResponse(BaseModel):
     name: str
     group_name: Optional[str] = None
     faculty_name: Optional[str] = None
-
-
-# Timetable DTOs
-class LessonInfo(BaseModel):
-    type: str
-    name: str
-    teacher_name: str
-    classroom: str
-    group: str
-
-
-class TimetableDto(BaseModel):
-    denominator: Dict[str, Dict[str, LessonInfo]]
-    numerator: Dict[str, Dict[str, LessonInfo]]
 
 
 # Attendance Report DTOs
@@ -189,3 +189,20 @@ class AttendanceReportDTO(BaseModel):
 # Error response
 class ErrorResponse(BaseModel):
     error: str
+
+
+# Timetable Response Models - ДОЛЖНЫ БЫТЬ ПОСЛЕ TimetableDto
+class GroupTimetable(BaseModel):
+    group_id: int
+    timetable: TimetableDto
+
+    class Config:
+        from_attributes = True
+
+
+class TeacherTimetable(BaseModel):
+    teacher_id: int
+    timetable: TimetableDto
+
+    class Config:
+        from_attributes = True

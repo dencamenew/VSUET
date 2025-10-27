@@ -184,3 +184,6 @@ async def delete_student_timetable(group_id: int, db: Session = Depends(get_db))
         return {"message": "Расписание группы удалено"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail={"error": str(e)})
+
+
+

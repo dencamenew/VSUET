@@ -27,3 +27,6 @@ class TimetableRepository:
 
     def delete_teacher_timetable(self, timetable_id: int) -> Optional[TeacherTimetable]:
         return self.teacher_timetable_repo.delete(timetable_id)
+
+
+

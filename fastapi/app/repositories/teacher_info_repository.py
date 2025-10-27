@@ -18,3 +18,6 @@ class TeacherInfoRepository(BaseRepository[TeacherInfo]):
             .filter(TeacherInfo.teacher_name == teacher_name)
             .first()
         )
+
+
+

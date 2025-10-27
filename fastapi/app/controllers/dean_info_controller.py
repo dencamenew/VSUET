@@ -39,3 +39,6 @@ async def get_all_deans(db: Session = Depends(get_db)):
     dean_service = DeanInfoService(db)
     deans = dean_service.get_all_deans()
     return deans
+
+
+
