@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.repositories.student_info_repository import StudentInfoRepository
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 from app.repositories.groups_repository import GroupsRepository
-from app.repositories.faculty_repository import FacultyRepository
+
 
 
 class InfoService:
@@ -12,7 +12,6 @@ class InfoService:
         self.student_info_repository = StudentInfoRepository(db)
         self.teacher_info_repository = TeacherInfoRepository(db)
         self.groups_repository = GroupsRepository(db)
-        self.faculty_repository = FacultyRepository(db)
 
     def get_student_info(self, student_id: int) -> Optional[Dict[str, Any]]:
         """Get student information by ID"""
