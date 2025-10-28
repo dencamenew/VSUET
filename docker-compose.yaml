@@ -1,14 +1,14 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:latest
+    image: postgres:15.4
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: db
     volumes:
       - ./db/initdb:/docker-entrypoint-initdb.d
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -17,7 +17,23 @@ services:
       timeout: 5s
       retries: 5
 
-  
+  fill_db:
+    container_name: fill_db
+    build:
+      context: ./fill_db
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./fill_db:/app
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
 
 volumes:
   postgres_data:
