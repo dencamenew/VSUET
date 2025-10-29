@@ -1,7 +1,7 @@
 from typing import TypeVar, Generic, Type, Optional, List, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from VSUET.fastapi.app.models.tables import Base
+from app.models.tables import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 

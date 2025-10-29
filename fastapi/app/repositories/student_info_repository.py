@@ -1,6 +1,6 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from VSUET.fastapi.app.models.tables import StudentInfo
+from app.models.tables import StudentInfo
 from .base_repository import BaseRepository
 
 

@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.orm import Session
-from VSUET.fastapi.app.models.tables import Rating
+from app.models.tables import Rating
 from .base_repository import BaseRepository
 
 

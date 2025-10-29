@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 import json
-from VSUET.fastapi.app.models.pydantic_models.pydantic_models import TimetableDto
+from app.models.pydantic_models.pydantic_models import TimetableDto
 from app.repositories.rating_repository import RatingRepository
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 
