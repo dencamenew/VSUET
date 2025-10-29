@@ -86,7 +86,7 @@ class AttendanceRepository(BaseRepository[Attendance]):
 
         return result
 
-
+    """меняет статус по зачетке для одного студента."""
     def mark_attendance_to_one(
         self,
         teacher_first_name: str,
@@ -149,3 +149,68 @@ class AttendanceRepository(BaseRepository[Attendance]):
         self.db.commit()
 
         return {"message": f"Посещаемость обновлена для предмета '{subject_name}' и группы '{group_name}'"}
+    
+    """меняет статус по зачетке для одного студента."""
+    def mark_attendance_to_many(
+        self,
+        teacher_first_name: str,
+        teacher_last_name: str,
+        group_name: str,
+        subject_name: str,
+        date_str: str,
+        zach_list: List[str]
+    ) -> dict:
+    # 1. Ищем преподавателя
+        teacher_user = (
+            self.db.query(User)
+            .filter(
+                User.first_name == teacher_first_name,
+                User.last_name == teacher_last_name,
+                User.role == "teacher"
+            )
+            .first()
+        )
+
+        if not teacher_user or not teacher_user.teacher_info:
+            return {"error": f"Преподаватель {teacher_first_name} {teacher_last_name} не найден"}
+
+        teacher_info = teacher_user.teacher_info
+
+        # 2. Ищем группу
+        group = self.db.query(Groups).filter(Groups.group_name == group_name).first()
+        if not group:
+            return {"error": f"Группа '{group_name}' не найдена"}
+
+        # 3. Ищем ведомость
+        attendance_record = (
+            self.db.query(Attendance)
+            .filter(
+                Attendance.teacher_id == teacher_info.id,
+                Attendance.group_id == group.id,
+                Attendance.subject_name == subject_name
+            )
+            .first()
+        )
+
+        if not attendance_record:
+            return {"error": f"Ведомость по предмету '{subject_name}' не найдена для преподавателя {teacher_last_name} и группы {group_name}"}
+
+        # 4. Загружаем существующую посещаемость
+        attendance_data = attendance_record.attendance_json or []
+
+        # 5. Обновляем 
+        for std_attendance in attendance_data:
+            for zach in zach_list:
+                if std_attendance["student_id"] == zach:
+                    std_attendance["attendance"][date_str] = True
+                
+        else:
+            attendance_data.append({"student_id": zach, "attendance": {date_str: True}})
+
+        # 6. Сохраняем изменения
+        attendance_record.attendance_json = attendance_data
+        flag_modified(attendance_record, "attendance_json")
+        self.db.commit()
+
+        return {"message": f"Посещаемость обновлена для предмета '{subject_name}' и группы '{group_name}'"}
+    

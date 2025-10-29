@@ -41,3 +41,18 @@ class AttendanceService:
             return {"status": "error", "detail": result["error"]}
 
         return {"status": "success", "message": result["message"]}
+    
+    def mark_to_many(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach_list: List[str]):
+        result = self.attendance_repository.mark_attendance_to_many(
+            teacher_first_name=teacher_first_name,
+            teacher_last_name=teacher_last_name,
+            subject_name=subject_name,
+            date_str=date,
+            zach_list=zach_list,
+            group_name=group_name
+        )
+
+        if "error" in result:
+            return {"status": "error", "detail": result["error"]}
+
+        return {"status": "success", "message": result["message"]}
