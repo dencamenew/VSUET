@@ -74,7 +74,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String(255), nullable=False)
     last_name = Column(String(255), nullable=False)
-    MAX_id = Column(String(255))
+    max_id = Column(String(255))
     role = Column(String(50), nullable=False)
     teacher_info_id = Column(Integer, ForeignKey("teacher_info.id"))
     student_info_id = Column(Integer, ForeignKey("student_info.id"))

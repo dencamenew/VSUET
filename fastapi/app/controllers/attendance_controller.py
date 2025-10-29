@@ -24,3 +24,22 @@ def get_student_attendance(
         raise HTTPException(status_code=404, detail=result["detail"])
 
     return result["data"]
+
+@attendance_router.get(
+    "/teacher/{first_name}/{last_name}/{subject_name}",
+    summary="Получить ведомости преподавателя",
+    description="Возвращает все ведомости (Attendance), которые должен заполнять преподаватель по ФИО и предмету.",
+)
+def get_teacher_attendances(
+    first_name: str,
+    last_name: str,
+    subject_name: str,
+    db: Session = Depends(get_db)
+):
+    service = AttendanceService(db)
+    result = service.get_teacher_attendances(first_name, last_name, subject_name)
+
+    if result["status"] == "error":
+        raise HTTPException(status_code=404, detail=result["detail"])
+
+    return result["data"]

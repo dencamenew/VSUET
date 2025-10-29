@@ -24,3 +24,13 @@ class AttendanceService:
             # Можно бросить исключение или вернуть результат как есть
             return {"status": "error", "detail": result["error"]}
         return {"status": "success", "data": result}
+    
+
+    def get_teacher_attendances(self, first_name: str, last_name: str, subject_name: str):
+        """
+        Возвращает все ведомости учителя по имени, фамилии и названию предмета.
+        """
+        result = self.attendance_repository.get_ved_for_teacher(first_name, last_name, subject_name)
+        if result and isinstance(result[0], dict) and "error" in result[0]:
+            return {"status": "error", "detail": result[0]["error"]}
+        return {"status": "success", "data": result}
