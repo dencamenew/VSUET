@@ -1,22 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
+from app.dto.requests import MarkAttendanceRequest
 from app.config.database import get_db
 from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 
 attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
-@attendance_router.get("/student/{group_name}/{zach_number}", summary="Для фронта студента.")
+@attendance_router.get("/student/{group_name}/{zach_number}", summary="Эндпоинт для получения всех ведомостей посещаемости студента по названию группы и номеру зачетки.")
 def get_student_attendance(
     group_name: str,
     zach_number: str,
     db: Session = Depends(get_db)
 ):
-    """
-    Эндпоинт для получения всех ведомостей посещаемости студента
-    по названию группы и номеру зачетки.
-    """
     service = AttendanceService(db)
     result = service.get_student_attendance(group_name, zach_number)
 
@@ -27,8 +24,7 @@ def get_student_attendance(
 
 @attendance_router.get(
     "/teacher/{first_name}/{last_name}/{subject_name}",
-    summary="Получить ведомости преподавателя",
-    description="Возвращает все ведомости (Attendance), которые должен заполнять преподаватель по ФИО и предмету.",
+    summary="Эндпоинт для получения всех ведомостей посещаемоести, которые ведет преподаватель."
 )
 def get_teacher_attendances(
     first_name: str,
@@ -44,9 +40,17 @@ def get_teacher_attendances(
 
     return result["data"]
 
-@attendance_router.post("/teacher/mark-to-one", summary="Выставление true/false на посещаемость студента по его зачетке.")
-def mark_to_one(teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach: str, status: bool, db: Session = Depends(get_db)):
+@attendance_router.post("/teacher/mark-to-one", summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки.")
+def mark_to_one(request: MarkAttendanceRequest, db: Session = Depends(get_db)):
     service = AttendanceService(db)
-    result = service.mark_to_one(teacher_first_name, teacher_last_name, group_name, subject_name, date, zach, status)
 
+    result = service.mark_to_one(
+        teacher_first_name=request.teacher_first_name,
+        teacher_last_name=request.teacher_last_name,
+        group_name=request.group_name,
+        subject_name=request.subject_name,
+        date=request.date,
+        zach=request.zach,
+        status=request.status)
+    
     return result
