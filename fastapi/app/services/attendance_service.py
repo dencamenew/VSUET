@@ -26,11 +26,18 @@ class AttendanceService:
         return {"status": "success", "data": result}
     
 
-    def get_teacher_attendances(self, first_name: str, last_name: str, subject_name: str):
-        """
-        Возвращает все ведомости учителя по имени, фамилии и названию предмета.
-        """
-        result = self.attendance_repository.get_ved_for_teacher(first_name, last_name, subject_name)
-        if result and isinstance(result[0], dict) and "error" in result[0]:
-            return {"status": "error", "detail": result[0]["error"]}
-        return {"status": "success", "data": result}
+    def mark_to_one(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach: str, status: bool):
+        result = self.attendance_repository.mark_attendance_to_one(
+            teacher_first_name=teacher_first_name,
+            teacher_last_name=teacher_last_name,
+            subject_name=subject_name,
+            date_str=date,
+            zach=zach,
+            group_name=group_name,
+            status=status
+        )
+
+        if "error" in result:
+            return {"status": "error", "detail": result["error"]}
+
+        return {"status": "success", "message": result["message"]}

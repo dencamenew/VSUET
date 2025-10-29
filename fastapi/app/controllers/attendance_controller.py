@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from app.config.database import get_db
@@ -43,3 +43,10 @@ def get_teacher_attendances(
         raise HTTPException(status_code=404, detail=result["detail"])
 
     return result["data"]
+
+@attendance_router.post("/teacher/mark-to-one", summary="Выставление true/false на посещаемость студента по его зачетке.")
+def mark_to_one(teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach: str, status: bool, db: Session = Depends(get_db)):
+    service = AttendanceService(db)
+    result = service.mark_to_one(teacher_first_name, teacher_last_name, group_name, subject_name, date, zach, status)
+
+    return result
