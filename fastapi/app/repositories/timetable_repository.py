@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.database import GroupTimetable, TeacherTimetable
+from VSUET.fastapi.app.models.tables import GroupTimetable, TeacherTimetable
 from .base_repository import BaseRepository
 
 

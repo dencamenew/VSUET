@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from app.models.pydantic_models import LoginRequest, LoginResponse
+from VSUET.fastapi.app.models.pydantic_models.pydantic_models import LoginRequest, LoginResponse
 from app.models.enums import Role
 from app.repositories.user_repository import UserRepository
 from app.dto.exceptions import InvalidCredentialsException

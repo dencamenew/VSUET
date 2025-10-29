@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from app.models.database import Attendance
+from VSUET.fastapi.app.models.tables import Attendance
 from .base_repository import BaseRepository
 
 
@@ -13,16 +13,6 @@ class AttendanceRepository(BaseRepository[Attendance]):
 
     def get_by_group_name(self, group_name: str) -> List[Attendance]:
         return self.db.query(Attendance).filter(Attendance.group_name == group_name).all()
-
-    def get_by_student_zach(self, zach_number: str) -> List[Attendance]:
-        # This would need to be implemented based on how student data is stored in report_json
-        # For now, returning empty list as placeholder
-        return []
-
-    def get_by_student_name(self, student_name: str) -> List[Attendance]:
-        # This would need to be implemented based on how student data is stored in report_json
-        # For now, returning empty list as placeholder
-        return []
 
     def get_by_group_and_subject(self, group_name: str, subject_name: str) -> List[Attendance]:
         return (

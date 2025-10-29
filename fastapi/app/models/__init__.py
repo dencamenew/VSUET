@@ -1,6 +1,6 @@
 from .enums import Role, AttendanceStatus
-from .database import *
-from .pydantic_models import *
+from .tables import *
+from .pydantic_models.pydantic_models import *
 
 __all__ = [
     "Role",

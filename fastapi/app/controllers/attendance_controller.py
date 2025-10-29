@@ -22,7 +22,7 @@ async def generate_attendance(
             raise HTTPException(status_code=404, detail="Расписание преподавателя не найдено")
         
         # Convert JSON to TimetableDto
-        from app.models.pydantic_models import TimetableDto
+        from VSUET.fastapi.app.models.pydantic_models.pydantic_models import TimetableDto
         timetable_dto = TimetableDto(**timetable.timetable_json)
         
         attendance_service = AttendanceService(db)

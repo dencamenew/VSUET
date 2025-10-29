@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
-from app.models.database import User
+from VSUET.fastapi.app.models.tables import User
 from app.models.enums import Role
 from .base_repository import BaseRepository
 
