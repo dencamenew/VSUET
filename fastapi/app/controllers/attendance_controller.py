@@ -5,7 +5,7 @@ from app.config.database import get_db
 from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 
-attendance_router = APIRouter(prefix="/api/admin/attendance", tags=["attendance"])
+attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
 @attendance_router.get("/student/{group_name}/{zach_number}", summary="Для фронта студента.")
 def get_student_attendance(
