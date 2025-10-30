@@ -69,7 +69,20 @@ class StudentInfoResponse(StudentInfoBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class RatingUpdateRequest(BaseModel):
+    zach_number: str
+    subject_name: str
+    control_point: str 
+    mark: int
 
+class StudentRatingResponse(BaseModel):
+    subject_name: str
+    rating: Dict[str, Any]
+
+class GroupRatingResponse(BaseModel):
+    group_name: str
+    subject_name: str
+    ratings: List[Dict[str, Any]]
 class TeacherInfoBase(BaseModel):
     teacher_name: str
 

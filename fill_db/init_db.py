@@ -686,7 +686,7 @@ for subj_name, lessons in subjects_map.items():
     """, (
         subj_name,
         "1 семестр 2025/2026",
-        teacher_id,
+        1,
         group_id,
         json.dumps(attendance_json)
     ))
