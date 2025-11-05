@@ -299,7 +299,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   const switchRef = useRef<NodeJS.Timeout | null>(null)
 
 
-  const URL = "https://teacherbackend.cloudpub.ru/api"
+  const URL = "http://localhost:8081/api"
 
   useEffect(() => {
     if (isOpen && lesson) {
@@ -668,8 +668,8 @@ export default function TeacherSchedulePage({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const t = translations[language] || translations.en
-  const URL = "https://teacherbackend.cloudpub.ru/api"
-  const COMMENT_URL = "https://teacherbackend.cloudpub.ru/api/comments"
+  const URL = "http://localhost:8081/api"
+  const COMMENT_URL = "http://localhost:8081/api/comments"
 
 
   const getLocalDateString = (date: Date): string => {
@@ -797,7 +797,7 @@ const saveCommentsToCache = (data: Record<string, string>) => {
           
           const response = await fetch(
 
-            `https://teacherbackend.cloudpub.ru/api/${formattedDate}/${encodedTeacherName}`,
+            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
             {
               headers: getAuthHeaders(),
             }

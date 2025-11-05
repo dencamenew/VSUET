@@ -35,9 +35,8 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
 
   const t = translations[language] || translations.en
 
-  const URL = "https://teacherbackend.cloudpub.ru/api"
-
-
+  // Убедитесь, что порт совпадает с бэкендом
+  const URL = "http://localhost:8081/api"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,12 +46,10 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
     setError("")
 
     try {
-
-      const response = await fetch("https://teacherbackend.cloudpub.ru/api/auth/login", {
+      const response = await fetch(`${URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include', // если используете cookie-based сессии
         body: JSON.stringify({
           name: fullName.trim(),
           password: password.trim()
@@ -60,6 +57,10 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          setError(t.invalidCredentials || "Неверное имя пользователя или пароль")
+          return
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -69,11 +70,12 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
         saveSession(data.sessionId)
         onLogin(data.teacher.name, data.sessionId, data.teacher.groupsSubjects)
       } else {
-        setError(t.invalidCredentials)
+        setError(t.invalidCredentials || "Неверное имя пользователя или пароль")
       }
+
     } catch (err) {
-      setError(t.connectionError)
       console.error("Login error:", err)
+      setError(t.connectionError || "Ошибка соединения с сервером")
     } finally {
       setIsLoading(false)
     }
