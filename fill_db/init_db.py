@@ -571,10 +571,16 @@ for teacher_name, timetable in teachers_data.items():
 
     # Наконец создаем пользователя с ссылкой на teacher_info_id
     first_name, last_name = teacher_name.split()
-    cur.execute(
-        "INSERT INTO users (first_name, last_name, role, teacher_info_id) VALUES (%s, %s, %s, %s);",
-        (first_name, last_name, "teacher", teacher_info_id)
-    )
+    if teacher_name == "Маслов А.А.":
+        cur.execute(
+            "INSERT INTO users (first_name, last_name, role, teacher_info_id, MAX_id) VALUES (%s, %s, %s, %s, %s);",
+            (first_name, last_name, "teacher", teacher_info_id, "1")
+        )
+    else:
+        cur.execute(
+            "INSERT INTO users (first_name, last_name, role, teacher_info_id) VALUES (%s, %s, %s, %s);",
+            (first_name, last_name, "teacher", teacher_info_id)
+        )
 
 # ---------- 7. Создаем пользователей-студентов ----------
 for student_id in student_ids:
