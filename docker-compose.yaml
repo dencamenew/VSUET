@@ -1,3 +1,4 @@
+
 services:
   postgres:
     container_name: postgres
@@ -35,13 +36,15 @@ services:
       POSTGRES_PORT: 5432
   
   fastapi:
-    build: .
+    build:
+      context: ./fastapi
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
       - DATABASE_URL=postgresql://admin:admin@db:5432/db
     depends_on:
-      - db
+      - postgres
     volumes:
       - .:/app
     command: python run.py

@@ -1,105 +1,96 @@
-CREATE TABLE IF NOT EXISTS raiting (
-    id SERIAL PRIMARY KEY,                  
-    group_name VARCHAR(255) NOT NULL,
-    zach_number VARCHAR(255) NOT NULL, 
-    sbj VARCHAR(255) NOT NULL,
-    raiting TEXT[] NOT NULL,
-    ved_type VARCHAR(255) NOT NULL,
-    UNIQUE (group_name, zach_number, sbj)
-);
+-- ========================
+-- SCHEMA INIT (PostgreSQL)
+-- ========================
 
-CREATE TABLE IF NOT EXISTS full_timetable (
+DROP TABLE IF EXISTS rating CASCADE;
+DROP TABLE IF EXISTS attendance_table CASCADE;
+DROP TABLE IF EXISTS teacher_timetable CASCADE;
+DROP TABLE IF EXISTS teacher_info CASCADE;
+DROP TABLE IF EXISTS student_info CASCADE;
+DROP TABLE IF EXISTS group_timetable CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- ------------------------
+-- TABLE: groups
+-- ------------------------
+CREATE TABLE groups (
     id SERIAL PRIMARY KEY,
-    date DATE NOT NULL,
-    group_name VARCHAR(100),
-    zach_number VARCHAR(255) NOT NULL,
-    time TIME NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    type_subject VARCHAR(20),
-    teacher VARCHAR(255),
-    audience VARCHAR(30),
-    turnout BOOLEAN DEFAULT FALSE,
-    comment VARCHAR(255),
-    UNIQUE (date, zach_number, time)
+    group_name VARCHAR(255) NOT NULL UNIQUE
 );
 
-
-CREATE TABLE IF NOT EXISTS students_info (
+-- ------------------------
+-- TABLE: group_timetable
+-- ------------------------
+CREATE TABLE group_timetable (
     id SERIAL PRIMARY KEY,
-    zach_number VARCHAR(20) NOT NULL UNIQUE,
-    password VARCHAR(255)
+    group_id BIGINT REFERENCES groups(id),
+    timetable JSONB NOT NULL
 );
 
-
-CREATE TABLE IF NOT EXISTS teachers_info (
+-- ------------------------
+-- TABLE: student_info
+-- ------------------------
+CREATE TABLE student_info (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    groups_subjects JSONB NOT NULL
+    zach_number VARCHAR(255) NOT NULL UNIQUE,
+    group_id BIGINT REFERENCES groups(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_teachers_name ON teachers_info(name);
-CREATE INDEX IF NOT EXISTS idx_full_timetable_date ON full_timetable(date);
-CREATE INDEX IF NOT EXISTS idx_full_timetable_zach ON full_timetable(zach_number);
-CREATE INDEX IF NOT EXISTS idx_full_timetable_date_zach ON full_timetable(date, zach_number);
-
-
-
-CREATE TABLE IF NOT EXISTS qr (
-    qrUUID VARCHAR(255) NOT NULL UNIQUE,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    subject VARCHAR(255) NOT NULL,
-    date DATE NOT NULL,
-    time TIME NOT NULL,
-    teacher VARCHAR(255) NOT NULL,
-    student VARCHAR(255),
-    status  VARCHAR(255) NOT NULL
+-- ------------------------
+-- TABLE: teacher_timetable
+-- ------------------------
+CREATE TABLE teacher_timetable (
+    id SERIAL PRIMARY KEY,
+    timetable JSONB NOT NULL
 );
 
+-- ------------------------
+-- TABLE: teacher_info
+-- ------------------------
+CREATE TABLE teacher_info (
+    id SERIAL PRIMARY KEY,
+    groups_subjects JSONB,
+    timetable_id BIGINT REFERENCES teacher_timetable(id)
+);
 
-CREATE OR REPLACE FUNCTION notify_raiting_change()
-RETURNS TRIGGER AS $$
-DECLARE
-    notification JSON;
-BEGIN
-    notification = json_build_object(
-        'eventType', TG_OP,
-        'zach_number', NEW.zach_number,
-        'group_name', NEW.group_name,
-        'sbj', NEW.sbj,
-        'raiting', NEW.raiting,
-        'changed_at', NOW()
-    );
+-- ------------------------
+-- TABLE: users
+-- ------------------------
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    MAX_id VARCHAR(255),
+    role VARCHAR(50) NOT NULL,
+    teacher_info_id BIGINT REFERENCES teacher_info(id),
+    student_info_id BIGINT REFERENCES student_info(id),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 
-    PERFORM pg_notify('raiting_updates', notification::text);
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- ------------------------
+-- TABLE: attendance_table
+-- ------------------------
+CREATE TABLE attendance (
+    id SERIAL PRIMARY KEY,
+    subject_name VARCHAR(255) NOT NULL,
+    semestr VARCHAR(50),
+    teacher_id BIGINT REFERENCES teacher_info(id),
+    group_id BIGINT REFERENCES groups(id),
+    attendance_json JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 
-CREATE OR REPLACE FUNCTION notify_full_timetable_change()
-RETURNS TRIGGER AS $$
-DECLARE
-    notification JSON;
-BEGIN
-    notification = json_build_object(
-        'eventType', TG_OP,
-        'date', NEW.date,
-        'zach_number', NEW.zach_number,
-        'time', NEW.time,
-        'turnout', NEW.turnout,
-        'comment', New.comment,
-        'changed_at', NOW()
-    );
-
-    PERFORM pg_notify('full_timetable_updates', notification::text);
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER raiting_notify_trigger
-AFTER INSERT OR UPDATE OR DELETE ON raiting
-FOR EACH ROW EXECUTE FUNCTION notify_raiting_change();
-
-CREATE TRIGGER full_timetable_notify_trigger
-AFTER INSERT OR UPDATE OR DELETE ON full_timetable
-FOR EACH ROW EXECUTE FUNCTION notify_full_timetable_change();
+-- ------------------------
+-- TABLE: rating
+-- ------------------------
+CREATE TABLE rating (
+    id SERIAL PRIMARY KEY,
+    subject_name VARCHAR(255) NOT NULL,
+    subject_type VARCHAR(255),
+    semestr VARCHAR(50),
+    teacher_id BIGINT REFERENCES teacher_info(id),
+    group_id BIGINT REFERENCES groups(id),
+    rating_json JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
