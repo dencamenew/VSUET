@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
-from app.models.tables import User
+from app.models.tables import StudentInfo, User
 from app.models.enums import Role
 from .base_repository import BaseRepository
 
@@ -18,8 +18,7 @@ class UserRepository(BaseRepository[User]):
             self.db.query(User)
             .options(
                 joinedload(User.student_info),
-                joinedload(User.teacher_info),
-                joinedload(User.dean_info)
+                joinedload(User.teacher_info)
             )
             .filter(User.username == username)
             .first()
@@ -34,3 +33,17 @@ class UserRepository(BaseRepository[User]):
     def get_by_max_id(self, max_id: str) -> Optional[User]:
         """Получить пользователя по его max_id (из MAX Init Data)."""
         return self.db.query(User).filter(User.max_id == max_id).first()
+    
+    def get_by_max_id_with_relations(self, max_id: str) -> Optional[User]:
+        """Получить пользователя по его max_id с загрузкой всех связанных данных."""
+        return (
+            self.db.query(User)
+            .options(
+                # Загружаем StudentInfo, а затем вложенно его Group
+                joinedload(User.student_info).joinedload(StudentInfo.group), 
+                joinedload(User.teacher_info)
+                # Добавьте другие нужные отношения здесь
+            )
+            .filter(User.max_id == max_id)
+            .first()
+        )

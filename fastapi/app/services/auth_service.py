@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from app.models.pydantic_models.pydantic_models import LoginRequest, LoginResponse
@@ -26,9 +26,7 @@ class AuthService:
         
         # 2. Генерация JWT токена
         access_token = create_access_token(
-            user_id=user.id,
-            username=user.max_id,
-            role=user.role
+            max_id=user.max_id
         )
 
         # 3. Формирование конечного ответа
@@ -38,3 +36,45 @@ class AuthService:
         }
         
         return response
+
+    def get_user_me_info(self, max_id: str) -> Dict[str, Any]:
+        """Собирает всю информацию о пользователе по его max_id."""
+        
+        # 1. Загрузка пользователя с отношениями
+        user = self.user_repository.get_by_max_id_with_relations(max_id)
+        if not user:
+            # Этот случай может произойти, если пользователь удален после выдачи токена
+            raise EntityNotFoundException(f"Пользователь с max_id {max_id} не найден.")
+
+        # 2. Сбор базовой информации
+        user_info = {
+            "id": user.id,
+            "max_id": user.max_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role, # Передаем строковое значение роли
+            "details": {} 
+        }
+        print("++++++")
+
+        # 3. Сбор специфичной информации по ролям
+        if user.role == Role.STUDENT and user.student_info:
+            student_info = user.student_info
+            
+            # Извлекаем имя группы из загруженного отношения
+            group_name = student_info.group.group_name if student_info.group else None
+            
+            user_info["details"].update({
+                "zach_number": getattr(student_info, 'zach_number', None),
+                "group_name": group_name,
+            })
+
+        elif user.role == Role.TEACHER and user.teacher_info:
+            teacher_info = user.teacher_info
+            user_info["details"].update({
+                "position": getattr(teacher_info, 'position', None), 
+            })
+
+        
+            
+        return user_info
