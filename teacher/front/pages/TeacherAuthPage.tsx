@@ -9,6 +9,7 @@ import { translations, type Language } from "@/lib/translations"
 import { GraduationCap } from "lucide-react"
 import type { GroupSubjects } from "../app/page"
 import { useSession } from '@/hooks/useSession'
+import { useFetch } from "@/hooks/api/useFetch"
 
 interface TeacherAuthPageProps {
   onLogin: (teacherName: string, sessionId: string, groupsSubjects: GroupSubjects) => void
@@ -37,6 +38,7 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
 
   // Убедитесь, что порт совпадает с бэкендом
   const URL = "http://localhost:8081/api"
+  const fetch = useFetch();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +48,24 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
     setError("")
 
     try {
-      const response = await fetch(`${URL}/auth/login`, {
+      // const response = await fetch(`${URL}/auth/login`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   credentials: 'include', // если используете cookie-based сессии
+      //   body: JSON.stringify({
+      //     name: fullName.trim(),
+      //     password: password.trim()
+      //   }),
+      // })
+
+      // if (!response.ok) {
+      //   if (response.status === 401) {
+      //     setError(t.invalidCredentials || "Неверное имя пользователя или пароль")
+      //     return
+      //   }
+      //   throw new Error(`HTTP error! status: ${response.status}`)
+      // }
+      const response = await fetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include', // если используете cookie-based сессии
@@ -54,17 +73,11 @@ export default function TeacherAuthPage({ onLogin, language }: TeacherAuthPagePr
           name: fullName.trim(),
           password: password.trim()
         }),
-      })
+      });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          setError(t.invalidCredentials || "Неверное имя пользователя или пароль")
-          return
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      const data: LoginResponse = await response.json();
+      console.log(data);
 
-      const data: LoginResponse = await response.json()
 
       if (data.message === "Login successful") {
         saveSession(data.sessionId)

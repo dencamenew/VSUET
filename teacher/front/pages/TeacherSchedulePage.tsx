@@ -651,10 +651,10 @@ export default function TeacherSchedulePage({
     initialComment: "",
     isEditMode: false
   })
-  const [qrModal, setQrModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
-    isOpen: false,
-    lesson: null,
-  })
+  // const [qrModal, setQrModal] = useState<{ isOpen: boolean; lesson: Lesson | null }>({
+  //   isOpen: false,
+  //   lesson: null,
+  // })
   const [viewCommentModal, setViewCommentModal] = useState<{
     isOpen: boolean
     comment: string
@@ -1121,13 +1121,13 @@ const handleDeleteComment = async () => {
   }
 }
 
-  const openQRModal = (lesson: Lesson) => {
-    setQrModal({ isOpen: true, lesson })
-  }
+  // const openQRModal = (lesson: Lesson) => {
+  //   setQrModal({ isOpen: true, lesson })
+  // }
 
-  const closeQRModal = () => {
-    setQrModal({ isOpen: false, lesson: null })
-  }
+  // const closeQRModal = () => {
+  //   setQrModal({ isOpen: false, lesson: null })
+  // }
 
   const openViewCommentModal = (comment: string, lesson: Lesson) => {
     setViewCommentModal({ isOpen: true, comment, lesson })
@@ -1279,7 +1279,7 @@ const handleDeleteComment = async () => {
 
                   <div className="flex justify-between items-center mt-4">
                     <div className="flex items-center space-x-2">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 px-2 text-muted-foreground hover:text-foreground"
@@ -1287,7 +1287,7 @@ const handleDeleteComment = async () => {
                       >
                         <QRCodeSVG className="w-4 h-4 mr-1" />
                         QR
-                      </Button>
+                      </Button> */}
                       {comment ? (
                         <Button
                           variant="ghost"
@@ -1339,7 +1339,7 @@ const handleDeleteComment = async () => {
         isEditMode={commentModal.isEditMode}
       />
 
-      <QRModal
+      {/* <QRModal
         isOpen={qrModal.isOpen}
         onClose={closeQRModal}
         lesson={qrModal.lesson}
@@ -1347,7 +1347,7 @@ const handleDeleteComment = async () => {
         selectedDate={selectedDateKey}
         teacherName={teacherName}
         getAuthHeaders={getAuthHeaders}
-      />
+      /> */}
 
       <ViewCommentModal
         isOpen={viewCommentModal.isOpen}

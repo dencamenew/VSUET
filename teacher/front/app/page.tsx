@@ -79,7 +79,7 @@ function App() {
       }
     } catch (error) {
       console.error('Session check failed:', error)
-      localStorage.removeItem("sessionId")
+      // localStorage.removeItem("sessionId")
     }
   }
 
