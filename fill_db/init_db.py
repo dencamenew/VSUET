@@ -583,13 +583,21 @@ for teacher_name, timetable in teachers_data.items():
         )
 
 # ---------- 7. Создаем пользователей-студентов ----------
+random_student_id = random.choice(student_ids)
+
 for student_id in student_ids:
     first_name = fake.first_name()
     last_name = fake.last_name()
-    cur.execute(
-        "INSERT INTO users (first_name, last_name, role, student_info_id) VALUES (%s, %s, %s, %s);",
-        (first_name, last_name, "student", student_id)
-    )
+    if student_id == random_student_id:
+        cur.execute(
+            "INSERT INTO users (first_name, last_name, role, student_info_id, MAX_id) VALUES (%s, %s, %s, %s, %s);",
+            (first_name, last_name, "student", student_id, "2")
+        )
+    else:
+        cur.execute(
+            "INSERT INTO users (first_name, last_name, role, student_info_id) VALUES (%s, %s, %s, %s);",
+            (first_name, last_name, "student", student_id)
+        )
 
 
 # ---------- Attendance с учётом реального типа недели ----------
