@@ -32,20 +32,15 @@ def create_access_token(max_id: str, expires_delta: Optional[timedelta] = None) 
 def decode_access_token(token: str) -> Dict[str, Any]:
     """Декодирует и проверяет JWT токен, автоматически проверяя exp."""
     try:
-        print("🔍 decode_access_token called")
-        print("Raw token repr:", repr(token))
-        print("SECRET_KEY repr:", repr(SECRET_KEY))
         payload = jwt.decode(
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
-        print("✅ Payload decoded successfully:", payload)
+
         return payload
 
     except JWTError as e:
-        # показываем точную ошибку во время разработки
-        print("❌ JWTError:", type(e).__name__, str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Недействительный токен: {str(e)}",

@@ -12,7 +12,6 @@ __all__ = [
     "RatingService",
     "SearchService",
     "InfoService",
-    "DeanInfoService",
 ]
 
 

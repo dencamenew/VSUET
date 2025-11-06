@@ -6,6 +6,7 @@ from app.models.pydantic_models.pydantic_models import LoginRequest, LoginRespon
 from app.services.auth_service import AuthService
 from app.dto.exceptions import InvalidCredentialsException
 from app.utils.jwt import get_current_user_id
+from fastapi import status
 
 auth_router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -46,16 +47,10 @@ async def user_me(
     """
     try:
         auth_service = AuthService(db)
-        # Передаем max_id в сервис
         user_data = auth_service.get_user_me_info(max_id) 
         return user_data
     
-    except EntityNotFoundException as e:
-        # Токен валиден, но ID не найден в базе (пользователь удален)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"message": str(e)}
-        )
+    
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

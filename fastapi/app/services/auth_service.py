@@ -6,13 +6,18 @@ from app.models.enums import Role
 from app.repositories.user_repository import UserRepository
 from app.dto.exceptions import InvalidCredentialsException
 from app.utils.jwt import create_access_token
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.repositories.student_info_repository import StudentInfoRepository
+from app.repositories.groups_repository import GroupsRepository
+from app.models.tables import TeacherInfo
+from app.repositories.teacher_info_repository import TeacherInfoRepository
 
 
 class AuthService:
     def __init__(self, db: Session):
         self.user_repository = UserRepository(db)
+        self.student_info_repository = StudentInfoRepository(db)
+        self.group_repository = GroupsRepository(db)
+        self.teacher_info_repository = TeacherInfoRepository(db)
 
     def login_by_max_id_token_only(self, max_id: str) -> Dict[str, str]:
         """
@@ -42,9 +47,10 @@ class AuthService:
         
         # 1. Загрузка пользователя с отношениями
         user = self.user_repository.get_by_max_id_with_relations(max_id)
-        if not user:
-            # Этот случай может произойти, если пользователь удален после выдачи токена
-            raise EntityNotFoundException(f"Пользователь с max_id {max_id} не найден.")
+
+        # if not user:
+        #     # Этот случай может произойти, если пользователь удален после выдачи токена
+        #     raise EntityNotFoundException(f"Пользователь с max_id {max_id} не найден.")
 
         # 2. Сбор базовой информации
         user_info = {
@@ -52,29 +58,20 @@ class AuthService:
             "max_id": user.max_id,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role, # Передаем строковое значение роли
-            "details": {} 
+            "role": user.role,
         }
-        print("++++++")
 
         # 3. Сбор специфичной информации по ролям
-        if user.role == Role.STUDENT and user.student_info:
-            student_info = user.student_info
-            
-            # Извлекаем имя группы из загруженного отношения
+        if user.role == "student":
+            student_info = self.student_info_repository.get_by_id(user.student_info_id)
+            user_info["zach_number"] = student_info.zach_number
             group_name = student_info.group.group_name if student_info.group else None
+            user_info["group_name"] = group_name
+
+
+
+        elif user.role == "teacher":
+            user_info["groups_sbj"]  = self.teacher_info_repository.get_by_id(user.teacher_info_id).groups_subjects
             
-            user_info["details"].update({
-                "zach_number": getattr(student_info, 'zach_number', None),
-                "group_name": group_name,
-            })
-
-        elif user.role == Role.TEACHER and user.teacher_info:
-            teacher_info = user.teacher_info
-            user_info["details"].update({
-                "position": getattr(teacher_info, 'position', None), 
-            })
-
-        
             
         return user_info

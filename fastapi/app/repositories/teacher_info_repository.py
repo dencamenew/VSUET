@@ -18,6 +18,7 @@ class TeacherInfoRepository(BaseRepository[TeacherInfo]):
             .filter(TeacherInfo.teacher_name == teacher_name)
             .first()
         )
-
-
-
+    
+    def get_by_id(self, teacher_id: int) -> Optional[TeacherInfo]:
+        """Получить преподавателя по его ID"""
+        return self.db.query(TeacherInfo).filter(TeacherInfo.id == teacher_id).first()
