@@ -5,8 +5,7 @@ from app.config.database import engine, Base
 from app.controllers.auth_controller import auth_router
 from app.controllers.attendance_controller import attendance_router
 from app.controllers.rating_controller import rating_router
-from app.controllers.search_controller import search_router
-from app.controllers.info_controller import info_router
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -34,8 +33,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(attendance_router)
 app.include_router(rating_router)
-app.include_router(search_router)
-app.include_router(info_router)
+
 
 
 @app.get("/")

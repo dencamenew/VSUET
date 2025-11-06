@@ -5,6 +5,7 @@ from app.dto.requests import MarkAttendanceToManyRequest, MarkAttendanceToOneReq
 from app.config.database import get_db
 from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
+from app.utils.jwt import get_current_user_id
 
 attendance_router = APIRouter(prefix="/api/attendance", tags=["Attendance(посещаемость)."])
 
@@ -12,7 +13,8 @@ attendance_router = APIRouter(prefix="/api/attendance", tags=["Attendance(пос
 def get_student_attendance(
     group_name: str,
     zach_number: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id) 
 ):
     service = AttendanceService(db)
     result = service.get_student_attendance(group_name, zach_number)
@@ -30,7 +32,8 @@ def get_teacher_attendances(
     first_name: str,
     last_name: str,
     subject_name: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ):
     service = AttendanceService(db)
     result = service.get_teacher_attendances(first_name, last_name, subject_name)
@@ -41,7 +44,7 @@ def get_teacher_attendances(
     return result["data"]
 
 @attendance_router.post("/teacher/mark-to-one", summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки.")
-def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_db)):
+def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id) ):
     service = AttendanceService(db)
 
     result = service.mark_to_one(
@@ -56,7 +59,7 @@ def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_d
     return result
 
 @attendance_router.post("/teacher/mark-to-many", summary="Эндпоинт для выставления статуса(true) о посещаемости. !!!Для автоматизтрованного учета!!!")
-def mark_to_many(request: MarkAttendanceToManyRequest, db: Session = Depends(get_db)):
+def mark_to_many(request: MarkAttendanceToManyRequest, db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id) ):
     service = AttendanceService(db)
 
     result = service.mark_to_many(
