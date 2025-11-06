@@ -1,14 +1,14 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:latest
+    image: postgres:15.4
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: db
     volumes:
       - ./db/initdb:/docker-entrypoint-initdb.d
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -17,72 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    container_name: redis
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-  full_timetable:
-    container_name: full_timetable
+  fill_db:
+    container_name: fill_db
     build:
-      context: ./parsers/full_timetable
+      context: ./fill_db
       dockerfile: Dockerfile
-    volumes:
-      - ./parsers/full_timetable:/app
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
-
-
-  students_info:
-    container_name: students_info
-    build:
-      context: ./parsers/students_info
-      dockerfile: Dockerfile
     volumes:
-      - ./parsers/students_info:/app
-    depends_on:
-      full_timetable:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-
-  teacher_info:
-    container_name: teacher_info
-    build:
-      context: ./parsers/teacher_info
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/teacher_info:/app
-    depends_on:
-      full_timetable:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-  raiting:
-    container_name: raiting
-    build:
-      context: ./parsers/raiting
-      dockerfile: Dockerfile
-    volumes:
-      - ./parsers/raiting:/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - ./fill_db:/app
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
 
 volumes:
   postgres_data:
-  redis_data:
