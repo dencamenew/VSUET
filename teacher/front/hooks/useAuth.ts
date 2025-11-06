@@ -1,4 +1,4 @@
-import { atom, useAtom } from "jotai";
+import { atom, useAtom, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 
 const tokenAtom = atom<string | undefined>(undefined);
@@ -20,9 +20,6 @@ export function useAuth() {
             setIsAuth(true);
         } else {
             setIsAuth(false);
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
         }
     }, [token]);
 
