@@ -42,12 +42,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgresql://admin:admin@db:5432/db
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/db
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
-      - .:/app
-    command: python run.py
+      - ./fastapi:/app
+
 
 volumes:
   postgres_data:
