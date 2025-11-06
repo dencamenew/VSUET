@@ -30,3 +30,7 @@ class UserRepository(BaseRepository[User]):
 
     def exists_by_username(self, username: str) -> bool:
         return self.exists(username=username)
+
+    def get_by_max_id(self, max_id: str) -> Optional[User]:
+        """Получить пользователя по его max_id (из MAX Init Data)."""
+        return self.db.query(User).filter(User.max_id == max_id).first()

@@ -3,7 +3,9 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 from app.models.enums import Role, AttendanceStatus
 
-
+class MaxIdRequest(BaseModel):
+    max_id: str
+    
 # Base models for database entities
 class UserBase(BaseModel):
     username: str
