@@ -35,19 +35,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
   
-  fastapi:
-    build:
-      context: ./fastapi
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=postgresql://admin:admin@postgres:5432/db
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./fastapi:/app
+ 
 
 
 volumes:

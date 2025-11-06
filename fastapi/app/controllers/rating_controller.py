@@ -1,10 +1,11 @@
-# app/controllers/rating_controller.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 from app.config.database import get_db
 from app.services.rating_service import RatingService
 from app.models.pydantic_models.pydantic_models import RatingUpdateRequest
+from app.utils.jwt import get_current_user_id  # <-- добавили импорт JWT-декодера
+
 
 class RatingController:
     def __init__(self):
@@ -33,12 +34,17 @@ class RatingController:
             response_model=Dict[str, Any]
         )
     
+    # -----------------------------
+    # JWT ЗАЩИЩЁННЫЕ ЭНДПОИНТЫ 👇
+    # -----------------------------
+
     async def get_student_rating(
         self,
         zach_number: str,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user_id: str = Depends(get_current_user_id)  # <-- токен обязателен
     ) -> Dict[str, Any]:
-        """Получить рейтинг студента по номеру зачётки"""
+        """Получить рейтинг студента по номеру зачётки (требуется токен)."""
         try:
             rating_service = RatingService(db)
             ratings = rating_service.get_student_ratings(zach_number)
@@ -49,7 +55,10 @@ class RatingController:
                     detail=f"Рейтинги для студента с зачёткой {zach_number} не найдены"
                 )
             
-            return ratings
+            return {
+                "requested_by": current_user_id,
+                "ratings": ratings
+            }
             
         except HTTPException:
             raise
@@ -60,9 +69,10 @@ class RatingController:
         self,
         group_name: str,
         subject_name: str,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user_id: str = Depends(get_current_user_id)
     ) -> Dict[str, Any]:
-        """Получить ведомость рейтинга группы по предмету"""
+        """Получить ведомость рейтинга группы по предмету (JWT обязательный)."""
         try:
             rating_service = RatingService(db)
             rating_data = rating_service.get_group_rating(group_name, subject_name)
@@ -73,6 +83,7 @@ class RatingController:
                     detail=f"Рейтинг для группы {group_name} по предмету {subject_name} не найден"
                 )
             
+            rating_data["requested_by"] = current_user_id
             return rating_data
             
         except HTTPException:
@@ -83,13 +94,13 @@ class RatingController:
     async def update_student_mark(
         self,
         request: RatingUpdateRequest,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user_id: str = Depends(get_current_user_id)
     ) -> Dict[str, Any]:
-        """Обновить оценку студента по контрольной точке"""
+        """Обновить оценку студента по контрольной точке (только для авторизованных)."""
         try:
             rating_service = RatingService(db)
             
-            # Проверяем, что оценка в допустимом диапазоне (0-100)
             if not (0 <= request.mark <= 100):
                 raise HTTPException(
                     status_code=400,
@@ -111,6 +122,7 @@ class RatingController:
             
             return {
                 "message": "Оценка успешно обновлена",
+                "updated_by": current_user_id,  # кто сделал обновление
                 "zach_number": request.zach_number,
                 "subject_name": request.subject_name,
                 "control_point": request.control_point,
@@ -122,6 +134,7 @@ class RatingController:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
-# Создаем экземпляр контроллера и экспортируем роутер
+
+# Экспорт роутера
 rating_controller = RatingController()
 rating_router = rating_controller.router
