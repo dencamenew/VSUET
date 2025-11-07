@@ -74,6 +74,7 @@ CREATE TABLE users (
 CREATE TABLE attendance (
     id SERIAL PRIMARY KEY,
     subject_name VARCHAR(255) NOT NULL,
+    subject_type VARCHAR(255),
     semestr VARCHAR(50),
     teacher_id BIGINT REFERENCES teacher_info(id),
     group_id BIGINT REFERENCES groups(id),
