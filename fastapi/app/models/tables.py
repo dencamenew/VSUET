@@ -90,6 +90,7 @@ class Attendance(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     subject_name = Column(String(255), nullable=False)
+    subject_type = Column(String(255), nullable=False)
     semestr = Column(String(50))
     teacher_id = Column(Integer, ForeignKey("teacher_info.id"))
     group_id = Column(Integer, ForeignKey("groups.id"))

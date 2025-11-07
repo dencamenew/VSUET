@@ -6,6 +6,8 @@ from app.models.enums import AttendanceStatus
 from app.repositories.attendance_repository import AttendanceRepository
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 from app.repositories.student_info_repository import StudentInfoRepository
+from app.repositories.user_repository import UserRepository
+from app.repositories.groups_repository import GroupsRepository
 
 
 class AttendanceService:
@@ -14,11 +16,22 @@ class AttendanceService:
         self.attendance_repository = AttendanceRepository(db)
         self.teacher_info_repository = TeacherInfoRepository(db)
         self.student_info_repository = StudentInfoRepository(db)
+        self.user_repository = UserRepository(db)
+        self.group_repository = GroupsRepository(db)
     
-    def get_teacher_attendance(self, first_name: str, last_name: str, subject_name: str):
-        result = self.attendance_repository.get_ved_for_teacher(first_name, last_name, subject_name)
+
+    def get_teacher_attendance(self, max_id: str, group_name: str, subject_type: str, subject_name: str):
+        """
+        Возвращает ведомости посещаемости студента по группе и номеру зачетки.
+        """
+        teacher_info_id = self.user_repository.get_by_max_id_teacher_info_id(max_id)[0] # почему-то возвращает кортеж поэтому [0]
+        group_id = self.group_repository.get_by_group_name(group_name).id
+        result = self.attendance_repository.get_ved_for_teacher(group_id, teacher_info_id, subject_name, subject_type)
         return result
     
+
+
+
     def get_student_attendance(self, group_name: str, zach_number: str) -> Dict:
         """
         Возвращает ведомости посещаемости студента по группе и номеру зачетки.
@@ -29,6 +42,8 @@ class AttendanceService:
             return {"status": "error", "detail": result["error"]}
         return {"status": "success", "data": result}
     
+
+
 
     def mark_to_one(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach: str, status: bool):
         result = self.attendance_repository.mark_attendance_to_one(
@@ -46,6 +61,9 @@ class AttendanceService:
 
         return {"status": "success", "message": result["message"]}
     
+
+
+
     def mark_to_many(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach_list: List[str]):
         result = self.attendance_repository.mark_attendance_to_many(
             teacher_first_name=teacher_first_name,

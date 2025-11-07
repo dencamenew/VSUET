@@ -7,7 +7,9 @@ from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 from app.utils.jwt import get_current_user_id
 
+
 attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
+
 
 @attendance_router.get("/student/{group_name}/{zach_number}", summary="Эндпоинт для получения всех ведомостей посещаемости студента по названию группы и номеру зачетки.")
 def get_student_attendance(
@@ -24,23 +26,32 @@ def get_student_attendance(
 
     return result["data"]
 
+
+
+
 @attendance_router.get(
-    "/teacher/{first_name}/{last_name}/{subject_name}",
-    summary="Эндпоинт для получения всех ведомостей посещаемоести, которые ведет преподаватель."
+    "/teacher/{group_name}/{subject_type}/{subject_name}",
+    summary="Эндпоинт для получения всех ведомости посещаемоести, которые ведет преподаватель по названию группы, названию и типу предмета."
 )
 def get_teacher_attendances(
-    first_name: str,
-    last_name: str,
+    group_name: str,
+    subject_type: str,
     subject_name: str,
     db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id)
+    max_id: str = Depends(get_current_user_id)
 ):
     service = AttendanceService(db)
-    result = service.get_teacher_attendance(first_name, last_name, subject_name)
+    result = service.get_teacher_attendance(max_id, group_name, subject_type, subject_name)
 
     return result
 
-@attendance_router.post("/teacher/mark-to-one", summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки.")
+
+
+
+@attendance_router.post(
+    "/teacher/mark-to-one", 
+    summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки."
+)
 def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_db), max_id: str = Depends(get_current_user_id) ):
     service = AttendanceService(db)
 

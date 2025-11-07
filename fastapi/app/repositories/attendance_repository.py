@@ -38,53 +38,22 @@ class AttendanceRepository(BaseRepository[Attendance]):
             "subjects": student_attendance_by_subject
         }
 
-    def get_ved_for_teacher(self, first_name: str, last_name: str, subject_name: str) -> List[Dict[str, Any]]:
+    def get_ved_for_teacher(self, group_id: int, teacher_id: int, subject_name: str, subject_type: str):
         """
-        Возвращает все ведомости, которые должен заполнять конкретный учитель
-        по его имени, фамилии и названию предмета.
+        Возвращает ведомость, которую должен заполнять конкретный учитель,
+        по названию группы, названию предмета, типу предмета и teacher_info_id.
         """
-
-        teacher_user = (
-            self.db.query(User)
-            .filter(
-                User.first_name == first_name,
-                User.last_name == last_name,
-                User.role == "teacher"
-            )
-            .first()
-        )
-
-        if not teacher_user:
-            return [{"error": f"Учитель {first_name} {last_name} не найден"}]
-
-        # Получаем TeacherInfo
-        teacher_info = teacher_user.teacher_info
-        if not teacher_info:
-            return [{"error": f"У пользователя {first_name} {last_name} нет связанных данных о преподавателе"}]
-
-        # Получаем ведомости (Attendance)
-        attendances = (
+        ved = (
             self.db.query(Attendance)
-            .filter(
-                Attendance.teacher_id == teacher_info.id,
-                Attendance.subject_name == subject_name
+               .filter(
+                   Attendance.group_id == group_id,
+                   Attendance.teacher_id == teacher_id,
+                   Attendance.subject_name == subject_name,
+                   Attendance.subject_type == subject_type
+               ).first()
             )
-            .all()
-        )
-
-        # Преобразуем для фронта
-        result = []
-        for a in attendances:
-            group = self.db.query(Groups).filter(Groups.id == a.group_id).first()
-            result.append({
-                "subject_name": a.subject_name,
-                "group_name": group.group_name if group else None,
-                "semestr": a.semestr,
-                "created_at": a.created_at,
-                "attendance_json": a.attendance_json
-            })
-
-        return result
+        
+        return ved
 
     """меняет статус по зачетке для одного студента."""
     def mark_attendance_to_one(
