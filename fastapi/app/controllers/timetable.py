@@ -10,7 +10,7 @@ from app.services.timetable_service import TimetableService
 
 timetable_router = APIRouter(prefix="/api/my/timetable", tags=["timetable"])
 
-@timetable_router.get("/student/{group_name}/{zach_number}", summary="Эндпоинт для получения расписания пользователя(студент/преподаватель) по MAX ID передаваемому в jwt токене.")
+@timetable_router.get("/", summary="Эндпоинт для получения расписания пользователя(студент/преподаватель) по MAX ID передаваемому в jwt токене.")
 def get_student_attendance(
     db: Session = Depends(get_db),
     max_id: str = Depends(get_current_user_id) 
