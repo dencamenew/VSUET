@@ -36,12 +36,9 @@ def get_teacher_attendances(
     current_user_id: str = Depends(get_current_user_id)
 ):
     service = AttendanceService(db)
-    result = service.get_teacher_attendances(first_name, last_name, subject_name)
+    result = service.get_teacher_attendance(first_name, last_name, subject_name)
 
-    if result["status"] == "error":
-        raise HTTPException(status_code=404, detail=result["detail"])
-
-    return result["data"]
+    return result
 
 @attendance_router.post("/teacher/mark-to-one", summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки.")
 def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id) ):

@@ -14,7 +14,11 @@ class AttendanceService:
         self.attendance_repository = AttendanceRepository(db)
         self.teacher_info_repository = TeacherInfoRepository(db)
         self.student_info_repository = StudentInfoRepository(db)
-
+    
+    def get_teacher_attendance(self, first_name: str, last_name: str, subject_name: str):
+        result = self.attendance_repository.get_ved_for_teacher(first_name, last_name, subject_name)
+        return result
+    
     def get_student_attendance(self, group_name: str, zach_number: str) -> Dict:
         """
         Возвращает ведомости посещаемости студента по группе и номеру зачетки.
