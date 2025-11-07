@@ -22,7 +22,7 @@ interface LogoutResponse {
   code?: string
 }
 
-export default function TeacherProfilePage({
+export default function TeacherProfile({
   teacherName,
   onLogout,
   onClose,

@@ -30,7 +30,7 @@ export default function BottomNavigation({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around *:cursor-pointer">
+    <div className="z-50 fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around *:cursor-pointer">
       <Button
         variant={getButtonVariant("schedule")}
         onClick={() => onNavigate("schedule")}

@@ -1,22 +1,44 @@
-import { ReactNode } from "react";
+// Drawer.tsx
+import { ReactNode, useRef, useEffect, useState } from "react";
+import { Moveable } from "../motion/Moveable";
 
-export function Drawer(
-    {
-        isOpen,
-        onClose,
-        children
-    } : {
-        isOpen: boolean,
-        onClose: () => void,
-        children: ReactNode
+export function Drawer({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const [drawerWidth, setDrawerWidth] = useState(320);
+
+  useEffect(() => {
+    if (drawerRef.current) {
+      const width = drawerRef.current.offsetWidth;
+      setDrawerWidth(width);
     }
-) {
+  }, []);
 
-    return isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end" onClick={onClose}>
-            <div className="w-80 h-full bg-card rounded-l-3xl p-6 animate-slide-in-right border-l border-border overflow-y-auto">
-                {children}
-            </div>
-        </div>
-    );
-};
+  return (
+    <Moveable
+      condition={isOpen}
+      from={{ x: drawerWidth, y: 0 }}
+      to={{ x: 0, y: 0 }}
+      unmount={true}
+      backdrop={true}
+      initial={false}
+      onExitComplete={onClose}
+      onClose={onClose}
+    >
+      <div
+        ref={drawerRef}
+        className="w-80 h-screen bg-card rounded-l-3xl p-6 border-l border-border overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </Moveable>
+  );
+}

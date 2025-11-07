@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import BottomNavigation from "@/components/ui/BottomNavigation"
 import { DayOfWeek, ILessonSlot, useTimetable, WeekType } from "@/hooks/api/useTimetable"
 import CalendarSlider, { DateItem } from "@/components/inputs/CalendarSlider"
+import { ScheduleList } from "@/components/ui/ScheduleList"
 
 interface CachedSchedule {
   data: Record<string, Lesson[]>;
@@ -893,50 +894,7 @@ export default function TeacherSchedulePage({
 
 
 
-  const getCardStyles = (type: ILessonSlot['class_type']) => {
-    switch (type) {
-      case "лекция":
-        return "bg-card border border-border border-l-4 border-l-blue-500 shadow-sm hover:shadow-md"
-      case "практические занятия":
-        return "bg-card border border-border border-l-4 border-l-red-500 shadow-sm hover:shadow-md"
-      case "лабораторная работа":
-        return "bg-card border border-border border-l-4 border-l-green-500 shadow-sm hover:shadow-md"
-      case "семинар":
-        return "bg-card border border-border border-l-4 border-l-yellow-500 shadow-sm hover:shadow-md"
-      default:
-        return "bg-card border border-border border-l-4 border-l-purple-500 shadow-sm hover:shadow-md"
-    }
-  }
 
-  const getTypeStyles = (type: ILessonSlot['class_type']) => {
-    switch (type) {
-      case "лекция":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-      case "практические занятия":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800"
-      case "лабораторная работа":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800"
-      case "семинар":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800"
-      default:
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-    }
-  }
-
-  const getTypeLabel = (type: ILessonSlot['class_type']) => {
-    switch (type) {
-      case "лекция":
-        return t.lecture
-      case "практические занятия":
-        return t.practice
-      case "лабораторная работа":
-        return t.lab
-      case "семинар":
-        return t.seminar
-      default:
-        return t.other
-    }
-  }
 
   const getCommentKey = (lesson: Lesson) => {
     return `${lesson.subject}_${lesson.group}_${lesson.time}`
@@ -1158,8 +1116,6 @@ export default function TeacherSchedulePage({
     return daySchedule;
   }, [timetable, currentDate]);
 
-  console.log(currentSchedule)
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
@@ -1194,76 +1150,11 @@ export default function TeacherSchedulePage({
           }
         </div>
 
-        <div className="flex flex-col gap-3">
-
-          {
-            currentSchedule ? Object.entries(currentSchedule).map(([time, item], index) => {
-              if (!item || !Object.values(item).length) return null;
-              console.log(currentSchedule)
-              return (
-                <div
-                  key={`${time}-${index}`}
-                  className={getCardStyles(item.class_type) + " p-4 rounded-xl transition-all"}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {time} • {item.auditorium}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{item.group}</p>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(item.class_type)}`}
-                    >
-                      {getTypeLabel(item.class_type)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="flex items-center space-x-2">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                        onClick={() => openQRModal(lesson)}
-                      >
-                        <QRCodeSVG className="w-4 h-4 mr-1" />
-                        QR
-                      </Button> */}
-                      {/* {comment ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-blue-500 hover:text-blue-600"
-                      onClick={() => openViewCommentModal(comment, lesson)}
-                    >
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      {truncateComment(comment)}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                      onClick={() => openCommentModal(lesson)}
-                    >
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      {t.comment}
-                    </Button>
-                  )} */}
-                    </div>
-                  </div>
-                </div>
-              );
-            }) :
-              <div className="size-full  pt-10 text-xl text-muted-foreground font-semibold">
-                <div className="rounded-3xl w-full bg-muted py-14 flex items-center justify-center px-10 text-center">
-                  {t.noClasses}
-                </div>
-              </div>
-          }
-        </div>
+        <ScheduleList
+          currentDate={currentDate.dateKey}
+          currentSchedule={currentSchedule}
+          language={language}
+        />
       </div>
 
       {/* Navigation */}

@@ -1,10 +1,22 @@
 import { atom, useAtom, useSetAtom } from "jotai";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 const tokenAtom = atom<string | undefined>(undefined);
 
+export function useTokenInit() {
+    const { setToken } = useToken();
+
+    useLayoutEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            setToken(token);
+        }
+    }, []);
+}
+
 export function useToken() {
     const [token, setToken] = useAtom(tokenAtom);
+
     return {
         token,
         setToken

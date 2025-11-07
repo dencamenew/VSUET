@@ -8,13 +8,13 @@ import { useState } from "react"
 import { Drawer } from "@/components/modals/Drawer"
 import BottomNavigation from "@/components/ui/BottomNavigation"
 import { useLanguage } from "@/hooks/useLanguage"
+import TeacherProfile from "./TeacherProfile"
 
 const sessionId = '';
 
 export function TeacherHandler(
 
 ) {
-
     const { lang, setLang } = useLanguage();
     const [isProfileOpen, setShowProfile] = useState(false);
     const [currentPage, setCurrentPage] = useState<"schedule" | "rating" | "attendance">("schedule");
@@ -22,13 +22,15 @@ export function TeacherHandler(
     const user = useMe();
     if (!user) return null;
 
+    const teacherName = user.first_name + " " + user.last_name;
+
     const handleLogout = () => { }
 
     return (
         <div className="min-h-screen bg-background">
             {currentPage === "schedule" && (
                 <TeacherSchedulePage
-                    teacherName={user.first_name + " " + user.last_name}
+                    teacherName={teacherName}
                     onNavigate={setCurrentPage}
                     onShowProfile={() => setShowProfile(true)}
                     language={lang}
@@ -40,7 +42,6 @@ export function TeacherHandler(
                     onNavigate={setCurrentPage}
                     onShowProfile={() => setShowProfile(true)}
                     language={lang}
-                    sessionId={sessionId}
                 />
             )}
             {currentPage === "attendance" && (
@@ -50,7 +51,6 @@ export function TeacherHandler(
                     onNavigate={setCurrentPage}
                     onShowProfile={() => setShowProfile(true)}
                     language={lang}
-                    sessionId={sessionId}
                 />
             )}
             <BottomNavigation
@@ -65,13 +65,12 @@ export function TeacherHandler(
                 isOpen={isProfileOpen}
                 onClose={() => setShowProfile(false)}
             >
-                <TeacherProfilePage
+                <TeacherProfile
                     teacherName={user.first_name}
                     onLogout={handleLogout}
                     onClose={() => setShowProfile(false)}
                     onLanguageChange={setLang}
                     language={lang}
-                    sessionId={sessionId}
                 />
             </Drawer>
         </div>

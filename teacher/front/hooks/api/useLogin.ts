@@ -13,7 +13,6 @@ export function useLogin(
 
     const handleAuth = useMutation({
         mutationFn: async () => {
-
             const response = await fetch("/auth/login_max_id", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -30,11 +29,18 @@ export function useLogin(
             return response.json();
         },
         onSuccess: (data: { access_token: string }) => {
+            localStorage.setItem("token", data.access_token);
             setToken(data.access_token);
         },
     });
 
     useLayoutEffect(() => {
-        handleAuth.mutate();
+        const localToken = localStorage.getItem("token");
+
+        if (localToken) {
+            setToken(localToken);
+        } else {
+            handleAuth.mutate();
+        }
     }, []);
 };

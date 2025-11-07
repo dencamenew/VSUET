@@ -5,9 +5,9 @@ import { useState } from "react"
 import type { Language } from "../lib/translations"
 import { useAuth } from "@/hooks/useAuth"
 import { AuthGuard } from "@/components/security/AuthGuard"
-import AuthModule from "@/modules/AuthModule"
+import AuthModule from "@/components/modules/AuthModule"
 import { useRole } from "@/components/security/useRole"
-import { TeacherHandler } from "@/modules/teacher/Handler"
+import { TeacherHandler } from "@/components/modules/teacher/Handler"
 
 // Интерфейс для данных групп и предметов
 export interface GroupSubjects {
