@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from app.dto.requests import MarkAttendanceToManyRequest, MarkAttendanceToOneRequest
@@ -7,7 +7,7 @@ from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
 from app.utils.jwt import get_current_user_id
 
-attendance_router = APIRouter(prefix="/api/attendance", tags=["Attendance(посещаемость)."])
+attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
 @attendance_router.get("/student/{group_name}/{zach_number}", summary="Эндпоинт для получения всех ведомостей посещаемости студента по названию группы и номеру зачетки.")
 def get_student_attendance(

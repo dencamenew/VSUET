@@ -4,7 +4,7 @@ from .student_info_repository import StudentInfoRepository
 from .teacher_info_repository import TeacherInfoRepository
 from .attendance_repository import AttendanceRepository
 from .rating_repository import RatingRepository
-from .timetable_repository import TimetableRepository
+
 
 __all__ = [
     "UserRepository",
