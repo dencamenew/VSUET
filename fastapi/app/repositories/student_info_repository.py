@@ -1,6 +1,6 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from app.models.tables import StudentInfo
+from app.models.tables import StudentInfo, User
 from .base_repository import BaseRepository
 
 
@@ -28,6 +28,21 @@ class StudentInfoRepository(BaseRepository[StudentInfo]):
             .filter(StudentInfo.group.has(group_name=group_name))
             .all()
         )
+    
+    def get_student_name_by_zach_number(self, zach_number: str):
+        """
+        Возвращает имя и фамилию студента по его зачетке.
+        """
+        result = (
+            self.db.query(User)
+            .join(StudentInfo, User.student_info_id == StudentInfo.id)
+            .filter(StudentInfo.zach_number == zach_number)
+            .first()
+        )
+
+        if result:
+            return {"first_name": result.first_name, "last_name": result.last_name}
+        return None
 
 
 
