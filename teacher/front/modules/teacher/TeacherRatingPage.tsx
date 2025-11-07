@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Calendar, User, GraduationCap, Users, Save } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Grade } from "@/data/mockData"
-import BottomNavigation from "../components/ui/BottomNavigation"
+import BottomNavigation from "@/components/ui/BottomNavigation"
 
 interface TeacherRatingPageProps {
   teacherName: string

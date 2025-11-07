@@ -1,28 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useFetch } from "./useFetch";
 import { useToken } from "../useAuth";
-import { useLayoutEffect } from "react";
 
-export type TRoles = "teacher" | "student" | "admin" | undefined;
+interface ITimetable {}
 
-export interface IUser {
-    details: {};
-    first_name: string;
-    last_name: string;
-    max_id: string;
-    role: TRoles;
-    id: number;
-};
-
-export function useMe() {
+export function useTimetable() {
     const fetch = useFetch();
     const { token } = useToken();
 
     const { data } = useQuery({
         queryKey: ["users/me", token],
         enabled: !!token,
-        queryFn: async (): Promise<IUser> => {
-            const response = await fetch("/auth/user/me", {
+        queryFn: async (): Promise<ITimetable> => {
+            const response = await fetch("/my/timetable", {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,

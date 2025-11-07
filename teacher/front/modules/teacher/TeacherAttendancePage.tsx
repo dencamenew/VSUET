@@ -5,9 +5,9 @@ import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Calendar, User, GraduationCap, Users, Check, X, Loader2 } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
-import type { GroupSubjects } from "../app/page"
 import { useSession } from '@/hooks/useSession'
-import BottomNavigation from "../components/ui/BottomNavigation"
+import { GroupSubjects } from "@/app/page"
+import BottomNavigation from "@/components/ui/BottomNavigation"
 
 interface TeacherAttendancePageProps {
   teacherName: string

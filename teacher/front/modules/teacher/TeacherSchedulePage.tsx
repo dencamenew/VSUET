@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Button } from "../components/ui/button"
 import {
   Calendar,
   User,
@@ -17,11 +16,12 @@ import {
   Trash2,
   QrCode
 } from "lucide-react"
-import { translations, type Language } from "../lib/translations"
-import { Textarea } from "../components/ui/textarea"
 import { QRCodeSVG } from 'qrcode.react'
 import { useSession } from '@/hooks/useSession'
-import BottomNavigation from "../components/ui/BottomNavigation"
+import { Language, translations } from "@/lib/translations"
+import { Button } from "@/components/ui/button"
+import BottomNavigation from "@/components/ui/BottomNavigation"
+import { useTimetable } from "@/hooks/api/useTimetable"
 
 interface CachedSchedule {
   data: Record<string, Lesson[]>;
@@ -37,8 +37,7 @@ interface TeacherSchedulePageProps {
   teacherName: string
   onNavigate: (page: "schedule" | "rating" | "attendance") => void
   onShowProfile: () => void
-  language: Language
-  getAuthHeaders: () => HeadersInit
+  language: Language;
 }
 
 
@@ -274,7 +273,7 @@ function CommentModal({
               </span>
             </div>
           </div>
-          <Button 
+          <Button
             type="submit" 
             disabled={!comment.trim()} 
             className="w-full py-3 rounded-lg bg-primary hover:bg-primary/90 text-black"
@@ -297,6 +296,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   const [isSwitching, setIsSwitching] = useState<boolean>(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
+
+
 
 
   const URL = "http://localhost:8081/api"
@@ -633,9 +634,10 @@ export default function TeacherSchedulePage({
   teacherName,
   onNavigate,
   onShowProfile,
-  language,
-  getAuthHeaders
+  language
 }: TeacherSchedulePageProps) {
+  const timetable = useTimetable();
+
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
   const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
@@ -1183,7 +1185,6 @@ const handleDeleteComment = async () => {
     }
   }
 
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
@@ -1206,7 +1207,7 @@ const handleDeleteComment = async () => {
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-2 px-8 scrollbar-hide">
+          <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-2 mx-10 scrollbar-hide">
             {dates.map((dateItem) => (
               <button
                 key={dateItem.key}
