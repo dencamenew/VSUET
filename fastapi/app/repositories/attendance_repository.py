@@ -11,6 +11,7 @@ class AttendanceRepository(BaseRepository[Attendance]):
     def __init__(self, db: Session):
         super().__init__(Attendance, db)
 
+
     def get_student_attendance(self, group_name: str, zach_number: str) -> Dict:
         """Возвращает все ведомости посещаемости студента по номеру зачетки и названию группы."""
         group = self.db.query(Groups).filter(Groups.group_name == group_name).first()
@@ -38,6 +39,9 @@ class AttendanceRepository(BaseRepository[Attendance]):
             "subjects": student_attendance_by_subject
         }
 
+
+
+
     def get_ved_for_teacher(self, group_id: int, teacher_id: int, subject_name: str, subject_type: str):
         """
         Возвращает ведомость, которую должен заполнять конкретный учитель,
@@ -55,52 +59,33 @@ class AttendanceRepository(BaseRepository[Attendance]):
         
         return ved
 
+
+
+
     """меняет статус по зачетке для одного студента."""
     def mark_attendance_to_one(
         self,
-        teacher_first_name: str,
-        teacher_last_name: str,
-        group_name: str,
+        teacher_info_id: int,
+        group_id: int,
         subject_name: str,
+        subject_type: str,
         date_str: str,
         zach: str,
         status: bool
     ) -> dict:
-    # 1. Ищем преподавателя
-        teacher_user = (
-            self.db.query(User)
-            .filter(
-                User.first_name == teacher_first_name,
-                User.last_name == teacher_last_name,
-                User.role == "teacher"
-            )
-            .first()
-        )
-
-        if not teacher_user or not teacher_user.teacher_info:
-            return {"error": f"Преподаватель {teacher_first_name} {teacher_last_name} не найден"}
-
-        teacher_info = teacher_user.teacher_info
-
-        # 2. Ищем группу
-        group = self.db.query(Groups).filter(Groups.group_name == group_name).first()
-        if not group:
-            return {"error": f"Группа '{group_name}' не найдена"}
-
         # 3. Ищем ведомость
         attendance_record = (
             self.db.query(Attendance)
             .filter(
-                Attendance.teacher_id == teacher_info.id,
-                Attendance.group_id == group.id,
-                Attendance.subject_name == subject_name
+                Attendance.teacher_id == teacher_info_id,
+                Attendance.group_id == group_id,
+                Attendance.subject_name == subject_name,
+                Attendance.subject_type == subject_type
             )
             .first()
         )
 
-        if not attendance_record:
-            return {"error": f"Ведомость по предмету '{subject_name}' не найдена для преподавателя {teacher_last_name} и группы {group_name}"}
-
+        
         # 4. Загружаем существующую посещаемость
         attendance_data = attendance_record.attendance_json or []
 
@@ -117,8 +102,11 @@ class AttendanceRepository(BaseRepository[Attendance]):
         flag_modified(attendance_record, "attendance_json")
         self.db.commit()
 
-        return {"message": f"Посещаемость обновлена для предмета '{subject_name}' и группы '{group_name}'"}
+        return {"message": f"Посещаемость обновлена"}
     
+
+
+
     """меняет статус по зачетке для одного студента."""
     def mark_attendance_to_many(
         self,

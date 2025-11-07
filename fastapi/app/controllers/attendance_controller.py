@@ -52,30 +52,39 @@ def get_teacher_attendances(
     "/teacher/mark-to-one", 
     summary="Эндпоинт для выставления статуса(true/false) в ведомость посещаемости на основе номера зачетки."
 )
-def mark_to_one(request: MarkAttendanceToOneRequest, db: Session = Depends(get_db), max_id: str = Depends(get_current_user_id) ):
+def mark_to_one(
+                group_name: str,
+                subject_name: str,
+                subject_type: str,
+                date: str,
+                zach: str,
+                status: bool,
+                db: Session = Depends(get_db),
+                max_id: str = Depends(get_current_user_id)
+                ):
     service = AttendanceService(db)
 
     result = service.mark_to_one(
-        teacher_first_name=request.teacher_first_name,
-        teacher_last_name=request.teacher_last_name,
-        group_name=request.group_name,
-        subject_name=request.subject_name,
-        date=request.date,
-        zach=request.zach,
-        status=request.status)
+        max_id=max_id,
+        group_name=group_name,
+        subject_name=subject_name,
+        date=date,
+        zach=zach,
+        status=status,
+        subject_type=subject_type)
     
     return result
 
-@attendance_router.post("/teacher/mark-to-many", summary="Эндпоинт для выставления статуса(true) о посещаемости. !!!Для автоматизтрованного учета!!!")
-def mark_to_many(request: MarkAttendanceToManyRequest, db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id) ):
-    service = AttendanceService(db)
+# @attendance_router.post("/teacher/mark-to-many", summary="Эндпоинт для выставления статуса(true) о посещаемости. !!!Для автоматизтрованного учета!!!")
+# def mark_to_many(request: MarkAttendanceToManyRequest, db: Session = Depends(get_db), current_user_id: str = Depends(get_current_user_id) ):
+#     service = AttendanceService(db)
 
-    result = service.mark_to_many(
-        teacher_first_name=request.teacher_first_name,
-        teacher_last_name=request.teacher_last_name,
-        group_name=request.group_name,
-        subject_name=request.subject_name,
-        date=request.date,
-        zach_list=request.zach_list)
+#     result = service.mark_to_many(
+#         teacher_first_name=request.teacher_first_name,
+#         teacher_last_name=request.teacher_last_name,
+#         group_name=request.group_name,
+#         subject_name=request.subject_name,
+#         date=request.date,
+#         zach_list=request.zach_list)
     
-    return result
+#     return result

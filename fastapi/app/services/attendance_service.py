@@ -45,14 +45,17 @@ class AttendanceService:
 
 
 
-    def mark_to_one(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach: str, status: bool):
+    def mark_to_one(self, max_id: str, group_name: str, subject_name: str, subject_type: str, date: str, zach: str, status: bool):
+        teacher_info_id = self.user_repository.get_by_max_id_teacher_info_id(max_id)[0] # почему-то возвращает кортеж поэтому [0]
+        group_id = self.group_repository.get_by_group_name(group_name).id
+
         result = self.attendance_repository.mark_attendance_to_one(
-            teacher_first_name=teacher_first_name,
-            teacher_last_name=teacher_last_name,
+            teacher_info_id=teacher_info_id,
             subject_name=subject_name,
+            subject_type=subject_type,
             date_str=date,
             zach=zach,
-            group_name=group_name,
+            group_id=group_id,
             status=status
         )
 
