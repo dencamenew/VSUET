@@ -648,7 +648,7 @@ for student_id in student_ids:
         )
 
 
-# ---------- Attendance с учётом реального типа недели ----------
+# ---------- Attendance с учётом типа недели и типа занятия ----------
 from datetime import date, timedelta
 
 start_date = date(2025, 9, 1)
@@ -678,8 +678,8 @@ def get_week_type(d):
     week_num = ((d - start_date).days // 7) + 1
     return "Числитель" if week_num % 2 == 1 else "Знаменатель"
 
-# ---------- 1) Составляем расписание предметов с учётом типа недели ----------
-# subjects_map: subj_name -> list of {"weekday": int, "week_type": str, "teacher": str}
+# ---------- 1) Составляем карту предметов по типам занятий ----------
+# subjects_map: (subject_name, class_type) -> list of {"weekday": int, "week_type": str, "teacher": str}
 subjects_map = {}
 
 for sem_type, sem_data in group_timetable_json.items():
@@ -692,9 +692,12 @@ for sem_type, sem_data in group_timetable_json.items():
                 continue
             subj = entry.get("name")
             teacher = entry.get("teacher")
-            if not subj:
+            class_type = entry.get("class_type", "другое")
+            if not subj or not class_type:
                 continue
-            subjects_map.setdefault(subj, []).append({
+
+            key = (subj, class_type)
+            subjects_map.setdefault(key, []).append({
                 "weekday": weekday_num,
                 "week_type": sem_type,
                 "teacher": teacher
@@ -704,12 +707,12 @@ for sem_type, sem_data in group_timetable_json.items():
 cur.execute("DELETE FROM attendance WHERE group_id = %s;", (group_id,))
 
 # ---------- 3) Генерация attendance ----------
-for subj_name, lessons in subjects_map.items():
-    # Получаем все даты каждого занятия по типу недели
+for (subj_name, class_type), lessons in subjects_map.items():
     class_dates_set = set()
     teacher_id = None
     sample_teacher = None
 
+    # Сбор всех дат для данного предмета и типа занятия
     for lesson in lessons:
         sample_teacher = sample_teacher or lesson.get("teacher")
         for d in generate_all_dates(start_date, end_date):
@@ -720,7 +723,7 @@ for subj_name, lessons in subjects_map.items():
     if not class_dates:
         continue
 
-    # Найти teacher_id, если возможно
+    # Определяем teacher_id по фамилии преподавателя (если есть)
     if sample_teacher:
         cur.execute("""
             SELECT ti.id
@@ -741,20 +744,22 @@ for subj_name, lessons in subjects_map.items():
             "attendance": {d.strftime("%Y-%m-%d"): False for d in class_dates}
         })
 
-    # Вставляем в таблицу
+    # Вставляем строку для КАЖДОГО типа занятия отдельно
     cur.execute("""
-        INSERT INTO attendance (subject_name, semestr, teacher_id, group_id, attendance_json)
-        VALUES (%s, %s, %s, %s, %s);
+        INSERT INTO attendance (subject_name, subject_type, semestr, teacher_id, group_id, attendance_json)
+        VALUES (%s, %s, %s, %s, %s, %s);
     """, (
         subj_name,
+        class_type,  # ← теперь классы разделены
         "1 семестр 2025/2026",
-        1,
+        teacher_id or 1,
         group_id,
         json.dumps(attendance_json)
     ))
 
 conn.commit()
-print("✅ Attendance создано с учётом типа недели.")
+print("✅ Attendance создано: разные типы занятий и даты разделены корректно.")
+
 
 
 
