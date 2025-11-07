@@ -14,7 +14,7 @@ const sessionId = '';
 export function TeacherHandler(
 
 ) {
-    
+
     const { lang, setLang } = useLanguage();
     const [isProfileOpen, setShowProfile] = useState(false);
     const [currentPage, setCurrentPage] = useState<"schedule" | "rating" | "attendance">("schedule");
@@ -22,13 +22,13 @@ export function TeacherHandler(
     const user = useMe();
     if (!user) return null;
 
-    const handleLogout = () => {}
+    const handleLogout = () => { }
 
     return (
         <div className="min-h-screen bg-background">
             {currentPage === "schedule" && (
                 <TeacherSchedulePage
-                    teacherName={user.first_name}
+                    teacherName={user.first_name + " " + user.last_name}
                     onNavigate={setCurrentPage}
                     onShowProfile={() => setShowProfile(true)}
                     language={lang}

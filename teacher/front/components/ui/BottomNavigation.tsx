@@ -24,44 +24,52 @@ export default function BottomNavigation({
   }
 
   const getButtonClass = (page: string) => {
-    return currentPage === page 
-      ? "flex-1 mx-1 bg-primary text-primary-foreground" 
+    return currentPage === page
+      ? "flex-1 mx-1 bg-primary text-primary-foreground"
       : "flex-1 mx-1 text-muted-foreground"
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around">
-      <Button 
-        variant={getButtonVariant("schedule")} 
-        onClick={() => onNavigate("schedule")} 
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex justify-around *:cursor-pointer">
+      <Button
+        variant={getButtonVariant("schedule")}
+        onClick={() => onNavigate("schedule")}
         className={getButtonClass("schedule")}
       >
-        <Calendar className="w-5 h-5 mr-2" />
-        {t.schedule}
+        <Calendar className="w-5 h-5" />
+        <p className="hidden md:block ps-2">
+          {t.schedule}
+        </p>
       </Button>
-      <Button 
-        variant={getButtonVariant("attendance")} 
-        onClick={() => onNavigate("attendance")} 
+      <Button
+        variant={getButtonVariant("attendance")}
+        onClick={() => onNavigate("attendance")}
         className={getButtonClass("attendance")}
       >
-        <Users className="w-5 h-5 mr-2" />
-        {t.attendance}
+        <Users className="w-5 h-5" />
+        <p className="hidden md:block ps-2">
+          {t.attendance}
+        </p>
       </Button>
-      <Button 
-        variant={getButtonVariant("rating")} 
-        onClick={() => onNavigate("rating")} 
+      <Button
+        variant={getButtonVariant("rating")}
+        onClick={() => onNavigate("rating")}
         className={getButtonClass("rating")}
       >
-        <GraduationCap className="w-5 h-5 mr-2" />
-        {t.rating}
+        <GraduationCap className="w-5 h-5" />
+        <p className="hidden md:block ps-2">
+          {t.rating}
+        </p>
       </Button>
-      <Button 
-        variant="ghost" 
-        onClick={onShowProfile} 
+      <Button
+        variant="ghost"
+        onClick={onShowProfile}
         className="flex-1 mx-1 text-muted-foreground"
       >
-        <User className="w-5 h-5 mr-2" />
-        {t.profile}
+        <User className="w-5 h-5" />
+        <p className="hidden md:block ps-2">
+          {t.profile}
+        </p>
       </Button>
     </div>
   )

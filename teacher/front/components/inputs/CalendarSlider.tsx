@@ -4,45 +4,73 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { SideFade } from "../ui/particles/SideFade"
 
-interface DateItem {
+export interface DateItem {
   date: number
   day: string
   month: string
   isToday: boolean
   fullDate: Date
   key: string
-  dayOfWeek: number // 0-6, где 0 = понедельник, 6 = воскресенье
+  dayOfWeek: number
+  weekType: "numerator" | "denominator"
 }
 
 interface CalendarSliderProps {
   language: "ru" | "en"
-  onChangeDate: (dateKey: string, dayOfWeek: number) => void
-  startDate?: Date
-  endDate?: Date
-  initialDate?: string
+  onChange: (
+    dateKey: string, 
+    dayOfWeek: number, 
+    weekType: "numerator" | "denominator"
+  ) => void
 }
 
-const VISIBLE_ITEMS = 7
 const ITEM_WIDTH = 70
+const GAP = 8
 const SWIPE_THRESHOLD = 50
 
 export default function CalendarSlider({
   language,
-  onChangeDate,
-  startDate = new Date(2025, 8, 1),
-  endDate = new Date(2025, 11, 31),
-  initialDate
+  onChange
 }: CalendarSliderProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [touchStart, setTouchStart] = useState<number>(0)
   const [touchEnd, setTouchEnd] = useState<number>(0)
+  const [scrollOffset, setScrollOffset] = useState(0)
+  const initialScrollDone = useRef(false)
 
-  const dates = useMemo(() => {
+  // Функция для определения числитель/знаменатель
+  const getWeekType = (date: Date): "numerator" | "denominator" => {
+    const year = date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1
+    const sept1st = new Date(year, 8, 1)
+
+    // Находим понедельник недели, в которую попадает 1 сентября
+    const sept1DayOfWeek = sept1st.getDay()
+    const daysToMonday = sept1DayOfWeek === 0 ? -6 : 1 - sept1DayOfWeek
+    const firstMonday = new Date(sept1st)
+    firstMonday.setDate(sept1st.getDate() + daysToMonday)
+
+    // Находим понедельник недели текущей даты
+    const currentDayOfWeek = date.getDay()
+    const daysToCurrentMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek
+    const currentMonday = new Date(date)
+    currentMonday.setDate(date.getDate() + daysToCurrentMonday)
+
+    // Вычисляем количество недель
+    const diffTime = currentMonday.getTime() - firstMonday.getTime()
+    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000))
+
+    return diffWeeks % 2 === 0 ? "numerator" : "denominator"
+  }
+
+  // Генерация всех дат
+  const allDates = useMemo(() => {
     const daysOfWeek =
-      language === "ru" 
-        ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] 
+      language === "ru"
+        ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
         : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     const months =
@@ -51,16 +79,23 @@ export default function CalendarSlider({
         : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
     const generatedDates: DateItem[] = []
+    const today = new Date()
+
+    // Генерируем даты: 365 дней назад до 365 дней вперед
+    const startDate = new Date(today)
+    startDate.setDate(today.getDate() - 365)
+
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + 365)
+
     const currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
       const dateKey = getLocalDateString(currentDate)
-      const today = new Date()
       const isToday = getLocalDateString(currentDate) === getLocalDateString(today)
       const dayIndex = currentDate.getDay()
-      
-      // Конвертируем день недели: 0 (Вс) -> 6, 1 (Пн) -> 0, 2-6 -> 1-5
       const dayOfWeek = dayIndex === 0 ? 6 : dayIndex - 1
+      const weekType = getWeekType(currentDate)
 
       generatedDates.push({
         date: currentDate.getDate(),
@@ -69,42 +104,56 @@ export default function CalendarSlider({
         isToday,
         fullDate: new Date(currentDate),
         key: dateKey,
-        dayOfWeek
+        dayOfWeek,
+        weekType
       })
 
       currentDate.setDate(currentDate.getDate() + 1)
     }
 
     return generatedDates
-  }, [language, startDate, endDate])
+  }, [language])
 
-  const [scrollOffset, setScrollOffset] = useState(0)
-
+  // Виртуализация: вычисляем какие элементы рендерить
   const visibleDates = useMemo(() => {
-    const startIndex = Math.max(0, Math.floor(scrollOffset / ITEM_WIDTH) - 2)
-    const endIndex = Math.min(dates.length, startIndex + VISIBLE_ITEMS + 4)
-    return dates.slice(startIndex, endIndex).map((date, idx) => ({
-      ...date,
-      virtualIndex: startIndex + idx
-    }))
-  }, [dates, scrollOffset])
+    const itemTotalWidth = ITEM_WIDTH + GAP
+    const containerWidth = scrollContainerRef.current?.clientWidth || 400
 
+    // Вычисляем индексы видимых элементов с буфером
+    const startIndex = Math.max(0, Math.floor(scrollOffset / itemTotalWidth) - 5)
+    const visibleCount = Math.ceil(containerWidth / itemTotalWidth) + 15
+    const endIndex = Math.min(allDates.length, startIndex + visibleCount)
+
+    return allDates.slice(startIndex, endIndex).map((date, idx) => ({
+      ...date,
+      absoluteIndex: startIndex + idx
+    }))
+  }, [allDates, scrollOffset])
+
+  // Инициализация: центрируем на сегодняшней дате
   useEffect(() => {
-    const targetDate = initialDate || getLocalDateString(new Date())
-    const targetIndex = dates.findIndex(d => d.key === targetDate)
-    
-    if (targetIndex !== -1) {
-      setSelectedDateKey(dates[targetIndex].key)
-      const targetOffset = targetIndex * ITEM_WIDTH - (VISIBLE_ITEMS / 2) * ITEM_WIDTH
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollLeft = targetOffset
-      }
-      onChangeDate(dates[targetIndex].key, dates[targetIndex].dayOfWeek)
-    } else if (dates.length > 0) {
-      setSelectedDateKey(dates[0].key)
-      onChangeDate(dates[0].key, dates[0].dayOfWeek)
+    if (initialScrollDone.current || allDates.length === 0) return
+
+    const todayKey = getLocalDateString(new Date())
+    const todayIndex = allDates.findIndex(d => d.key === todayKey)
+
+    if (todayIndex !== -1 && scrollContainerRef.current) {
+      const container = scrollContainerRef.current
+      const containerWidth = container.clientWidth
+      const itemTotalWidth = ITEM_WIDTH + GAP
+
+      // Центрируем сегодняшнюю дату
+      const targetScroll = (todayIndex * itemTotalWidth) - (containerWidth / 2) + (ITEM_WIDTH / 2)
+
+      // Устанавливаем без анимации
+      container.scrollLeft = Math.max(0, targetScroll)
+      setScrollOffset(container.scrollLeft)
+
+      setSelectedDateKey(allDates[todayIndex].key)
+      onChange(allDates[todayIndex].key, allDates[todayIndex].dayOfWeek, allDates[todayIndex].weekType)
+      initialScrollDone.current = true
     }
-  }, [dates])
+  }, [allDates, onChange])
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -124,7 +173,6 @@ export default function CalendarSlider({
     if (touchStart - touchEnd > SWIPE_THRESHOLD) {
       scrollRight()
     }
-
     if (touchStart - touchEnd < -SWIPE_THRESHOLD) {
       scrollLeft()
     }
@@ -132,68 +180,121 @@ export default function CalendarSlider({
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -ITEM_WIDTH * 3, behavior: "smooth" })
+      scrollContainerRef.current.scrollBy({
+        left: -(ITEM_WIDTH + GAP) * 2,
+        behavior: "smooth"
+      })
     }
   }
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: ITEM_WIDTH * 3, behavior: "smooth" })
+      scrollContainerRef.current.scrollBy({
+        left: (ITEM_WIDTH + GAP) * 2,
+        behavior: "smooth"
+      })
     }
   }
 
   const handleDateSelect = (dateItem: DateItem) => {
     setSelectedDateKey(dateItem.key)
-    onChangeDate(dateItem.key, dateItem.dayOfWeek)
+    onChange(dateItem.key, dateItem.dayOfWeek, dateItem.weekType)
+
+    // Плавно центрируем выбранную дату
+    if (scrollContainerRef.current) {
+      const dateIndex = allDates.findIndex(d => d.key === dateItem.key)
+      if (dateIndex !== -1) {
+        const container = scrollContainerRef.current
+        const containerWidth = container.clientWidth
+        const itemTotalWidth = ITEM_WIDTH + GAP
+        const targetScroll = (dateIndex * itemTotalWidth) - (containerWidth / 2) + (ITEM_WIDTH / 2)
+
+        container.scrollTo({
+          left: Math.max(0, targetScroll),
+          behavior: "smooth"
+        })
+      }
+    }
   }
 
+  const itemTotalWidth = ITEM_WIDTH + GAP
+  const totalWidth = allDates.length * itemTotalWidth
+
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <Button
         variant="ghost"
         size="icon"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hover:bg-primary/10 hover:text-primary transition-colors"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 hover:bg-primary/10 hover:text-primary transition-colors"
         onClick={scrollLeft}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="flex gap-2 overflow-x-auto pb-2 mx-10 scrollbar-hide scroll-smooth"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {visibleDates.map((dateItem) => (
-          <button
-            key={dateItem.key}
-            onClick={() => handleDateSelect(dateItem)}
-            style={{
-              minWidth: `${ITEM_WIDTH - 10}px`,
-              transform: `translateX(${dateItem.virtualIndex * ITEM_WIDTH}px)`
+      
+      <div className="relative mx-10">
+          <SideFade
+            width={120}
+            height="100%"
+            className="bg-gradient-to-r from-background to-transparent left-0 top-0 z-50"
+          />
+          <SideFade
+            width={120}
+            height="100%"
+            className="bg-gradient-to-l from-background to-transparent right-0 top-0 z-50"
+          />
+
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="overflow-x-auto pb-2 scrollbar-hide"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+        >
+          <div
+            className="relative flex gap-2"
+            style={{ 
+              width: `${totalWidth}px`,
+              height: '92px'
             }}
-            className={`flex flex-col items-center p-3 rounded-2xl transition-all ${
-              dateItem.isToday
-                ? "bg-primary text-primary-foreground"
-                : selectedDateKey === dateItem.key
-                ? "bg-muted"
-                : "hover:bg-muted"
-            }`}
           >
-            <span className="text-xs text-muted-foreground mb-1">{dateItem.month}</span>
-            <span className="text-lg font-semibold">{dateItem.date}</span>
-            <span className="text-xs mt-1">{dateItem.day}</span>
-          </button>
-        ))}
+            {visibleDates.map((dateItem) => (
+              <button
+                key={dateItem.key}
+                onClick={() => handleDateSelect(dateItem)}
+                style={{
+                  position: 'absolute',
+                  left: `${dateItem.absoluteIndex * itemTotalWidth}px`,
+                  width: `${ITEM_WIDTH}px`,
+                  flexShrink: 0
+                }}
+                className={cn(
+                  "flex flex-col items-center p-3 rounded-2xl transition-all cursor-pointer relative hover:bg-muted",
+                  dateItem.isToday
+                    ? selectedDateKey === dateItem.key 
+                      ? "border border-primary bg-muted" 
+                      : "bg-primary text-primary-foreground hover:text-primary"
+                    : selectedDateKey === dateItem.key && "bg-muted"
+                )}
+              >
+                <span className="text-xs mb-1">{dateItem.month}</span>
+                <span className="text-lg font-semibold">{dateItem.date}</span>
+                <span className="text-xs mt-1">{dateItem.day}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Button
         variant="ghost"
         size="icon"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hover:bg-primary/10 hover:text-primary transition-colors"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 hover:bg-primary/10 hover:text-primary transition-colors"
         onClick={scrollRight}
       >
         <ChevronRight className="h-4 w-4" />

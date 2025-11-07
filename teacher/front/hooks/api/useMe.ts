@@ -22,7 +22,7 @@ export function useMe() {
         queryKey: ["users/me", token],
         enabled: !!token,
         queryFn: async (): Promise<IUser> => {
-            const response = await fetch("/auth/user/me", {
+            const response = await fetch("/user/me", {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -21,7 +21,8 @@ import { useSession } from '@/hooks/useSession'
 import { Language, translations } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
 import BottomNavigation from "@/components/ui/BottomNavigation"
-import { useTimetable } from "@/hooks/api/useTimetable"
+import { DayOfWeek, ILessonSlot, useTimetable, WeekType } from "@/hooks/api/useTimetable"
+import CalendarSlider, { DateItem } from "@/components/inputs/CalendarSlider"
 
 interface CachedSchedule {
   data: Record<string, Lesson[]>;
@@ -41,14 +42,14 @@ interface TeacherSchedulePageProps {
 }
 
 
-interface DateItem {
-  date: number
-  day: string
-  month: string
-  isToday: boolean
-  fullDate: Date
-  key: string
-}
+// interface DateItem {
+//   date: number
+//   day: string
+//   month: string
+//   isToday: boolean
+//   fullDate: Date
+//   key: string
+// }
 
 interface CommentModalProps {
   isOpen: boolean
@@ -135,12 +136,12 @@ const getCachedSchedule = (teacherName: string): Record<string, Lesson[]> | null
     if (!cached) return null;
 
     const cachedData: CachedSchedule = JSON.parse(cached);
-    
+
     // Проверяем актуальность кеша и соответствие преподавателя
-    const isCacheValid = 
-      Date.now() - cachedData.timestamp < CACHE_DURATION && 
+    const isCacheValid =
+      Date.now() - cachedData.timestamp < CACHE_DURATION &&
       cachedData.teacherName === teacherName;
-    
+
     return isCacheValid ? cachedData.data : null;
   } catch (error) {
     console.error('Error reading cache:', error);
@@ -162,16 +163,16 @@ const saveToCache = (data: Record<string, Lesson[]>, teacherName: string) => {
   }
 };
 
-function CommentModal({ 
-  isOpen, 
-  onClose, 
-  lesson, 
-  language, 
-  selectedDate, 
-  initialComment = "", 
+function CommentModal({
+  isOpen,
+  onClose,
+  lesson,
+  language,
+  selectedDate,
+  initialComment = "",
   onSaveComment,
   onDeleteComment,
-  isEditMode = false 
+  isEditMode = false
 }: CommentModalProps) {
   const [comment, setComment] = useState(initialComment)
   const t = translations[language] || translations.en
@@ -227,9 +228,9 @@ function CommentModal({
           <h3 className="text-lg font-semibold text-foreground">{t.comment || "Комментарий"}</h3>
           <div className="flex gap-1">
             {isEditMode && onDeleteComment && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleDelete}
                 className="p-1 hover:bg-muted rounded-lg text-destructive"
                 title={t.delete}
@@ -237,10 +238,10 @@ function CommentModal({
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onClose} 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
               className="p-1 hover:bg-muted rounded-lg"
               title={t.back}
             >
@@ -274,8 +275,8 @@ function CommentModal({
             </div>
           </div>
           <Button
-            type="submit" 
-            disabled={!comment.trim()} 
+            type="submit"
+            disabled={!comment.trim()}
             className="w-full py-3 rounded-lg bg-primary hover:bg-primary/90 text-black"
           >
             <Send className="w-4 h-4 mr-2 text-black" />
@@ -292,7 +293,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   const [nextQrUrl, setNextQrUrl] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
-  const [timer, setTimer] = useState<number>(120) 
+  const [timer, setTimer] = useState<number>(120)
   const [isSwitching, setIsSwitching] = useState<boolean>(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const switchRef = useRef<NodeJS.Timeout | null>(null)
@@ -336,16 +337,16 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
     }
   }, [currentQrUrl, timer])
 
-  
+
 
   useEffect(() => {
     if (timer === 0 && timerRef.current && currentQrUrl) {
       clearInterval(timerRef.current)
       timerRef.current = null
-      
+
       // Начинаем процесс плавной смены QR-кода
       setIsSwitching(true)
-      
+
       // Генерируем следующий QR-код
       generateNextQRCode()
     }
@@ -358,7 +359,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
         setCurrentQrUrl(nextQrUrl)
         setNextQrUrl("")
         setIsSwitching(false)
-        setTimer(120) 
+        setTimer(120)
       }, 200)
     }
 
@@ -371,17 +372,17 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
 
   const generateNextQRCode = async () => {
     if (!lesson) return
-    
+
     try {
       const request = {
-      subject: lesson.subject,
-      groupName: lesson.group,
-      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
-      endLessonTime: lesson.endTime,
-      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
-      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
-    }
-      
+        subject: lesson.subject,
+        groupName: lesson.group,
+        time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
+        endLessonTime: lesson.endTime,
+        date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
+        teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
+      }
+
       const response = await fetch(`${URL}/qr/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -394,13 +395,13 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       }
 
       const qrUrl = await response.text() // Теперь получаем просто строку с URL
-      
+
       if (qrUrl) {
         setNextQrUrl(qrUrl)
       } else {
         throw new Error('Пустой ответ от сервера')
       }
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
       console.error('Error generating QR:', err)
@@ -412,21 +413,21 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
 
   const generateQRCodeForLesson = async () => {
     if (!lesson) return
-    
+
     setLoading(true)
     setError("")
     setTimer(10)
-    
+
     try {
       const request = {
-      subject: lesson.subject,
-      groupName: lesson.group,
-      time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
-      endLessonTime: lesson.endTime,
-      date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
-      teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
-    }
-      
+        subject: lesson.subject,
+        groupName: lesson.group,
+        time: lesson.time, // ← ИЗМЕНИТЬ: было startLessonTime
+        endLessonTime: lesson.endTime,
+        date: selectedDate, // ← ИЗМЕНИТЬ: было classDate
+        teacher: teacherName // ← ИЗМЕНИТЬ: было teacherName
+      }
+
       const response = await fetch(`${URL}/qr/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -439,13 +440,13 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
       }
 
       const qrUrl = await response.text() // Теперь получаем просто строку с URL
-      
+
       if (qrUrl) {
         setCurrentQrUrl(qrUrl)
       } else {
         throw new Error('Пустой ответ от сервера')
       }
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
       console.error('Error generating QR:', err)
@@ -517,9 +518,8 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
             <div className="flex flex-col items-center">
               <div className="bg-white p-4 border-2 border-border w-48 h-48 flex items-center justify-center">
                 {/* Анимация только opacity без scale */}
-                <div className={`transition-opacity duration-300 ${
-                  isSwitching ? 'opacity-0' : 'opacity-100'
-                }`}>
+                <div className={`transition-opacity duration-300 ${isSwitching ? 'opacity-0' : 'opacity-100'
+                  }`}>
                   <QRCodeSVG
                     value={currentQrUrl}
                     size={192}
@@ -528,7 +528,7 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
                   />
                 </div>
               </div>
-              
+
               <div className="mt-2 text-center">
                 <p className="text-xs text-muted-foreground">
                   {language === "ru" ? "Доступен еще:" : "Available for:"}
@@ -560,14 +560,14 @@ function QRModal({ isOpen, onClose, lesson, language, selectedDate, teacherName,
   )
 }
 
-function ViewCommentModal({ 
-  isOpen, 
-  onClose, 
-  comment, 
-  lesson, 
-  language, 
-  onEditComment, 
-  onDeleteComment 
+function ViewCommentModal({
+  isOpen,
+  onClose,
+  comment,
+  lesson,
+  language,
+  onEditComment,
+  onDeleteComment
 }: ViewCommentModalProps) {
   const t = translations[language] || translations.en
 
@@ -585,28 +585,28 @@ function ViewCommentModal({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">{t.comment || "Comment"}</h3>
           <div className="flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onEditComment}
               className="p-1 hover:bg-muted rounded-lg"
               title={t.edit}
             >
               <Edit className="w-4 h-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onDeleteComment}
               className="p-1 hover:bg-muted rounded-lg text-destructive"
               title={t.delete}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onClose} 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
               className="p-1 hover:bg-muted rounded-lg"
               title={t.back}
             >
@@ -636,14 +636,13 @@ export default function TeacherSchedulePage({
   onShowProfile,
   language
 }: TeacherSchedulePageProps) {
-  const timetable = useTimetable();
 
   const [selectedDateKey, setSelectedDateKey] = useState<string>("")
   const [dates, setDates] = useState<DateItem[]>([])
   const [schedule, setSchedule] = useState<Record<string, Lesson[]>>({})
   const [loading, setLoading] = useState<boolean>(true)
-  const [commentModal, setCommentModal] = useState<{ 
-    isOpen: boolean; 
+  const [commentModal, setCommentModal] = useState<{
+    isOpen: boolean;
     lesson: Lesson | null;
     initialComment?: string;
     isEditMode?: boolean;
@@ -713,42 +712,42 @@ export default function TeacherSchedulePage({
     }
   }
 
-const COMMENT_CACHE_KEY = 'teacher_comments_cache';
-const COMMENT_CACHE_DURATION = 30 * 60 * 1000; // 30 минут
+  const COMMENT_CACHE_KEY = 'teacher_comments_cache';
+  const COMMENT_CACHE_DURATION = 30 * 60 * 1000; // 30 минут
 
-// Функция для получения кешированных комментариев
-const getCachedComments = (): Record<string, string> | null => {
-  try {
-    const cached = localStorage.getItem(COMMENT_CACHE_KEY);
-    if (!cached) return null;
+  // Функция для получения кешированных комментариев
+  const getCachedComments = (): Record<string, string> | null => {
+    try {
+      const cached = localStorage.getItem(COMMENT_CACHE_KEY);
+      if (!cached) return null;
 
-    const cachedData = JSON.parse(cached);
-    const isCacheValid = Date.now() - cachedData.timestamp < COMMENT_CACHE_DURATION;
-    
-    return isCacheValid ? cachedData.data : null;
-  } catch (error) {
-    console.error('Error reading comments cache:', error);
-    return null;
-  }
-};
+      const cachedData = JSON.parse(cached);
+      const isCacheValid = Date.now() - cachedData.timestamp < COMMENT_CACHE_DURATION;
 
-// Функция для сохранения комментариев в кеш
-const saveCommentsToCache = (data: Record<string, string>) => {
-  try {
-    const cacheData = {
-      data,
-      timestamp: Date.now()
-    };
-    localStorage.setItem(COMMENT_CACHE_KEY, JSON.stringify(cacheData));
-  } catch (error) {
-    console.error('Error saving comments to cache:', error);
-  }
-};
+      return isCacheValid ? cachedData.data : null;
+    } catch (error) {
+      console.error('Error reading comments cache:', error);
+      return null;
+    }
+  };
+
+  // Функция для сохранения комментариев в кеш
+  const saveCommentsToCache = (data: Record<string, string>) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(COMMENT_CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Error saving comments to cache:', error);
+    }
+  };
 
   // Функция для группировки занятий по времени, предмету и аудитории
   const groupLessonsByTimeAndSubject = (lessons: ApiScheduleItem[]): Lesson[] => {
     const grouped: Record<string, ApiScheduleItem[]> = {}
-    
+
     lessons.forEach(lesson => {
       const key = `${lesson.time}_${lesson.subject}_${lesson.audience}`
       if (!grouped[key]) {
@@ -756,11 +755,11 @@ const saveCommentsToCache = (data: Record<string, string>) => {
       }
       grouped[key].push(lesson)
     })
-    
+
     return Object.values(grouped).map(group => {
       const firstLesson = group[0]
       const groups = group.map(l => l.groupName).join('/')
-      
+
       return {
         id: firstLesson.id,
         subject: firstLesson.subject,
@@ -774,60 +773,7 @@ const saveCommentsToCache = (data: Record<string, string>) => {
   }
 
   // Функция для получения расписания с API
-  const fetchSchedule = async () => {
-    try {
-      setLoading(true);
-      
-      const cachedData = getCachedSchedule(teacherName);
-      if (cachedData) {
-        setSchedule(cachedData);
-        setLoading(false);
-        return;
-      }
 
-      const startDate = new Date(2025, 8, 1);
-      const endDate = new Date(2025, 11, 31);
-      
-      const allSchedule: Record<string, Lesson[]> = {};
-      
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateString = getLocalDateString(date);
-        
-        try {
-          const formattedDate = dateString;
-          const encodedTeacherName = encodeURIComponent(teacherName);
-          
-          const response = await fetch(
-
-            `http://localhost:8081/api/${formattedDate}/${encodedTeacherName}`,
-            {
-              headers: getAuthHeaders(),
-            }
-          );
-          
-          if (response.ok) {
-            const data: ApiScheduleResponse = await response.json();
-            
-            if (data.schedule && data.schedule.length > 0) {
-              const groupedLessons = groupLessonsByTimeAndSubject(data.schedule);
-              allSchedule[dateString] = groupedLessons;
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching schedule for ${dateString}:`, error);
-        }
-      }
-      
-      setSchedule(allSchedule);
-      saveToCache(allSchedule, teacherName);
-      
-    } catch (error) {
-      console.error('Error fetching schedule:', error);
-      setSchedule({});
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const generateAllDates = () => {
     const daysOfWeek =
@@ -864,69 +810,57 @@ const saveCommentsToCache = (data: Record<string, string>) => {
 
     return generatedDates
   }
-  
+
   // Функция для загрузки комментариев
   const loadComments = async () => {
-  if (!selectedDateKey || currentScheduleData.length === 0) return;
-  
-  try {
-    // Пытаемся загрузить из кэша
-    const cachedComments = getCachedComments();
-    if (cachedComments) {
-      setLessonComments(cachedComments);
-      return;
-    }
+    if (!selectedDateKey || currentScheduleData.length === 0) return;
 
-    const commentsMap: Record<string, string> = {};
-    
-    for (const lesson of currentScheduleData) {
-      const mainGroup = lesson.group.split('/')[0];
-      
-      const params = new URLSearchParams({
-        subject: lesson.subject,
-        groupName: mainGroup,
-        time: lesson.time,
-        date: selectedDateKey,
-        teacher: teacherName
-      });
-      
-      const response = await fetch(`${COMMENT_URL}?${params}`, {
-        headers: getAuthHeaders(),
-        credentials: 'include'
-      });
+    try {
+      // Пытаемся загрузить из кэша
+      const cachedComments = getCachedComments();
+      if (cachedComments) {
+        setLessonComments(cachedComments);
+        return;
+      }
 
-      if (response.ok) {
-        const result: CommentResponse = await response.json();
-        
-        if (result.success && result.comment && result.exists) {
-          const commentKey = getCommentKey(lesson);
-          commentsMap[commentKey] = result.comment;
+      const commentsMap: Record<string, string> = {};
+
+      for (const lesson of currentScheduleData) {
+        const mainGroup = lesson.group.split('/')[0];
+
+        const params = new URLSearchParams({
+          subject: lesson.subject,
+          groupName: mainGroup,
+          time: lesson.time,
+          date: selectedDateKey,
+          teacher: teacherName
+        });
+
+        const response = await fetch(`${COMMENT_URL}?${params}`, {
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const result: CommentResponse = await response.json();
+
+          if (result.success && result.comment && result.exists) {
+            const commentKey = getCommentKey(lesson);
+            commentsMap[commentKey] = result.comment;
+          }
         }
       }
+
+      setLessonComments(commentsMap);
+      saveCommentsToCache(commentsMap); // Сохраняем в кэш
+
+    } catch (error) {
+      console.error('Error loading comments:', error);
     }
-    
-    setLessonComments(commentsMap);
-    saveCommentsToCache(commentsMap); // Сохраняем в кэш
-    
-  } catch (error) {
-    console.error('Error loading comments:', error);
-  }
-};
+  };
 
   // Первый useEffect - инициализация дат и загрузка расписания
-  useEffect(() => {
-    const allDates = generateAllDates();
-    setDates(allDates);
-    
-    fetchSchedule();
-    
-    const intervalId = setInterval(() => {
-      localStorage.removeItem(CACHE_KEY);
-      fetchSchedule();
-    }, CACHE_DURATION);
 
-    return () => clearInterval(intervalId);
-  }, [language, teacherName]);
 
   // Второй useEffect - загрузка комментариев при изменении даты или расписания
   useEffect(() => {
@@ -957,53 +891,48 @@ const saveCommentsToCache = (data: Record<string, string>) => {
   }
 
 
-  const selectedDateInfo = useMemo(() => {
-    const selectedDateObj = dates.find((d) => d.key === selectedDateKey)
-    if (!selectedDateObj) return t.selectDate
-    
-    const date = new Date(selectedDateObj.key)
-    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      weekday: "short"
-    })
-  }, [dates, selectedDateKey, language])
 
-  const getCardStyles = (type: "lecture" | "practice" | "lab" | "other") => {
+
+  const getCardStyles = (type: ILessonSlot['class_type']) => {
     switch (type) {
-      case "lecture":
+      case "лекция":
         return "bg-card border border-border border-l-4 border-l-blue-500 shadow-sm hover:shadow-md"
-      case "practice":
+      case "практические занятия":
         return "bg-card border border-border border-l-4 border-l-red-500 shadow-sm hover:shadow-md"
-      case "lab":
+      case "лабораторная работа":
         return "bg-card border border-border border-l-4 border-l-green-500 shadow-sm hover:shadow-md"
+      case "семинар":
+        return "bg-card border border-border border-l-4 border-l-yellow-500 shadow-sm hover:shadow-md"
       default:
         return "bg-card border border-border border-l-4 border-l-purple-500 shadow-sm hover:shadow-md"
     }
   }
 
-  const getTypeStyles = (type: "lecture" | "practice" | "lab" | "other") => {
+  const getTypeStyles = (type: ILessonSlot['class_type']) => {
     switch (type) {
-      case "lecture":
+      case "лекция":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-      case "practice":
+      case "практические занятия":
         return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800"
-      case "lab":
+      case "лабораторная работа":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800"
+      case "семинар":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800"
       default:
         return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
     }
   }
 
-  const getTypeLabel = (type: "lecture" | "practice" | "lab" | "other") => {
+  const getTypeLabel = (type: ILessonSlot['class_type']) => {
     switch (type) {
-      case "lecture":
+      case "лекция":
         return t.lecture
-      case "practice":
+      case "практические занятия":
         return t.practice
-      case "lab":
+      case "лабораторная работа":
         return t.lab
+      case "семинар":
+        return t.seminar
       default:
         return t.other
     }
@@ -1021,9 +950,9 @@ const saveCommentsToCache = (data: Record<string, string>) => {
   const openCommentModal = (lesson: Lesson, isEditMode = false) => {
     const commentKey = getCommentKey(lesson)
     const existingComment = lessonComments[commentKey] || ""
-    
-    setCommentModal({ 
-      isOpen: true, 
+
+    setCommentModal({
+      isOpen: true,
       lesson,
       initialComment: existingComment,
       isEditMode
@@ -1036,92 +965,92 @@ const saveCommentsToCache = (data: Record<string, string>) => {
 
   // Функция сохранения комментария
   const handleSaveComment = async (comment: string) => {
-  if (commentModal.lesson) {
-    try {
-      const mainGroup = commentModal.lesson.group.split('/')[0];
-      
-      const request: CommentRequest = {
-        subject: commentModal.lesson.subject,
-        groupName: mainGroup,
-        time: commentModal.lesson.time,
-        date: selectedDateKey,
-        teacher: teacherName,
-        comment: comment
-      };
-      
-      const response = await fetch(COMMENT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify(request),
-        credentials: 'include'
-      });
+    if (commentModal.lesson) {
+      try {
+        const mainGroup = commentModal.lesson.group.split('/')[0];
 
-      const result: CommentResponse = await response.json();
-      
-      if (response.ok && result.success) {
-        const commentKey = getCommentKey(commentModal.lesson)
-        const newComments = {
-          ...lessonComments,
-          [commentKey]: comment
+        const request: CommentRequest = {
+          subject: commentModal.lesson.subject,
+          groupName: mainGroup,
+          time: commentModal.lesson.time,
+          date: selectedDateKey,
+          teacher: teacherName,
+          comment: comment
         };
-        
-        setLessonComments(newComments);
-        saveCommentsToCache(newComments); // Обновляем кэш
-        
-        
-      } else {
-        throw new Error(result.error || result.message || 'Ошибка сохранения');
+
+        const response = await fetch(COMMENT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify(request),
+          credentials: 'include'
+        });
+
+        const result: CommentResponse = await response.json();
+
+        if (response.ok && result.success) {
+          const commentKey = getCommentKey(commentModal.lesson)
+          const newComments = {
+            ...lessonComments,
+            [commentKey]: comment
+          };
+
+          setLessonComments(newComments);
+          saveCommentsToCache(newComments); // Обновляем кэш
+
+
+        } else {
+          throw new Error(result.error || result.message || 'Ошибка сохранения');
+        }
+      } catch (error) {
+        console.error('Error saving comment:', error);
+
       }
-    } catch (error) {
-      console.error('Error saving comment:', error);
-      
     }
   }
-}
 
-const handleDeleteComment = async () => {
-  if (commentModal.lesson) {
-    try {
-      const mainGroup = commentModal.lesson.group.split('/')[0];
-      
-      const params = new URLSearchParams({
-        subject: commentModal.lesson.subject,
-        groupName: mainGroup,
-        time: commentModal.lesson.time,
-        date: selectedDateKey,
-        teacher: teacherName
-      });
-      
-      const response = await fetch(`${COMMENT_URL}?${params}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        credentials: 'include'
-      });
+  const handleDeleteComment = async () => {
+    if (commentModal.lesson) {
+      try {
+        const mainGroup = commentModal.lesson.group.split('/')[0];
 
-      const result: CommentResponse = await response.json();
-      
-      if (response.ok && result.success) {
-        const commentKey = getCommentKey(commentModal.lesson)
-        const newComments = { ...lessonComments }
-        delete newComments[commentKey]
-        
-        setLessonComments(newComments);
-        saveCommentsToCache(newComments); // Обновляем кэш
-        
-        
-        closeCommentModal();
-      } else {
-        throw new Error(result.error || result.message || 'Ошибка удаления');
+        const params = new URLSearchParams({
+          subject: commentModal.lesson.subject,
+          groupName: mainGroup,
+          time: commentModal.lesson.time,
+          date: selectedDateKey,
+          teacher: teacherName
+        });
+
+        const response = await fetch(`${COMMENT_URL}?${params}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
+
+        const result: CommentResponse = await response.json();
+
+        if (response.ok && result.success) {
+          const commentKey = getCommentKey(commentModal.lesson)
+          const newComments = { ...lessonComments }
+          delete newComments[commentKey]
+
+          setLessonComments(newComments);
+          saveCommentsToCache(newComments); // Обновляем кэш
+
+
+          closeCommentModal();
+        } else {
+          throw new Error(result.error || result.message || 'Ошибка удаления');
+        }
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+
       }
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-  
     }
   }
-}
 
   // const openQRModal = (lesson: Lesson) => {
   //   setQrModal({ isOpen: true, lesson })
@@ -1150,7 +1079,7 @@ const handleDeleteComment = async () => {
     if (viewCommentModal.lesson) {
       try {
         const mainGroup = viewCommentModal.lesson.group.split('/')[0];
-        
+
         const params = new URLSearchParams({
           subject: viewCommentModal.lesson.subject,
           groupName: mainGroup,
@@ -1158,7 +1087,7 @@ const handleDeleteComment = async () => {
           date: selectedDateKey,
           teacher: teacherName
         });
-        
+
         const response = await fetch(`${COMMENT_URL}?${params}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
@@ -1166,7 +1095,7 @@ const handleDeleteComment = async () => {
         });
 
         const result: CommentResponse = await response.json();
-        
+
         if (response.ok && result.success) {
           const commentKey = getCommentKey(viewCommentModal.lesson)
           setLessonComments(prev => {
@@ -1174,7 +1103,7 @@ const handleDeleteComment = async () => {
             delete newComments[commentKey]
             return newComments
           });
-          
+
           closeViewCommentModal();
         } else {
           throw new Error(result.error || result.message || 'Ошибка удаления');
@@ -1184,6 +1113,52 @@ const handleDeleteComment = async () => {
       }
     }
   }
+
+  const [currentDate, setCurrentDate] = useState<
+    {
+      dayOfWeek: number | undefined;
+      weekType: DateItem["weekType"] | undefined;
+      dateKey: string | undefined;
+    }
+  >({
+    dayOfWeek: undefined,
+    weekType: undefined,
+    dateKey: undefined
+  });
+
+  const selectedDateInfo = useMemo(() => {
+    if (!currentDate?.dateKey) return t.selectDate;
+
+    const date = new Date(currentDate.dateKey);
+    return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "short"
+    })
+  }, [currentDate, language, t.selectDate]);
+
+  const timetable = useTimetable();
+
+  const currentSchedule = useMemo(() => {
+    if (!timetable?.timetable || !currentDate?.weekType || currentDate?.dayOfWeek === undefined) {
+      return undefined;
+    }
+
+    if (currentDate.dayOfWeek > 4) {
+      return undefined;
+    }
+
+    const daysOrder: DayOfWeek[] = ["ПОНЕДЕЛЬНИК", "ВТОРНИК", "СРЕДА", "ЧЕТВЕРГ", "ПЯТНИЦА"];
+    const currentDay: DayOfWeek = daysOrder[currentDate.dayOfWeek];
+    const ruWeekType: WeekType = currentDate.weekType === "numerator" ? "Числитель" : "Знаменатель";
+
+    const daySchedule = timetable.timetable[ruWeekType]?.[currentDay];
+
+    return daySchedule;
+  }, [timetable, currentDate]);
+
+  console.log(currentSchedule)
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -1196,85 +1171,52 @@ const handleDeleteComment = async () => {
       </div>
 
       {/* Calendar */}
-      <div className="px-4 mb-6">
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hover:bg-primary/10 hover:text-primary transition-colors"
-            onClick={scrollLeft}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
 
-          <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-2 mx-10 scrollbar-hide">
-            {dates.map((dateItem) => (
-              <button
-                key={dateItem.key}
-                onClick={() => setSelectedDateKey(dateItem.key)}
-                className={`flex flex-col items-center p-3 rounded-2xl min-w-[60px] transition-all ${
-                  dateItem.isToday
-                    ? "bg-primary text-primary-foreground" // ← ВЫДЕЛЕНИЕ СЕГОДНЯШНЕЙ ДАТЫ
-                    : selectedDateKey === dateItem.key
-                      ? "bg-muted"
-                      : "hover:bg-muted"
-                }`}
-              >
-                {/* Добавляем месяц над числом */}
-                <span className="text-xs text-muted-foreground mb-1">{dateItem.month}</span>
-                                  <span className="text-lg font-semibold">{dateItem.date}</span>
-                <span className="text-xs mt-1">{dateItem.day}</span>
-              </button>
-            ))}
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hover:bg-primary/10 hover:text-primary transition-colors"
-            onClick={scrollRight}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      <div>
+        <CalendarSlider
+          language={language}
+          onChange={(dateKey, dayOfWeek, weekType) => {
+            setCurrentDate({
+              weekType,
+              dayOfWeek,
+              dateKey
+            })
+          }}
+        />
       </div>
 
       {/* Schedule */}
       <div className="px-4 pb-20">
-        <div className="mb-4">
+        <div className="mb-4 w-full flex justify-between items-center">
           <h2 className="text-xl font-semibold">{selectedDateInfo}</h2>
+          {currentDate.weekType &&
+            <h2 className="font-semibold">{t[currentDate.weekType]}</h2>
+          }
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <p className="text-muted-foreground">{t.loading}</p>
-          </div>
-        ) : currentScheduleData.length === 0 ? (
-          <div className="flex justify-center items-center h-40">
-            <p className="text-muted-foreground">{t.noLessons}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {currentScheduleData.map((lesson) => {
-              const commentKey = getCommentKey(lesson)
-              const comment = lessonComments[commentKey]
+        <div className="flex flex-col gap-3">
+
+          {
+            currentSchedule ? Object.entries(currentSchedule).map(([time, item], index) => {
+              if (!item || !Object.values(item).length) return null;
+              console.log(currentSchedule)
               return (
                 <div
-                  key={`${lesson.id}-${lesson.time}`}
-                  className={getCardStyles(lesson.type) + " p-4 rounded-xl transition-all"}
+                  key={`${time}-${index}`}
+                  className={getCardStyles(item.class_type) + " p-4 rounded-xl transition-all"}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{lesson.subject}</h3>
+                      <h3 className="font-semibold text-foreground">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {lesson.time} - {lesson.endTime} • {lesson.room}
+                        {time} • {item.auditorium}
                       </p>
-                      <p className="text-sm text-muted-foreground">{lesson.group}</p>
+                      <p className="text-sm text-muted-foreground">{item.group}</p>
                     </div>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(lesson.type)}`}
+                      className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(item.class_type)}`}
                     >
-                      {getTypeLabel(lesson.type)}
+                      {getTypeLabel(item.class_type)}
                     </span>
                   </div>
 
@@ -1289,34 +1231,39 @@ const handleDeleteComment = async () => {
                         <QRCodeSVG className="w-4 h-4 mr-1" />
                         QR
                       </Button> */}
-                      {comment ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-blue-500 hover:text-blue-600"
-                          onClick={() => openViewCommentModal(comment, lesson)}
-                        >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          {truncateComment(comment)}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                          onClick={() => openCommentModal(lesson)}
-                        >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          {t.comment}
-                        </Button>
-                      )}
+                      {/* {comment ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-blue-500 hover:text-blue-600"
+                      onClick={() => openViewCommentModal(comment, lesson)}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      {truncateComment(comment)}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => openCommentModal(lesson)}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      {t.comment}
+                    </Button>
+                  )} */}
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              );
+            }) :
+              <div className="size-full  pt-10 text-xl text-muted-foreground font-semibold">
+                <div className="rounded-3xl w-full bg-muted py-14 flex items-center justify-center px-10 text-center">
+                  {t.noClasses}
+                </div>
+              </div>
+          }
+        </div>
       </div>
 
       {/* Navigation */}
