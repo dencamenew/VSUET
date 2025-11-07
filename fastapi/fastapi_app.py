@@ -5,8 +5,8 @@ from app.config.database import engine, Base
 from app.controllers.auth_controller import auth_router
 from app.controllers.attendance_controller import attendance_router
 from app.controllers.rating_controller import rating_router
-from app.controllers.timetable import timetable_router
-
+from app.controllers.timetable_controller import timetable_router
+from app.controllers.user_controller import user_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -35,7 +35,7 @@ app.include_router(auth_router)
 app.include_router(attendance_router)
 app.include_router(rating_router)
 app.include_router(timetable_router)
-
+app.include_router(user_router)
 
 
 @app.get("/")

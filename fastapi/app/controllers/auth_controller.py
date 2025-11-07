@@ -36,23 +36,3 @@ async def login_by_max_id_token_only(
             detail={"message": "Internal Server Error", "error": str(e)}
         )
 
-@auth_router.get("/user/me", response_model=Dict[str, Any])
-async def user_me(
-    max_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-) -> Dict[str, Any]:
-    """
-    Получает информацию о текущем авторизованном пользователе.
-    Требует JWT токен в заголовке Authorization: Bearer <token>.
-    """
-    try:
-        auth_service = AuthService(db)
-        user_data = auth_service.get_user_me_info(max_id) 
-        return user_data
-    
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": f"Ошибка сервера: {str(e)}"}
-        )
