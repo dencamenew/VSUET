@@ -32,11 +32,14 @@ class AttendanceService:
 
 
 
-    def get_student_attendance(self, group_name: str, zach_number: str) -> Dict:
+    def get_student_attendance(self, max_id: str, subject_name: str, subject_type: str) -> Dict:
         """
         Возвращает ведомости посещаемости студента по группе и номеру зачетки.
         """
-        result = self.attendance_repository.get_student_attendance(group_name, zach_number)
+        student_info_id = self.user_repository.get_by_max_id_student_info_id(max_id=max_id)[0] #почему-то кортеж возвращает поэтому [0]
+        zach = self.student_info_repository.get_by_id(student_id=student_info_id).zach_number 
+        group_id = self.student_info_repository.get_by_id(student_id=student_info_id).group_id
+        result = self.attendance_repository.get_student_attendance(group_id=group_id, zach_number=zach, subject_name=subject_name, subject_type=subject_type)
         if "error" in result:
             # Можно бросить исключение или вернуть результат как есть
             return {"status": "error", "detail": result["error"]}

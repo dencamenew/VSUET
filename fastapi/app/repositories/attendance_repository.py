@@ -12,31 +12,30 @@ class AttendanceRepository(BaseRepository[Attendance]):
         super().__init__(Attendance, db)
 
 
-    def get_student_attendance(self, group_name: str, zach_number: str) -> Dict:
+    def get_student_attendance(self, group_id: int, zach_number: str, subject_type: str, subject_name: str) -> Dict:
         """Возвращает все ведомости посещаемости студента по номеру зачетки и названию группы."""
-        group = self.db.query(Groups).filter(Groups.group_name == group_name).first()
-        if not group:
-            return {"error": f"Группа '{group_name}' не найдена"}
+        
 
-        attendances = self.db.query(Attendance).filter(Attendance.group_id == group.id).all()
-        student_attendance_by_subject = []
+        attendances = (
+            self.db.query(Attendance)
+                .filter(
+                    Attendance.group_id == group_id,
+                    Attendance.subject_name == subject_name,
+                    Attendance.subject_type == subject_type
+                ).first().attendance_json
+            )
+        
+        student_attendance = {}
 
         for attendance_record in attendances:
-            subject_name = attendance_record.subject_name
-            attendance_list = attendance_record.attendance_json
-
-            for entry in attendance_list:
-                if entry["student_id"] == zach_number:
-                    student_attendance_by_subject.append({
-                        "subject": subject_name,
-                        "attendance": entry["attendance"]
-                    })
-                    break
+            if attendance_record["student_id"] == zach_number:
+                student_attendance = attendance_record
+                break
 
         return {
-            "zach_number": zach_number,
-            "group": group_name,
-            "subjects": student_attendance_by_subject
+            "subject_name": subject_name,
+            "subject_type": subject_type,
+            "attendance": student_attendance
         }
 
 

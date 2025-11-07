@@ -64,10 +64,25 @@ class UserRepository(BaseRepository[User]):
             .first()
         )
     
+
+
+
     def get_by_max_id_teacher_info_id(self, max_id: str):
         """Получить teacher_info_id по его max_id."""
         return (
             self.db.query(User.teacher_info_id)
+            .filter(User.max_id == max_id)
+            .first()
+        )
+    
+
+
+
+
+    def get_by_max_id_student_info_id(self, max_id: str):
+        """Получить student_info_id по его max_id."""
+        return (
+            self.db.query(User.student_info_id)
             .filter(User.max_id == max_id)
             .first()
         )

@@ -11,15 +11,15 @@ from app.utils.jwt import get_current_user_id
 attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
 
-@attendance_router.get("/student/{group_name}/{zach_number}", summary="Эндпоинт для получения всех ведомостей посещаемости студента по названию группы и номеру зачетки.")
+@attendance_router.get("/student/{subject_name}/{subject_type}", summary="Эндпоинт для получения ведомости посещаемости студента по названию и типу предмета.")
 def get_student_attendance(
-    group_name: str,
-    zach_number: str,
+    subject_name: str,
+    subject_type: str,
     db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id) 
+    max_id: str = Depends(get_current_user_id) 
 ):
     service = AttendanceService(db)
-    result = service.get_student_attendance(group_name, zach_number)
+    result = service.get_student_attendance(max_id=max_id, subject_name=subject_name, subject_type=subject_type)
 
     if result["status"] == "error":
         raise HTTPException(status_code=404, detail=result["detail"])
@@ -31,7 +31,7 @@ def get_student_attendance(
 
 @attendance_router.get(
     "/teacher/{group_name}/{subject_type}/{subject_name}",
-    summary="Эндпоинт для получения всех ведомости посещаемоести, которые ведет преподаватель по названию группы, названию и типу предмета."
+    summary="Эндпоинт для получения ведомости посещаемоести, которую ведет преподаватель по названию группы, названию и типу предмета."
 )
 def get_teacher_attendances(
     group_name: str,
