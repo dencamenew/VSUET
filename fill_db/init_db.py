@@ -25,14 +25,15 @@ group_id = cur.fetchone()[0]
 # ---------- 2. Создаем студентов ----------
 students_count = 15
 student_ids = []
-for _ in range(students_count):
-    zach_number = str(random.randint(10000, 99999))
+start_zach_number = 247160  # первый номер зачётки
+
+for i in range(students_count):
+    zach_number = str(start_zach_number + i)  # последовательные номера
     cur.execute(
         "INSERT INTO student_info (zach_number, group_id) VALUES (%s, %s) RETURNING id;",
         (zach_number, group_id)
     )
     student_ids.append(cur.fetchone()[0])
-
 # ---------- 3. JSON расписания группы ----------
 group_timetable_json = {
     "Числитель": {
@@ -762,7 +763,6 @@ print("✅ Attendance создано: разные типы занятий и д
 
 
 
-
 import random
 
 # ---------- 1) Получаем всех студентов группы ----------
@@ -772,11 +772,15 @@ students = [row[0] for row in cur.fetchall()]
 # ---------- 2) Определяем предметы с типом экзамена ----------
 exam_subjects = ["Иностранный язык", "Основы информационной безопасности", "Философия"]
 
-# Берём все предметы группы из таблицы attendance
-cur.execute("SELECT subject_name, teacher_id FROM attendance WHERE group_id = %s;", (group_id,))
+# ---------- 3) Берём уникальные предметы группы из таблицы attendance ----------
+cur.execute("""
+    SELECT DISTINCT subject_name, teacher_id
+    FROM attendance
+    WHERE group_id = %s;
+""", (group_id,))
 subjects = cur.fetchall()  # [(subject_name, teacher_id), ...]
 
-# ---------- 3) Генерация rating_json и вставка ----------
+# ---------- 4) Генерация rating_json и вставка ----------
 for subject_name, teacher_id in subjects:
     # Определяем тип предмета
     subject_type = "экзамен" if subject_name in exam_subjects else "зачёт"
@@ -803,5 +807,34 @@ for subject_name, teacher_id in subjects:
         json.dumps(rating_json)
     ))
 
+# ---------- 5) Добавляем "Учебная практика" и "Курсовая работа" в rating ----------
+extra_subjects = [
+    ("Учебная практика", "практика"),
+    ("Сетевые технологии", "курсовая работа")
+]
+
+for subject_name, subject_type in extra_subjects:
+    rating_json = []
+    for zach in students:
+        # случайным образом выбираем "Хорошо" или "Отлично"
+        grade = random.choice(["Хорошо", "Отлично"])
+        rating_json.append({
+            "student_id": str(zach),
+            "grade": grade
+        })
+
+    # teacher_id можно поставить первого преподавателя (например, 1)
+    cur.execute("""
+        INSERT INTO rating (subject_name, subject_type, semestr, teacher_id, group_id, rating_json)
+        VALUES (%s, %s, %s, %s, %s, %s);
+    """, (
+        subject_name,
+        subject_type,
+        "1 семестр 2025/2026",
+        1,
+        group_id,
+        json.dumps(rating_json)
+    ))
+
 conn.commit()
-print("✅ Таблица rating заполнена: экзамены и зачёты, 5 контрольных точек для каждого студента.")
+print("✅ Таблица rating заполнена корректно, дубликаты исключены.")

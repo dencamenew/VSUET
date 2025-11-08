@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 from app.models.enums import Role, AttendanceStatus
+from typing import Union
 
 class MaxIdRequest(BaseModel):
     max_id: str
@@ -74,8 +75,8 @@ class StudentInfoResponse(StudentInfoBase):
 class RatingUpdateRequest(BaseModel):
     zach_number: str
     subject_name: str
-    control_point: str 
-    mark: int
+    control_point: str
+    mark: Union[int, str]
 
 class StudentRatingResponse(BaseModel):
     subject_name: str
