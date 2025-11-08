@@ -18,7 +18,8 @@ app = FastAPI(
     description="FastAPI version of VSUET system",
     version="1.0.0",
     docs_url="/docs",  # Явно указываем URL для документации
-    redoc_url="/redoc"  # URL для Redoc
+    redoc_url="/redoc",
+    root_path="/api"
 )
 
 # Add CORS middleware with comprehensive settings
