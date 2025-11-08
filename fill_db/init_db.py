@@ -569,6 +569,13 @@ for teacher_name, timetable in teachers_data.items():
     {
       "lesson_name": "Технологии и методы программирования",
       "lesson_type": "практические занятия"
+    },{
+      "lesson_name": "Учебная практика",
+      "lesson_type": "практика"
+    },
+    {
+      "lesson_name": "Сетевые технологии",
+      "lesson_type": "курсовая работа"
     }
   ],
   "УБ-31": [
