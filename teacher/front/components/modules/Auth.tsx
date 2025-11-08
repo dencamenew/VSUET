@@ -1,9 +1,8 @@
 "use client"
 
-import { translations, type Language } from "@/lib/translations"
 import { useLogin } from "@/hooks/api/useLogin"
 
-const MAX_ID = "2";
+const MAX_ID = "1";
 
 export default function AuthModule() {
   // const [fullName, setFullName] = useState("")

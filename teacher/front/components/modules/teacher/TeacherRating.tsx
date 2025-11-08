@@ -14,7 +14,7 @@ interface TeacherRatingPageProps {
   language: Language
 }
 
-export default function TeacherRatingPage({
+export default function TeacherRating({
   teacherName,
   onNavigate,
   onShowProfile,
@@ -295,14 +295,6 @@ export default function TeacherRatingPage({
           </div>
         )}
       </div>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation
-        onNavigate={onNavigate}
-        onShowProfile={onShowProfile}
-        language={language}
-        currentPage="rating"
-      />
     </div>
   )
 }

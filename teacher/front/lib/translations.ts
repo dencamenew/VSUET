@@ -45,7 +45,6 @@ export const translations = {
     selectFaculty: "Выберите факультет",
     selectGroup: "Выберите группу",
     selectSubject: "Выберите предмет",
-    student: "Студент",
     checkpoint: "Контрольная точка",
     finalGrade: "Итоговая оценка",
     practicalWork: "Практическая работа",

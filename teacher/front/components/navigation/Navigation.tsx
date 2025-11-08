@@ -1,11 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Calendar, User, GraduationCap, Users, Settings2, Settings, Moon, Sun, Globe } from "lucide-react"
+import { Calendar, User, GraduationCap, Users, Settings, Moon, Sun, Globe } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
 import { useMe } from "@/hooks/api/useMe"
 import { Drawer } from "../modals/Drawer"
-import TeacherProfile from "../modules/UserProfile"
 import { useEffect, useRef, useState } from "react"
 import { useRole } from "../security/useRole"
 import { useLanguage } from "@/hooks/useLanguage"
@@ -49,8 +48,8 @@ function SettingsHandler(
 
           )}
         >
-          <Settings className="size-5" />
-          Настройки
+          <Settings className={cn("size-5 duration-500 transition-transform", isOpen && "rotate-180")} />
+          {t.settings}
         </div>
       </div>
       <ResizableY
@@ -207,6 +206,7 @@ export default function Navigation({
             </div>
           </div>
           <Button
+            variant={getButtonVariant("schedule")}
             onClick={() => onNavigate("schedule")}
             className={getButtonClass("schedule")}
           >

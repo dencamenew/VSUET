@@ -1079,12 +1079,11 @@ export default function Schedule({
       <div className="flex items-center justify-between py-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">{t.schedule}</h1>
-          <p className="text-muted-foreground">{userName}</p>
+          <p className="text-muted-foreground md:hidden">{userName}</p>
         </div>
       </div>
 
       {/* Calendar */}
-
       <div>
         <CalendarSlider
           language={lang}
@@ -1113,10 +1112,6 @@ export default function Schedule({
           language={lang}
         />
       </div>
-
-      {/* Navigation */}
-
-
       {/* Modals */}
       {/* <CommentModal
         isOpen={commentModal.isOpen}

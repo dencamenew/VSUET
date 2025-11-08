@@ -1,10 +1,10 @@
 import { useMe } from "@/hooks/api/useMe"
-import TeacherAttendancePage from "./TeacherAttendancePage"
-import TeacherRatingPage from "./TeacherRatingPage"
 import { useState } from "react"
 import { useLanguage } from "@/hooks/useLanguage"
 import Navigation from "@/components/navigation/Navigation"
 import Schedule from "../Schedule"
+import TeacherRating from "./TeacherRating"
+import TeacherAttendance from "./TeacherAttendance"
 
 export function TeacherHandler() {
     const { lang, setLang } = useLanguage();
@@ -27,11 +27,11 @@ export function TeacherHandler() {
                 {currentPage === "schedule" && (
                     <Schedule
                         userName={teacherName}
-                        // onNavigate={setCurrentPage}
+                    // onNavigate={setCurrentPage}
                     />
                 )}
                 {currentPage === "rating" && (
-                    <TeacherRatingPage
+                    <TeacherRating
                         teacherName={teacherName}
                         onNavigate={setCurrentPage}
                         onShowProfile={() => setShowProfile(true)}
@@ -39,13 +39,7 @@ export function TeacherHandler() {
                     />
                 )}
                 {currentPage === "attendance" && (
-                    <TeacherAttendancePage
-                        teacherName={teacherName}
-                        groupsSubjects={groupsSubjects}
-                        onNavigate={setCurrentPage}
-                        onShowProfile={() => setShowProfile(true)}
-                        language={lang}
-                    />
+                    <TeacherAttendance />
                 )}
             </div>
         </div>

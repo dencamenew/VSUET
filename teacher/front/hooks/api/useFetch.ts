@@ -14,7 +14,7 @@ export function useFetch() {
         const headers = new Headers(init?.headers || {});
 
         if (token)
-            headers.set("X-Session-Id", token);
+            headers.set("Authorization", `Bearer ${token}`);
 
         if (!headers.has("Content-Type")) {
             headers.set("Content-Type", "application/json");
@@ -30,6 +30,7 @@ export function useFetch() {
 
             if (response.status === 401) {
                 setToken(undefined);
+                localStorage.removeItem("token");
                 throw new Error("Ошибка авторизации!");
             }
 

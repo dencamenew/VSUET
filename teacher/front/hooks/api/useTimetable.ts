@@ -27,10 +27,6 @@ export function useTimetable() {
     queryFn: async (): Promise<ITimetable> => {
       const response = await fetch("/my/timetable", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
       });
 
       return await response.json();

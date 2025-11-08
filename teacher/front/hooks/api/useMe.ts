@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useFetch } from "./useFetch";
 import { useToken } from "../useAuth";
-import { useLayoutEffect } from "react";
+import { ILessonSlot } from "./useTimetable";
 
 export type TRoles = "teacher" | "student" | "admin" | undefined;
 
@@ -12,6 +12,14 @@ export interface IUser {
     max_id: string;
     role: TRoles;
     id: number;
+
+    // teacher
+    groups_sbj: {
+        [key: string]: {
+            lesson_type: ILessonSlot["class_type"],
+            lesson_name: string
+        }[]
+    }
 };
 
 export function useMe() {
@@ -24,10 +32,6 @@ export function useMe() {
         queryFn: async (): Promise<IUser> => {
             const response = await fetch("/user/me", {
                 method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
             });
 
             return await response.json();
