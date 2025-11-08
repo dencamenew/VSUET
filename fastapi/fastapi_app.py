@@ -18,14 +18,13 @@ app = FastAPI(
     description="FastAPI version of VSUET system",
     version="1.0.0",
     docs_url="/docs",  # Явно указываем URL для документации
-    redoc_url="/redoc",
-    root_path="/api"
+    redoc_url="/redoc"
 )
 
 # Add CORS middleware with comprehensive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["https://localhost:3000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
