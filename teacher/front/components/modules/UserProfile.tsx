@@ -6,13 +6,17 @@ import { User, Moon, Sun, LogOut, X, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { translations, type Language } from "@/lib/translations"
 import { useSession } from '@/hooks/useSession'
+import { useRole } from "@/components/security/useRole"
 
 interface TeacherProfilePageProps {
-  teacherName: string
+  userName: string
   onLogout: () => void
   onClose: () => void
   onLanguageChange: (language: "ru" | "en") => void
-  language: Language
+  language: Language,
+  isDarkMode: boolean,
+  toggleTheme: () => void,
+  toggleLanguage: () => void
 }
 
 interface LogoutResponse {
@@ -22,51 +26,24 @@ interface LogoutResponse {
   code?: string
 }
 
-export default function TeacherProfile({
-  teacherName,
+export default function UserProfile({
+  userName,
   onLogout,
   onClose,
   onLanguageChange,
   language,
+  toggleTheme,
+  isDarkMode,
+  toggleLanguage
 }: TeacherProfilePageProps) {
-  const [isDarkMode, setIsDarkMode] = useState(true)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [logoutError, setLogoutError] = useState("")
-  const { sessionId, clearSession } = useSession()
-
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const { sessionId, clearSession } = useSession();
+  const { role } = useRole();
   const t = translations[language] || translations.en
 
   const URL = process.env.NEXT_PUBLIC_API_URL
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark")
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
-    }
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode
-    setIsDarkMode(newTheme)
-    localStorage.setItem("theme", newTheme ? "dark" : "light")
-
-    if (newTheme) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
-
-  const toggleLanguage = () => {
-    const newLanguage = language === "ru" ? "en" : "ru"
-    localStorage.setItem("language", newLanguage)
-    onLanguageChange(newLanguage)
-  }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -116,12 +93,12 @@ export default function TeacherProfile({
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft">
-            <User className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
+            <User className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">{t.profile}</h2>
-            <p className="text-muted-foreground text-sm">{t.accountInfo}</p>
+            <h2 className="text-xl font-semibold text-foreground">{userName}</h2>
+            {role && <p className="text-muted-foreground text-sm">{t[role]}</p>}
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -131,16 +108,6 @@ export default function TeacherProfile({
 
       {/* Account Info */}
       <div className="space-y-6 mb-8">
-        <div className="bg-muted/30 rounded-xl p-4 border border-border">
-          <h3 className="text-foreground font-medium mb-3">{t.accountInfo}</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">{t.teacherName}</span>
-              <span className="text-foreground font-medium">{teacherName}</span>
-            </div>
-          </div>
-        </div>
-
         {/* Settings */}
         <div className="bg-muted/30 rounded-xl p-4 border border-border">
           <h3 className="text-foreground font-medium mb-3">{t.settings}</h3>

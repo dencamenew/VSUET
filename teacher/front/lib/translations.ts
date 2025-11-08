@@ -16,6 +16,9 @@ export const translations = {
     rating: "Оценки",
     attendance: "Посещаемость",
     profile: "Профиль",
+    teacher: "Преподаватель",
+    student: "Студент",
+    admin: "Администратор",
 
     // Schedule
     selectDate: "Выберите дату",
@@ -93,6 +96,9 @@ export const translations = {
     rating: "Grades",
     attendance: "Attendance",
     profile: "Profile",
+    teacher: "Teacher",
+    student: "Student",
+    admin: "Admin",
 
     // Schedule
     selectDate: "Select date",

@@ -7,7 +7,7 @@ import { Calendar, User, GraduationCap, Users, Check, X, Loader2 } from "lucide-
 import { translations, type Language } from "@/lib/translations"
 import { useSession } from '@/hooks/useSession'
 import { GroupSubjects } from "@/app/page"
-import BottomNavigation from "@/components/ui/BottomNavigation"
+import BottomNavigation from "@/components/navigation/Navigation"
 
 interface TeacherAttendancePageProps {
   teacherName: string
@@ -61,17 +61,17 @@ export default function TeacherAttendancePage({
   const URL = "http://localhost:8081/api"
 
   // Получаем список групп
-  const groups = Object.keys(groupsSubjects || {}).map(groupName => ({ 
-    id: groupName, 
-    name: groupName 
+  const groups = Object.keys(groupsSubjects || {}).map(groupName => ({
+    id: groupName,
+    name: groupName
   }))
 
   // Получаем список предметов для выбранной группы
   const subjects = selectedGroup && groupsSubjects[selectedGroup]
     ? groupsSubjects[selectedGroup].map(subject => ({
-        id: subject,
-        name: subject
-      }))
+      id: subject,
+      name: subject
+    }))
     : []
 
   // Загрузка данных посещаемости
@@ -95,13 +95,13 @@ export default function TeacherAttendancePage({
           headers: getAuthHeaders(),
         }
       )
-      
+
       if (!response.ok) {
         throw new Error(`Ошибка HTTP: ${response.status}`)
       }
-      
+
       const apiResponse: ApiResponse = await response.json()
-      
+
       if (apiResponse.status === "SUCCESS") {
         processAttendanceData(apiResponse.data)
       } else {
@@ -122,7 +122,7 @@ export default function TeacherAttendancePage({
   const processAttendanceData = (records: AttendanceRecord[]) => {
     // Группируем записи по студентам
     const studentsMap = new Map<string, StudentAttendance>()
-    
+
     records.forEach(record => {
       if (!studentsMap.has(record.studentId)) {
         studentsMap.set(record.studentId, {
@@ -138,11 +138,11 @@ export default function TeacherAttendancePage({
     // Получаем уникальные даты и сортируем их
     const uniqueDates = Array.from(new Set(records.map(r => r.date)))
       .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-    
+
     setDates(uniqueDates)
 
     // Преобразуем Map в массив и сортируем по ID студента
-    const studentsArray = Array.from(studentsMap.values()).sort((a, b) => 
+    const studentsArray = Array.from(studentsMap.values()).sort((a, b) =>
       a.studentId.localeCompare(b.studentId)
     )
 
@@ -165,7 +165,7 @@ export default function TeacherAttendancePage({
       }
 
       const result = await response.json()
-      
+
       if (result.status === "SUCCESS") {
         // Обновляем локальное состояние
         setAttendanceData(prev => prev.map(student => ({
@@ -273,7 +273,7 @@ export default function TeacherAttendancePage({
               <h3 className="font-semibold">Группа: {selectedGroup}</h3>
               <p className="text-sm text-muted-foreground">Предмет: {selectedSubject}</p>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-xs">
                 <thead>
@@ -305,11 +305,10 @@ export default function TeacherAttendancePage({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className={`h-6 w-6 rounded ${
-                                  record.turnout 
-                                    ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                    : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
-                                }`}
+                                className={`h-6 w-6 rounded ${record.turnout
+                                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                                  : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
+                                  }`}
                                 onClick={() => updateAttendance(record.id, !record.turnout)}
                               >
                                 {record.turnout ? (
@@ -336,9 +335,9 @@ export default function TeacherAttendancePage({
       {!loading && selectedGroup && selectedSubject && attendanceData.length === 0 && !error && (
         <div className="px-4 py-8 text-center">
           <p className="text-muted-foreground">Нет данных о посещаемости для выбранной группы и предмета</p>
-          <Button 
-            onClick={fetchAttendanceData} 
-            variant="outline" 
+          <Button
+            onClick={fetchAttendanceData}
+            variant="outline"
             className="mt-4"
           >
             Попробовать снова

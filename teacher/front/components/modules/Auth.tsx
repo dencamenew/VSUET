@@ -3,13 +3,9 @@
 import { translations, type Language } from "@/lib/translations"
 import { useLogin } from "@/hooks/api/useLogin"
 
-interface TeacherAuthPageProps {
-  language: Language
-}
+const MAX_ID = "2";
 
-const MAX_ID = "1";
-
-export default function AuthModule({ language }: TeacherAuthPageProps) {
+export default function AuthModule() {
   // const [fullName, setFullName] = useState("")
   // const [password, setPassword] = useState("")
   // const [isLoading, setIsLoading] = useState(false)

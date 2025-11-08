@@ -121,7 +121,7 @@ export function ScheduleList(
     const entries = currentSchedule ? Object.entries(currentSchedule).filter(([_, item]) => item && Object.values(item).length) : []
 
     return (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 items-center">
             <AnimatePresence mode="popLayout">
                 {entries.length > 0 ? (
                     entries.map(([time, item], index) => (
@@ -131,7 +131,7 @@ export function ScheduleList(
                             initial="hidden"
                             animate="visible"
                             exit="exit"
-                            className={getCardStyles(item.class_type) + " p-4 rounded-xl"}
+                            className={getCardStyles(item.class_type) + " p-4 rounded-xl w-full max-w-2xl"}
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex-1">
@@ -166,7 +166,7 @@ export function ScheduleList(
                             damping: 12,
                             mass: 0.8,
                         }}
-                        className="size-full pt-10 text-xl text-muted-foreground font-semibold z-30"
+                        className="size-full pt-10 text-xl text-muted-foreground font-semibold z-30 w-full max-w-2xl"
                     >
                         <div className="rounded-3xl w-full bg-muted py-14 flex items-center justify-center px-10 text-center">
                             {t.noClasses}

@@ -5,7 +5,7 @@ import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { translations, type Language } from "@/lib/translations"
 import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Grade } from "@/data/mockData"
-import BottomNavigation from "@/components/ui/BottomNavigation"
+import BottomNavigation from "@/components/navigation/Navigation"
 
 interface TeacherRatingPageProps {
   teacherName: string
@@ -285,7 +285,7 @@ export default function TeacherRatingPage({
               </table>
             </div>
 
-            
+
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">

@@ -230,8 +230,6 @@ export default function CalendarSlider({
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-
-      
       <div className="relative mx-10">
           <SideFade
             width={120}
