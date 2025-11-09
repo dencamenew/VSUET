@@ -24,7 +24,7 @@ app = FastAPI(
 # Add CORS middleware with comprehensive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://localhost:3000", "https://vsuet-xcmz.vercel.app"],
+    allow_origins=["http://localhost:3000", "https://vsuet-xcmz.vercel.app"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
