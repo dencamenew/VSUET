@@ -29,7 +29,7 @@ async def generate_qr_session(
     max_id: str = Depends(get_current_user_id),
     redis: Redis = Depends(get_redis)
 ):
-    qr_service = QRService(redis)
+    qr_service = QRService(redis, db)
     session_info = await qr_service.generate_qr_session(
         group_name=group_name,
         subject_name=subject_name,
@@ -52,7 +52,7 @@ async def close_qr_session(
     max_id: str = Depends(get_current_user_id),
     redis: Redis = Depends(get_redis)
 ):
-    qr_service = QRService(redis)
+    qr_service = QRService(redis, db)
     if qr_service is None:
         return {"error": "Сервис QR не инициализирован"}
 
@@ -77,14 +77,14 @@ async def scan_qr(
     max_id: str = Depends(get_current_user_id),
     redis: Redis = Depends(get_redis)
 ):
-    qr_service = QRService(redis)
+    qr_service = QRService(redis, db)
     if qr_service is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Сервис QR не инициализирован"
         )
 
-    result = await qr_service.scan_qr(session_id, token)
+    result = await qr_service.scan_qr(max_id, session_id, token)
 
     if "error" in result:
         raise HTTPException(

@@ -5,12 +5,16 @@ from typing import Dict, Any
 from uuid import uuid4
 from redis.asyncio import Redis
 from fastapi import status
+from sqlalchemy.orm import Session
+from app.repositories.user_repository import UserRepository
 
 
 class QRService:
-    def __init__(self, redis: Redis):
+    def __init__(self, redis: Redis, db: Session):
         self.redis = redis
         self._token_update_task: asyncio.Task | None = None
+        self.db = db
+        self.user_repository = UserRepository(db)
 
 
     async def generate_qr_session(
@@ -63,7 +67,7 @@ class QRService:
         return {"message": f"Сессия {session_id} успешно закрыта", "session_id": session_id}
 
 
-    async def scan_qr(self, session_id: str, token: str) -> Dict[str, Any]:
+    async def scan_qr(self, max_id: str, session_id: str, token: str) -> Dict[str, Any]:
         """Проверка QR-кода: session_id + token"""
         session_key = f"session:{session_id}"
 
@@ -78,6 +82,17 @@ class QRService:
         current_token = await self.redis.hget(session_key, "current_token")
         if token != current_token:
             return {"error": "Неверный токен", "status_code": status.HTTP_403_FORBIDDEN}
+        
+        # Получаем текущий список студентов
+        students_json = await self.redis.hget(session_key, "students")
+        students = json.loads(students_json) if students_json else []
+        
+
+        # Добавляем студента, если его там ещё нет
+        student_id = await asyncio.to_thread(self.user_repository.get_student_zach_number_by_max_id, max_id)
+        if student_id not in students:
+            students.append(student_id)
+            await self.redis.hset(session_key, "students", json.dumps(students))
 
         # Если всё верно
         return {
@@ -89,7 +104,7 @@ class QRService:
 
 
     
-
+    # фоновые задачи для Redis потом перенести в config/datebase.py
     async def update_tokens_loop(self, interval: int = 10):
         """Фоновая задача: обновление токенов всех активных сессий и публикация в канал Redis"""
         while True:

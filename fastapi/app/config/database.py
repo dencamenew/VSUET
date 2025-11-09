@@ -28,6 +28,14 @@ def get_db():
     finally:
         db.close()
 
+# Функция для создания сессии DB внутри init_redis
+def get_db_sync():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 
 
@@ -48,11 +56,12 @@ async def init_redis():
         )
     
     if qr_service is None:
-        qr_service = QRService(redis_client)
+        db = next(get_db_sync())
+        qr_service = QRService(redis_client, db)
     
     # запуск фоновой задачи, если она ещё не запущена
     if _token_update_task is None:
-        _token_update_task = asyncio.create_task(qr_service.update_tokens_loop(interval=100)) #вот тут ставится интервал
+        _token_update_task = asyncio.create_task(qr_service.update_tokens_loop(interval=1000)) #вот тут ставится интервал
     
     return redis_client
 

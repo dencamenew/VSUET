@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Any, Dict, Optional, List, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 from app.models.tables import StudentInfo, User
@@ -27,6 +27,7 @@ class UserRepository(BaseRepository[User]):
             .filter(User.username == username)
             .first()
         )
+    
 
 
 
@@ -75,7 +76,18 @@ class UserRepository(BaseRepository[User]):
             .first()
         )
     
-
+    def get_student_zach_number_by_max_id(self, max_id: str) -> Optional[str]:
+        """
+        Получить номер зачетки студента по его max_id.
+        """
+        result = (
+            self.db.query(StudentInfo.zach_number)
+            .select_from(User)  # явно указываем левую таблицу
+            .join(StudentInfo, User.student_info_id == StudentInfo.id)
+            .filter(User.max_id == max_id)
+            .scalar()
+        )
+        return result
 
 
 
