@@ -1,0 +1,67 @@
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:15.4
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+    volumes:
+      - ./db/initdb:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  fill_db:
+    container_name: fill_db
+    build:
+      context: ./fill_db
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./fill_db:/app
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
+  fastapi:
+    container_name: fastapi
+    build:
+      context: ./fastapi
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./fastapi:/app
+  
+  nextapp:
+    container_name: nextapp
+    build:
+      context: ./nextapp 
+      dockerfile: Dockerfile 
+    ports:
+      - "3000:3000" 
+    volumes:
+      - ./nextapp:/app
+    depends_on:
+      - fastapi
+
+      
+volumes:
+  postgres_data:
