@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 const langAtom = atom<Language>("ru");
 
+// TODO: переделать под i18n
 export function useLanguage() {
     const [lang, setLang] = useAtom(langAtom);
 

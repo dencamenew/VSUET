@@ -163,7 +163,7 @@ export default function TeacherAttendance(
 
       {/* Таблица посещаемости */}
       {table && table.length > 0 && (
-        <div className="h-full pb-4 overflow-hidden">
+        <div className="max-h-full h-fit pb-4 overflow-hidden">
           <div className="bg-card rounded-lg border border-border h-full flex flex-col overflow-hidden">
             {/* Заголовок таблицы - фиксированный */}
             <div className="flex-shrink-0 p-4 border-b border-border">
@@ -174,7 +174,7 @@ export default function TeacherAttendance(
             </div>
 
             {/* Контейнер с прокруткой */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto h-fit">
               <table className="w-full border-collapse text-xs">
                 <thead className="sticky top-0 bg-card z-20">
                   <tr>

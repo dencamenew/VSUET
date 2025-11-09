@@ -1,31 +1,25 @@
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { translations, type Language } from "@/lib/translations"
+import { translations } from "@/lib/translations"
 import { mockFaculties, mockGroups, mockSubjects, mockStudents, mockGrades, type Grade } from "@/data/mockData"
-import BottomNavigation from "@/components/navigation/Navigation"
+import { useLanguage } from "@/hooks/useLanguage"
 
-interface TeacherRatingPageProps {
-  teacherName: string
-  onNavigate: (page: "schedule" | "rating" | "attendance") => void
-  onShowProfile: () => void
-  language: Language
-}
-
-export default function TeacherRating({
-  teacherName,
-  onNavigate,
-  onShowProfile,
-  language,
-}: TeacherRatingPageProps) {
+export default function TeacherRating(
+  {
+    userName,
+  }: {
+    userName: string
+  }
+) {
+  const { lang } = useLanguage();
   const [selectedGroup, setSelectedGroup] = useState<string>("")
   const [selectedSubject, setSelectedSubject] = useState<string>("")
   const [grades, setGrades] = useState<Record<string, Grade>>({})
   const [loading, setLoading] = useState(false)
 
-  const t = translations[language] || translations.en
+  const t = translations[lang] || translations.en
 
   const studentsInGroup = mockStudents.filter((student) => student.groupId === selectedGroup)
   const selectedSubjectData = mockSubjects.find((subject) => subject.id === selectedSubject)
@@ -103,15 +97,15 @@ export default function TeacherRating({
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-12">
+      <div className="flex items-center justify-between py-4 pt-12">
         <div>
           <h1 className="text-2xl font-bold">{t.rating}</h1>
-          <p className="text-muted-foreground">{teacherName}</p>
+          <p className="text-muted-foreground md:hidden">{userName}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="px-4 mb-6 space-y-4">
+      <div className="mb-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">{t.group}</label>
@@ -290,7 +284,7 @@ export default function TeacherRating({
         ) : (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground text-lg">
-              {language === "ru" ? "Выберите группу и предмет" : "Select group and subject"}
+              {lang === "ru" ? "Выберите группу и предмет" : "Select group and subject"}
             </p>
           </div>
         )}

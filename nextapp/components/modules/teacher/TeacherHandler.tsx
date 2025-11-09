@@ -33,10 +33,7 @@ export function TeacherHandler() {
                 )}
                 {currentModule === "rating" && (
                     <TeacherRating
-                        teacherName={teacherName}
-                        onNavigate={setCurrentModule}
-                        onShowProfile={() => setShowProfile(true)}
-                        language={lang}
+                        userName={teacherName}
                     />
                 )}
                 {currentModule === "attendance" && (
