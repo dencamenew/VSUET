@@ -108,7 +108,7 @@ export default function TeacherAttendance(
   };
 
   return (
-    <div className="h-full bg-background text-foreground flex flex-col">
+    <div className="h-full bg-background text-foreground flex flex-col px-6">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between pt-12 py-4">
         <div>
@@ -143,7 +143,6 @@ export default function TeacherAttendance(
             <Select
               value={JSON.stringify(selectedSbj)}
               onChange={(e) => {
-                console.log(e.target.value);
                 const sbj = JSON.parse(e.target.value);
                 setSelectedSbj(sbj);
               }}

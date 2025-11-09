@@ -51,41 +51,41 @@ export default function UserProfile({
     }
   }
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    setLogoutError("")
+  // const handleLogout = async () => {
+  //   setIsLoggingOut(true)
+  //   setLogoutError("")
 
-    try {
-      const response = await fetch(`${URL}/auth/logout`, {
-        method: "POST",
-        headers: {
-          'X-Session-Id': sessionId || '',
-          "Content-Type": "application/json",
-        },
-      })
+  //   try {
+  //     const response = await fetch(`${URL}/auth/logout`, {
+  //       method: "POST",
+  //       headers: {
+  //         'X-Session-Id': sessionId || '',
+  //         "Content-Type": "application/json",
+  //       },
+  //     })
 
-      const data: LogoutResponse = await response.json()
+  //     const data: LogoutResponse = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`)
-      }
+  //     if (!response.ok) {
+  //       throw new Error(data.error || `HTTP error! status: ${response.status}`)
+  //     }
 
-      if (data.sessionInvalidated || data.message === "Logout successful") {
-        clearSession()
-        onLogout()
-      } else if (data.message === "No active session found") {
-        clearSession()
-        onLogout()
-      } else {
-        setLogoutError(data.message || t.logoutError || "Logout failed")
-      }
-    } catch (err) {
-      setLogoutError(err instanceof Error ? err.message : t.connectionError || "Connection error")
-      console.error("Logout error:", err)
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }
+  //     if (data.sessionInvalidated || data.message === "Logout successful") {
+  //       clearSession()
+  //       onLogout()
+  //     } else if (data.message === "No active session found") {
+  //       clearSession()
+  //       onLogout()
+  //     } else {
+  //       setLogoutError(data.message || t.logoutError || "Logout failed")
+  //     }
+  //   } catch (err) {
+  //     setLogoutError(err instanceof Error ? err.message : t.connectionError || "Connection error")
+  //     console.error("Logout error:", err)
+  //   } finally {
+  //     setIsLoggingOut(false)
+  //   }
+  // }
 
   return (
 
@@ -109,7 +109,7 @@ export default function UserProfile({
       {/* Account Info */}
       <div className="space-y-6 mb-8">
         {/* Settings */}
-        <div className="bg-muted/30 rounded-xl p-4 border border-border">
+        <div className="bg-muted rounded-xl p-4">
           <h3 className="text-foreground font-medium mb-3">{t.settings}</h3>
           <div className="space-y-4">
             {/* Theme Settings */}
@@ -179,7 +179,7 @@ export default function UserProfile({
       </div>
 
       {/* Logout Button */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         {logoutError && (
           <p className="text-destructive text-sm text-center">{logoutError}</p>
         )}
@@ -201,7 +201,7 @@ export default function UserProfile({
             </>
           )}
         </Button>
-      </div>
+      </div> */}
     </>
   )
 }

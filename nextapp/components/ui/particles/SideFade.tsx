@@ -20,7 +20,6 @@ export function SideFade({
             ref={ref}
             style={{
                 pointerEvents: 'none',
-                zIndex: 10,
                 width,
                 height,
                 transition: `opacity ${transition}s cubic-bezier(0.25, 1, 0.5, 1)`

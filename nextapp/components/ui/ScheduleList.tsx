@@ -4,6 +4,7 @@ import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { ILessonSlot, LessonTime } from "@/hooks/api/useTimetable"
 import { Language, translations } from "@/lib/translations"
 import { nanoid } from 'nanoid'
+import { SideFade } from './particles/SideFade'
 
 export function ScheduleList(
     {
@@ -66,16 +67,14 @@ export function ScheduleList(
     const cardVariants: Variants = {
         hidden: {
             opacity: 0,
-            y: "100%",
             scale: 0.85,
             filter: "blur(4px)",
         },
         visible: () => ({
             opacity: 1,
-            y: 0,
             scale: 1,
             filter: "blur(0px)",
-            zIndex: 20,
+            zIndex: 50,
             transition: {
                 type: "spring",
                 stiffness: 300,
@@ -91,9 +90,9 @@ export function ScheduleList(
 
                 scale: {
                     type: "spring",
-                    stiffness: 170,
-                    damping: 23,
-                    mass: 1.8,
+                    stiffness: 160,
+                    damping: 26,
+                    mass: 1.1,
                 },
 
                 filter: {
@@ -108,7 +107,7 @@ export function ScheduleList(
             opacity: 0,
             scale: 0.7,
             filter: "blur(8px)",
-            zIndex: 10,
+            zIndex: 40,
             transition: {
                 type: "spring",
                 stiffness: 300,
@@ -121,59 +120,68 @@ export function ScheduleList(
     const entries = currentSchedule ? Object.entries(currentSchedule).filter(([_, item]) => item && Object.values(item).length) : []
 
     return (
-        <div className="flex flex-col gap-3 items-center">
-            <AnimatePresence mode="popLayout">
-                {entries.length > 0 ? (
-                    entries.map(([time, item], index) => (
-                        <motion.div
-                            key={`${index}-${currentDate}`}
-                            variants={cardVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            className={getCardStyles(item.class_type) + " p-4 rounded-xl w-full max-w-2xl"}
-                        >
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-foreground">{item.name}</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {time} • {item.auditorium}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">{item.group}</p>
+        <div className='size-full relative overflow-hidden'>
+            <div className='absolute px-4 z-60 w-full'>
+                <SideFade
+                    width="100%"
+                    height={24}
+                    className="bg-gradient-to-b from-background to-transparent left-0 top-0 relative z-60"
+                />
+            </div>
+            <div className="flex flex-col gap-3 items-center h-full w-full overflow-y-auto px-6 py-6 z-30">
+                <AnimatePresence mode="popLayout">
+                    {entries.length > 0 ? (
+                        entries.map(([time, item], index) => (
+                            <motion.div
+                                key={`${index}-${currentDate}`}
+                                variants={cardVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className={getCardStyles(item.class_type) + " p-4 rounded-xl w-full max-w-2xl z-30"}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-foreground">{item.name}</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {time} • {item.auditorium}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">{item.group}</p>
+                                    </div>
+                                    <span
+                                        className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(item.class_type)}`}
+                                    >
+                                        {getTypeLabel(item.class_type)}
+                                    </span>
                                 </div>
-                                <span
-                                    className={`text-xs px-2 py-1 rounded-full ${getTypeStyles(item.class_type)}`}
-                                >
-                                    {getTypeLabel(item.class_type)}
-                                </span>
-                            </div>
 
-                            <div className="flex justify-between items-center mt-4">
-                                <div className="flex items-center space-x-2">
-                                    {/* Комментарии и QR здесь */}
+                                <div className="flex justify-between items-center mt-4">
+                                    <div className="flex items-center space-x-2">
+                                        {/* Комментарии и QR здесь */}
+                                    </div>
                                 </div>
+                            </motion.div>
+                        ))
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, filter: "blur(10px)", y: 30, scale: 0.7 }}
+                            animate={{ opacity: 1, filter: "blur(0px)", y: 0, scale: 1 }}
+                            exit={{ opacity: 0, filter: "blur(10px)", y: 30, scale: 0.7 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 80,
+                                damping: 12,
+                                mass: 0.8,
+                            }}
+                            className="size-full pt-10 text-xl text-muted-foreground font-semibold z-20 w-full max-w-2xl"
+                        >
+                            <div className="rounded-3xl w-full bg-muted py-14 flex items-center justify-center px-10 text-center">
+                                {t.noClasses}
                             </div>
                         </motion.div>
-                    ))
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, filter: "blur(10px)", y: 30, scale: 0.7 }}
-                        animate={{ opacity: 1, filter: "blur(0px)", y: 0, scale: 1 }}
-                        exit={{ opacity: 0, filter: "blur(10px)", y: 30, scale: 0.7 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 80,
-                            damping: 12,
-                            mass: 0.8,
-                        }}
-                        className="size-full pt-10 text-xl text-muted-foreground font-semibold z-30 w-full max-w-2xl"
-                    >
-                        <div className="rounded-3xl w-full bg-muted py-14 flex items-center justify-center px-10 text-center">
-                            {t.noClasses}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     )
 }

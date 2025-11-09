@@ -80,13 +80,12 @@ export function useAttendanceTeacher(
     const { token } = useToken();
 
     const { data } = useQuery({
-        queryKey: ["attendance/teacher", groupName, subjectType, subjectName, token],
+        queryKey: ["attendance/teacher", groupName, subjectType, subjectName],
         enabled: !!token && !!groupName && !!subjectType && !!subjectName,
         queryFn: async (): Promise<IAttendanceTeacher> => {
             const encodedGroup = (groupName!);
             const encodedType = (subjectType!);
             const encodedName = (subjectName!);
-            console.log(encodedGroup, encodedType, encodedName)
 
             const response = await fetch(
                 `/attendance/teacher/${encodedGroup}/${encodedType}/${encodedName}`,

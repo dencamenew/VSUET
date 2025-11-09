@@ -5,7 +5,7 @@ import { Loading } from "../ui/loading";
 import { useLayoutEffect } from "react";
 import { useToken } from "@/hooks/useAuth";
 
-const MAX_ID = "1";
+const MAX_ID = process.env.NEXT_PUBLIC_TARGET_MAX_ID || "1";
 
 export default function AuthModule() {
   const auth = useLogin(MAX_ID);

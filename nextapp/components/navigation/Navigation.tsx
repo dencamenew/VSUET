@@ -12,13 +12,14 @@ import UserProfile from "../modules/UserProfile"
 import { cn } from "@/lib/utils"
 import { ResizableY } from "../motion/Resizable"
 import { useDimensions } from "@/hooks/ui/useDimensions"
+import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 
 interface BottomNavigationProps {
   onNavigate: (page: "schedule" | "rating" | "attendance") => void
   language: Language
   currentPage: "schedule" | "rating" | "attendance";
   setLang: (lang: Language) => void
-};
+}
 
 function SettingsHandler(
   {
@@ -31,7 +32,7 @@ function SettingsHandler(
     toggleLanguage: () => void
   }
 ) {
-  const { lang, setLang } = useLanguage();
+  const { lang } = useLanguage();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const t = translations[lang] || translations.en;
   const resizeRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,6 @@ function SettingsHandler(
           className={cn(
             "h-9 w-full box-border cursor-pointer flex justify-center items-center gap-2 bg-foreground text-primary-foreground rounded-md py-2 text-sm  hover:bg-primary/90 transition-all",
             isOpen && "bg-primary/80 hover:bg-primary/70"
-
           )}
         >
           <Settings className={cn("size-5 duration-500 transition-transform", isOpen && "rotate-180")} />
@@ -60,7 +60,6 @@ function SettingsHandler(
       >
         <div ref={resizeRef} className="bg-muted p-4">
           <div className="space-y-4">
-            {/* Theme Settings */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 {isDarkMode ? (
@@ -133,25 +132,112 @@ export default function Navigation({
   onNavigate,
   currentPage,
 }: BottomNavigationProps) {
-
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { lang, setLang } = useLanguage();
-
   const user = useMe();
   const { role } = useRole();
-
   const t = translations[lang] || translations.en;
   const [isProfileOpen, setShowProfile] = useState(false);
 
-  const getButtonVariant = (page: string) => {
-    return currentPage === page ? "default" : "ghost"
-  }
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [buttonRects, setButtonRects] = useState<{ top: number; height: number }[]>([]);
+  const indicatorY = useMotionValue(0);
+  const indicatorH = useMotionValue(0);
+  const hasMounted = useRef(false);
 
-  const getButtonClass = (page: string) => {
-    return currentPage === page
-      ? "w-full bg-primary text-primary-foreground justify-start"
-      : "w-full text-muted-foreground justify-start"
-  }
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const [mobileButtonRects, setMobileButtonRects] = useState<{ left: number; width: number }[]>([]);
+  const mobileIndicatorX = useMotionValue(0);
+  const mobileIndicatorW = useMotionValue(0);
+  const mobileHasMounted = useRef(false);
+
+  const pages = ["schedule", "attendance", "rating"] as const;
+  const activeIndex = pages.indexOf(currentPage);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const measureButtons = () => {
+      const buttons = containerRef.current!.querySelectorAll<HTMLButtonElement>("[data-nav-button]");
+      const rects = Array.from(buttons).map(b => {
+        const { top, height } = b.getBoundingClientRect();
+        const containerTop = containerRef.current!.getBoundingClientRect().top;
+        return { top: top - containerTop, height };
+      });
+      setButtonRects(rects);
+    };
+
+    setTimeout(measureButtons, 0);
+    window.addEventListener('resize', measureButtons);
+    return () => window.removeEventListener('resize', measureButtons);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileContainerRef.current) return;
+
+    const measureButtons = () => {
+      const buttons = mobileContainerRef.current!.querySelectorAll<HTMLButtonElement>("[data-mobile-nav-button]");
+      if (buttons.length === 0) return;
+
+      const rects = Array.from(buttons).map(b => {
+        const { left, width } = b.getBoundingClientRect();
+        const containerLeft = mobileContainerRef.current!.getBoundingClientRect().left;
+        return { left: left - containerLeft, width };
+      });
+
+      setMobileButtonRects(rects);
+    };
+
+    const timer = setTimeout(measureButtons, 100);
+    window.addEventListener('resize', measureButtons);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measureButtons);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!buttonRects[activeIndex]) return;
+
+    if (!hasMounted.current) {
+      indicatorY.set(buttonRects[activeIndex].top);
+      indicatorH.set(buttonRects[activeIndex].height);
+      hasMounted.current = true;
+    } else {
+      animate(indicatorY, buttonRects[activeIndex].top, {
+        type: "spring",
+        stiffness: 280,
+        damping: 35,
+      });
+      animate(indicatorH, buttonRects[activeIndex].height, {
+        type: "spring",
+        stiffness: 280,
+        damping: 35,
+      });
+    }
+  }, [activeIndex, buttonRects, indicatorY, indicatorH]);
+
+  useEffect(() => {
+    if (!mobileButtonRects[activeIndex]) return;
+
+    if (!mobileHasMounted.current) {
+      mobileIndicatorX.set(mobileButtonRects[activeIndex].left);
+      mobileIndicatorW.set(mobileButtonRects[activeIndex].width);
+      mobileHasMounted.current = true;
+    } else {
+      animate(mobileIndicatorX, mobileButtonRects[activeIndex].left, {
+        type: "spring",
+        stiffness: 280,
+        damping: 35,
+      });
+      animate(mobileIndicatorW, mobileButtonRects[activeIndex].width, {
+        type: "spring",
+        stiffness: 280,
+        damping: 35,
+      });
+    }
+  }, [activeIndex, mobileButtonRects, mobileIndicatorX, mobileIndicatorW]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme")
@@ -183,17 +269,16 @@ export default function Navigation({
     setLang(newLanguage);
   }
 
-
   if (!user) return null;
   const userName = user.first_name + " " + user.last_name;
 
   const handleLogout = () => { }
 
-
   return (
     <>
+      {/* Десктоп */}
       <div className="hidden md:flex md:flex-col w-74 bg-background border-r border-border p-4 gap-2 h-screen justify-between pt-14 pb-4">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 relative" ref={containerRef}>
           <div className="pb-10">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
@@ -205,46 +290,50 @@ export default function Navigation({
               </div>
             </div>
           </div>
-          <Button
-            variant={getButtonVariant("schedule")}
+
+          <motion.div
+            className="absolute left-0 w-full bg-primary rounded-md pointer-events-none z-0"
+            style={{
+              y: indicatorY,
+              height: indicatorH,
+            }}
+          />
+
+          <button
+            data-nav-button
             onClick={() => onNavigate("schedule")}
-            className={getButtonClass("schedule")}
+            className={cn(
+              "cursor-pointer relative z-10 w-full flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
+              currentPage === "schedule" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
           >
             <Calendar className="w-5 h-5" />
-            <span className="ps-2">
-              {t.schedule}
-            </span>
-          </Button>
-          <Button
-            variant={getButtonVariant("attendance")}
+            <span>{t.schedule}</span>
+          </button>
+
+          <button
+            data-nav-button
             onClick={() => onNavigate("attendance")}
-            className={getButtonClass("attendance")}
+            className={cn(
+              "cursor-pointer relative z-10 w-full flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
+              currentPage === "attendance" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
           >
             <Users className="w-5 h-5" />
-            <span className="ps-2">
-              {t.attendance}
-            </span>
-          </Button>
-          <Button
-            variant={getButtonVariant("rating")}
+            <span>{t.attendance}</span>
+          </button>
+
+          <button
+            data-nav-button
             onClick={() => onNavigate("rating")}
-            className={getButtonClass("rating")}
+            className={cn(
+              "cursor-pointer relative z-10 w-full flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
+              currentPage === "rating" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
           >
             <GraduationCap className="w-5 h-5" />
-            <span className="ps-2">
-              {t.rating}
-            </span>
-          </Button>
-          {/* <Button
-            variant="ghost"
-            onClick={() => setShowProfile(true)}
-            className="w-full text-muted-foreground justify-start"
-          >
-            <User className="w-5 h-5" />
-            <span className="ps-2">
-              {t.profile}
-            </span>
-          </Button> */}
+            <span>{t.rating}</span>
+          </button>
         </div>
         <SettingsHandler
           toggleTheme={toggleTheme}
@@ -253,41 +342,58 @@ export default function Navigation({
         />
       </div>
 
-      {/* Для мобилки */}
-      <div className="md:hidden flex bg-background border-t border-border p-4 gap-2 w-full">
-        <Button
-          size="icon"
+      {/* Мобилка с анимацией */}
+      <div className="md:hidden flex bg-background border-t border-border p-4 gap-2 w-full relative" ref={mobileContainerRef}>
+        <motion.div
+          className="absolute top-1/2 -translate-y-1/2 bg-foreground rounded-md pointer-events-none z-0"
+          style={{
+            left: mobileIndicatorX,
+            width: mobileIndicatorW,
+            height: 40,
+          }}
+        />
+
+        <button
+          data-mobile-nav-button
           onClick={() => onNavigate("schedule")}
-          variant={getButtonVariant("schedule")}
-          className="flex-1"
+          className={cn(
+            "relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
+            currentPage === "schedule" ? "text-primary-foreground" : "text-muted-foreground"
+          )}
         >
           <Calendar className="w-5 h-5" />
-        </Button>
-        <Button
-          size="icon"
-          variant={getButtonVariant("attendance")}
+        </button>
+
+        <button
+          data-mobile-nav-button
           onClick={() => onNavigate("attendance")}
-          className="flex-1"
+          className={cn(
+            "relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
+            currentPage === "attendance" ? "text-primary-foreground" : "text-muted-foreground"
+          )}
         >
           <Users className="w-5 h-5" />
-        </Button>
-        <Button
-          size="icon"
-          variant={getButtonVariant("rating")}
+        </button>
+
+        <button
+          data-mobile-nav-button
           onClick={() => onNavigate("rating")}
-          className="flex-1"
+          className={cn(
+            "relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
+            currentPage === "rating" ? "text-primary-foreground" : "text-muted-foreground"
+          )}
         >
           <GraduationCap className="w-5 h-5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
+        </button>
+
+        <button
           onClick={() => setShowProfile(true)}
-          className="flex-1"
+          className="relative z-10 flex-1 h-10 flex items-center justify-center rounded-md text-muted-foreground"
         >
           <User className="w-5 h-5" />
-        </Button>
+        </button>
       </div>
+
       <Drawer
         isOpen={isProfileOpen}
         onClose={() => setShowProfile(false)}
@@ -306,3 +412,4 @@ export default function Navigation({
     </>
   )
 }
+
