@@ -744,6 +744,10 @@ for (subj_name, class_type), lessons in subjects_map.items():
         if row:
             teacher_id = row[0]
 
+    if "Технологии" in subj_name:
+        teacher_id = 1
+    else:
+        teacher_id = None
     # Формируем attendance_json
     attendance_json = []
     for zach in students:
@@ -751,7 +755,6 @@ for (subj_name, class_type), lessons in subjects_map.items():
             "student_id": str(zach),
             "attendance": {d.strftime("%Y-%m-%d"): False for d in class_dates}
         })
-
     # Вставляем строку для КАЖДОГО типа занятия отдельно
     cur.execute("""
         INSERT INTO attendance (subject_name, subject_type, semestr, teacher_id, group_id, attendance_json)
@@ -760,7 +763,7 @@ for (subj_name, class_type), lessons in subjects_map.items():
         subj_name,
         class_type,  # ← теперь классы разделены
         "1 семестр 2025/2026",
-        teacher_id or 1,
+        teacher_id or None,
         group_id,
         json.dumps(attendance_json)
     ))
@@ -801,7 +804,12 @@ for subject_name, teacher_id in subjects:
             "rating": kt_ratings
         })
 
-    # Вставка в таблицу rating
+    if "Технологии" in subject_name:
+        teacher_id_to_insert = 1
+        print(subject_name)
+    else:
+        teacher_id_to_insert = None
+  
     cur.execute("""
         INSERT INTO rating (subject_name, subject_type, semestr, teacher_id, group_id, rating_json)
         VALUES (%s, %s, %s, %s, %s, %s);
@@ -809,10 +817,11 @@ for subject_name, teacher_id in subjects:
         subject_name,
         subject_type,
         "1 семестр 2025/2026",
-        teacher_id,
+        teacher_id_to_insert,
         group_id,
-        json.dumps(rating_json)
+        json.dumps(rating_json, ensure_ascii=False)
     ))
+
 
 # ---------- 5) Добавляем "Учебная практика" и "Курсовая работа" в rating ----------
 extra_subjects = [
@@ -845,3 +854,275 @@ for subject_name, subject_type in extra_subjects:
 
 conn.commit()
 print("✅ Таблица rating заполнена корректно, дубликаты исключены.")
+maslov_groups_subjects = {
+    "УБ-42": [
+        {"lesson_name": "Мобильная разработка", "lesson_type": "лабораторная работа"},
+        {"lesson_name": "Операционные системы", "lesson_type": "лабораторная работа"},
+        {"lesson_name": "Технологии и методы программирования", "lesson_type": "лабораторная работа"}
+    ],
+    "УБ-33": [
+        {"lesson_name": "Базы данных", "lesson_type": "лабораторная работа"},
+        {"lesson_name": "Веб-программирование", "lesson_type": "лекция"},
+        {"lesson_name": "Операционные системы", "lesson_type": "практические занятия"}
+    ],
+    "УБ-31": [
+        {"lesson_name": "Базы данных", "lesson_type": "практические занятия"},
+        {"lesson_name": "Искусственный интеллект", "lesson_type": "лекция"},
+        {"lesson_name": "Мобильная разработка", "lesson_type": "практические занятия"},
+        {"lesson_name": "Веб-программирование", "lesson_type": "практические занятия"}
+    ],
+    "УБ-43": [
+        {"lesson_name": "Искусственный интеллект", "lesson_type": "практические занятия"},
+        {"lesson_name": "Технологии и методы программирования", "lesson_type": "практические занятия"}
+    ],
+    "УБ-32": [
+        {"lesson_name": "Веб-программирование", "lesson_type": "лекция"},
+        {"lesson_name": "Проектный практикум", "lesson_type": "практические занятия"},
+        {"lesson_name": "Технологии и методы программирования", "lesson_type": "практические занятия"}
+    ]
+}
+
+first_names = [
+    "Алексей", "Иван", "Дмитрий", "Сергей", "Николай", "Михаил",
+    "Андрей", "Павел", "Владимир", "Евгений", "Анна", "Ольга",
+    "Татьяна", "Екатерина", "Юлия", "Светлана", "Виктория", "Ирина"
+]
+last_names = [
+    "Иванов", "Петров", "Сидоров", "Кузнецов", "Попов", "Васильев",
+    "Соколов", "Морозов", "Лебедев", "Козлов", "Новиков", "Фёдоров",
+    "Михайлов", "Тарасов", "Егоров", "Никитин", "Зайцев", "Романов"
+]
+# Начальный id для групп
+group_id_counter = 2
+cursor = conn.cursor()
+# === Добавляем группы ===
+for group_name in maslov_groups_subjects.keys():
+    cursor.execute(
+        "INSERT INTO groups (id, group_name) VALUES (%s, %s) ON CONFLICT (group_name) DO NOTHING;",
+        (group_id_counter, group_name)
+    )
+    group_id_counter += 1
+
+conn.commit()
+print("✅ Группы успешно добавлены.")
+
+# === Добавляем студентов ===
+group_id_counter = 2
+student_info_id = 1
+
+for group_name in maslov_groups_subjects.keys():
+    for _ in range(15):
+        zach_number = str(random.randint(100000, 999999))
+        first = random.choice(first_names)
+        last = random.choice(last_names)
+
+        # Добавляем запись в student_info
+        cursor.execute(
+            "INSERT INTO student_info (zach_number, group_id) VALUES (%s, %s) RETURNING id;",
+            (zach_number, group_id_counter)
+        )
+        student_info_id = cursor.fetchone()[0]
+
+        # Добавляем запись в users
+        cursor.execute(
+            """
+            INSERT INTO users (first_name, last_name, MAX_id, role, teacher_info_id, student_info_id)
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """,
+            (first, last, None, 'студент', None, student_info_id)
+        )
+
+    group_id_counter += 1
+
+conn.commit()
+print("✅ Студенты успешно добавлены в БД.")
+
+
+print("🔒 Подключение к базе данных закрыто.")
+cursor.execute("SELECT id, group_name FROM groups;")
+groups_from_db = {name: gid for gid, name in cursor.fetchall()}
+
+# Получаем студентов по группам (student_info_id, zach_number, group_id)
+cursor.execute("SELECT id, zach_number, group_id FROM student_info;")
+students_by_group = {}
+for sid, zach, gid in cursor.fetchall():
+    students_by_group.setdefault(gid, []).append((sid, zach))
+
+# Функция генерации JSON рейтинга
+def generate_rating_json(students):
+    rating_list = []
+    for student_info_id, zach_number in students:
+        rating_list.append({
+            "rating": {
+                "kt1": random.randint(0, 100),
+                "kt2": random.randint(0, 100),
+                "kt3": random.randint(0, 100),
+                "kt4": random.randint(0, 100),
+                "kt5": random.randint(0, 100)
+            },
+            "student_id": zach_number
+        })
+    return json.dumps(rating_list, ensure_ascii=False)
+
+# === Генерация записей в rating ===
+for group_name, subjects in maslov_groups_subjects.items():
+    group_id = groups_from_db[group_name]
+    students = students_by_group[group_id]
+
+    # Определяем, какие предметы будут экзаменами
+    exam_subjects = random.sample(subjects, min(3, len(subjects)))
+    for subj in subjects:
+        subject_name = subj["lesson_name"]
+        subject_type = random.choice(["экзамен", "зачёт"])
+        semestr = "1 семестр 2025/2026"
+        teacher_id = 1  # если преподавателей нет
+        rating_json = generate_rating_json(students)
+        exam_or_zachet = "экзамен" if subj in exam_subjects else "зачёт"
+
+        cursor.execute(
+            """
+            INSERT INTO rating (subject_name, subject_type, semestr, teacher_id, group_id, rating_json)
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """,
+            (subject_name, subject_type, semestr, teacher_id, group_id, rating_json)
+        )
+
+conn.commit()
+print("✅ Таблица rating успешно заполнена.")
+from datetime import datetime, timedelta
+# ======================
+# 📘 Расписание
+# ======================
+schedule = {
+    "Числитель": {
+        "ПОНЕДЕЛЬНИК": [
+            {"name": "Операционные системы", "group": "УБ-42"},
+            {"name": "Базы данных", "group": "УБ-33"}
+        ],
+        "СРЕДА": [
+            {"name": "Технологии и методы программирования", "group": "УБ-42"},
+            {"name": "Мобильная разработка", "group": "УБ-31"},
+            {"name": "Искусственный интеллект", "group": "УБ-43"}
+        ],
+        "ПЯТНИЦА": [
+            {"name": "Мобильная разработка", "group": "УБ-42"},
+            {"name": "Искусственный интеллект", "group": "УБ-31"}
+        ],
+        "ЧЕТВЕРГ": [
+            {"name": "Проектный практикум", "group": "УБ-32"},
+            {"name": "Веб-программирование", "group": "УБ-33"},
+            {"name": "Базы данных", "group": "УБ-31"}
+        ]
+    },
+    "Знаменатель": {
+        "СРЕДА": [
+            {"name": "Технологии и методы программирования", "group": "УБ-42"},
+            {"name": "Базы данных", "group": "УБ-33"},
+            {"name": "Веб-программирование", "group": "УБ-31"}
+        ],
+        "ПЯТНИЦА": [
+            {"name": "Веб-программирование", "group": "УБ-43"},
+            {"name": "Технологии и методы программирования", "group": "УБ-32"}
+        ],
+        "ЧЕТВЕРГ": [
+            {"name": "Мобильная разработка", "group": "УБ-31"},
+            {"name": "Операционные системы", "group": "УБ-33"}
+        ],
+        "ПОНЕДЕЛЬНИК": [
+            {"name": "Веб-программирование", "group": "УБ-32"},
+            {"name": "Базы данных", "group": "УБ-33"}
+        ]
+    }
+}
+
+# ======================
+# 📅 Генерация дат
+# ======================
+def get_dates_for_semester(start, end, weekday, is_chislitel):
+    current = start
+    week_counter = 0
+    dates = []
+    while current <= end:
+        if current.weekday() == weekday:
+            if (week_counter % 2 == 0 and is_chislitel) or (week_counter % 2 == 1 and not is_chislitel):
+                dates.append(current.strftime("%Y-%m-%d"))
+            week_counter += 1
+        current += timedelta(days=1)
+    return dates
+
+# Словарь для перевода названия дня недели в индекс weekday()
+weekday_map = {
+    "ПОНЕДЕЛЬНИК": 0,
+    "ВТОРНИК": 1,
+    "СРЕДА": 2,
+    "ЧЕТВЕРГ": 3,
+    "ПЯТНИЦА": 4
+}
+
+# ======================
+# 📋 Получаем студентов
+# ======================
+cursor.execute("SELECT id, zach_number, group_id FROM student_info;")
+students_by_group = {}
+for sid, zach, gid in cursor.fetchall():
+    students_by_group.setdefault(gid, []).append((sid, zach))
+
+cursor.execute("SELECT id, group_name FROM groups;")
+groups_from_db = {name: gid for gid, name in cursor.fetchall()}
+
+# ======================
+# 🧾 Генерация JSON
+# ======================
+def generate_attendance_json(students, dates):
+    data = []
+    for _, zach in students:
+        attendance = {d: random.choice([True, False]) for d in dates}
+        data.append({"student_id": zach, "attendance": attendance})
+    return json.dumps(data, ensure_ascii=False)
+
+# ======================
+# 🧠 Заполнение attendance
+# ======================
+start_sem = datetime(2025, 9, 1)
+end_sem = datetime(2025, 12, 29)
+
+def get_lesson_type(group_name, subject_name):
+    for subj in maslov_groups_subjects.get(group_name, []):
+        if subj["lesson_name"] == subject_name:
+            return subj["lesson_type"]
+    return None
+
+for parity, days in schedule.items():
+    is_chislitel = parity == "Числитель"
+    for day, lessons in days.items():
+        weekday_num = weekday_map[day]
+        lesson_dates = get_dates_for_semester(start_sem, end_sem, weekday_num, is_chislitel)
+
+        for lesson in lessons:
+            subject_name = lesson["name"]
+            group_name = lesson["group"]
+            group_id = groups_from_db.get(group_name)
+            if not group_id:
+                continue
+
+            students = students_by_group.get(group_id, [])
+            if not students:
+                continue
+
+            subject_type = get_lesson_type(group_name, subject_name)
+            semestr = "1 семестр 2025/2026"
+            teacher_id = 1
+            attendance_json = generate_attendance_json(students, lesson_dates)
+
+            cursor.execute(
+                """
+                INSERT INTO attendance (subject_name, subject_type, semestr, teacher_id, group_id, attendance_json)
+                VALUES (%s, %s, %s, %s, %s, %s);
+                """,
+                (subject_name, subject_type, semestr, teacher_id, group_id, attendance_json)
+            )
+
+conn.commit()
+cursor.close()
+conn.close()
+print("✅ Таблица attendance успешно заполнена.")
