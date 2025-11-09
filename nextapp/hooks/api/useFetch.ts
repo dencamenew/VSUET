@@ -12,7 +12,7 @@ export function useFetch() {
 
     return useCallback(async (url: string, init?: RequestInit) => {
         const headers = new Headers(init?.headers || {});
-
+        console.log(`${api}${url}`)
         if (token)
             headers.set("Authorization", `Bearer ${token}`);
 

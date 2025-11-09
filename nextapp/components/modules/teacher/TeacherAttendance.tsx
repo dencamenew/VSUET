@@ -3,23 +3,11 @@
 import { useState, useEffect, useMemo } from "react"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Calendar, User, GraduationCap, Users, Check, X, Loader2 } from "lucide-react"
+import { Check } from "lucide-react"
 import { translations, type Language } from "@/lib/translations"
-import { useSession } from '@/hooks/useSession'
-import { GroupSubjects } from "@/app/page"
-import BottomNavigation from "@/components/navigation/Navigation"
 import { useMe } from "@/hooks/api/useMe"
 import { useLanguage } from "@/hooks/useLanguage"
-import { nanoid } from "nanoid"
-import { useAttendanceTeacher } from "@/hooks/api/useAttendance"
-
-interface TeacherAttendancePageProps {
-  teacherName: string
-  groupsSubjects: GroupSubjects
-  onNavigate: (page: "schedule" | "rating" | "attendance") => void
-  onShowProfile: () => void
-  language: Language
-}
+import { IAttendaceTable, useAttendanceTeacher, useToggleAttendanceTeacher } from "@/hooks/api/useAttendance"
 
 interface AttendanceRecord {
   id: number
@@ -45,155 +33,23 @@ interface StudentAttendance {
   records: Map<string, AttendanceRecord>
 }
 
-export default function TeacherAttendance() {
+export default function TeacherAttendance(
+  {
+    userName
+  }: {
+    userName: string
+  }
+) {
   const { lang } = useLanguage();
-
-
-  const [attendanceData, setAttendanceData] = useState<StudentAttendance[]>([])
-  const [dates, setDates] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>("")
-  const { getAuthHeaders } = useSession()
-
   const t = translations[lang] || translations.en
+  const toggleMutation = useToggleAttendanceTeacher();
 
-  // const URL = "http://localhost:8081/api"
-
-  // // Получаем список групп
-  // const groups = Object.keys(groupsSubjects || {}).map(groupName => ({
-  //   id: groupName,
-  //   name: groupName
-  // }))
-
-  // // Получаем список предметов для выбранной группы
-  // const subjects = selectedGroup && groupsSubjects[selectedGroup]
-  //   ? groupsSubjects[selectedGroup].map(subject => ({
-  //     id: subject,
-  //     name: subject
-  //   }))
-  //   : []
-
-  // // Загрузка данных посещаемости
-  // useEffect(() => {
-  //   if (selectedGroup && selectedSubject) {
-  //     fetchAttendanceData()
-  //   } else {
-  //     setAttendanceData([])
-  //     setDates([])
-  //     setError("")
-  //   }
-  // }, [selectedGroup, selectedSubject])
-
-  // const fetchAttendanceData = async () => {
-  //   setLoading(true)
-  //   setError("")
-  //   try {
-  //     const response = await fetch(
-  //       `${URL}/attendance/vedomost?teacher=${encodeURIComponent(teacherName)}&subject=${encodeURIComponent(selectedSubject)}&groupName=${encodeURIComponent(selectedGroup)}`,
-  //       {
-  //         headers: getAuthHeaders(),
-  //       }
-  //     )
-
-  //     if (!response.ok) {
-  //       throw new Error(`Ошибка HTTP: ${response.status}`)
-  //     }
-
-  //     const apiResponse: ApiResponse = await response.json()
-
-  //     if (apiResponse.status === "SUCCESS") {
-  //       processAttendanceData(apiResponse.data)
-  //     } else {
-  //       setError(apiResponse.message || "Не удалось получить данные")
-  //       setAttendanceData([])
-  //       setDates([])
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching attendance data:", error)
-  //     setError("Ошибка при загрузке данных")
-  //     setAttendanceData([])
-  //     setDates([])
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
-
-  // const processAttendanceData = (records: AttendanceRecord[]) => {
-  //   // Группируем записи по студентам
-  //   const studentsMap = new Map<string, StudentAttendance>()
-
-  //   records.forEach(record => {
-  //     if (!studentsMap.has(record.studentId)) {
-  //       studentsMap.set(record.studentId, {
-  //         studentId: record.studentId,
-  //         studentName: record.studentId,
-  //         records: new Map()
-  //       })
-  //     }
-  //     // Сохраняем запись по дате
-  //     studentsMap.get(record.studentId)!.records.set(record.date, record)
-  //   })
-
-  //   // Получаем уникальные даты и сортируем их
-  //   const uniqueDates = Array.from(new Set(records.map(r => r.date)))
-  //     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-
-  //   setDates(uniqueDates)
-
-  //   // Преобразуем Map в массив и сортируем по ID студента
-  //   const studentsArray = Array.from(studentsMap.values()).sort((a, b) =>
-  //     a.studentId.localeCompare(b.studentId)
-  //   )
-
-  //   setAttendanceData(studentsArray)
-  // }
-
-  // const updateAttendance = async (recordId: number, turnout: boolean) => {
-  //   try {
-  //     const response = await fetch(`${URL}/attendance/update-attendance`, {
-  //       method: 'PUT',
-  //       headers: getAuthHeaders(),
-  //       body: JSON.stringify({
-  //         id: recordId,
-  //         turnout: turnout
-  //       }),
-  //     })
-
-  //     if (!response.ok) {
-  //       throw new Error('Failed to update attendance')
-  //     }
-
-  //     const result = await response.json()
-
-  //     if (result.status === "SUCCESS") {
-  //       // Обновляем локальное состояние
-  //       setAttendanceData(prev => prev.map(student => ({
-  //         ...student,
-  //         records: new Map(Array.from(student.records.entries()).map(([date, record]) => [
-  //           date,
-  //           record.id === recordId ? { ...record, turnout } : record
-  //         ]))
-  //       })))
-  //     } else {
-  //       throw new Error(result.message || 'Ошибка при обновлении')
-  //     }
-  //   } catch (error) {
-  //     console.error('Error updating attendance:', error)
-  //     alert('Ошибка при обновлении посещаемости')
-  //   }
-  // }
-
-  // // Автоматически выбираем предмет, если он всего один
-  // useEffect(() => {
-  //   if (subjects.length === 1) {
-  //     setSelectedSubject(subjects[0].id)
-  //   } else if (subjects.length === 0) {
-  //     setSelectedSubject("")
-  //   }
-  // }, [subjects])
+  const [table, setTable] = useState<IAttendaceTable | undefined>(undefined);
   const [selectedGroup, setSelectedGroup] = useState<string | undefined>(undefined);
-  const [selectedSubjectName, setSelectedSubjectName] = useState<string | undefined>(undefined);
-  const [selectedSubjectType, setSelectedSubjectType] = useState<string | undefined>(undefined);
+  const [selectedSbj, setSelectedSbj] = useState<{
+    lesson_name: string;
+    lesson_type: string;
+  } | undefined>(undefined);
 
   const user = useMe();
 
@@ -206,23 +62,63 @@ export default function TeacherAttendance() {
     return user.groups_sbj[selectedGroup] || [];
   }, [groups, user, selectedGroup]);
 
-  const dataA = useAttendanceTeacher(
+  const fetchAttendance = useAttendanceTeacher(
     selectedGroup,
-    selectedSubjectType,
-    selectedSubjectName,
+    selectedSbj?.lesson_type,
+    selectedSbj?.lesson_name,
   );
 
+  const { dates, students } = useMemo(() => {
+    if (!table || table.length === 0) {
+      return { dates: [], students: [] };
+    }
+
+    const firstStudent = table[0];
+    const allDates = Object.keys(firstStudent.attendance).sort();
+
+    const studentsData = table.map(item => ({
+      studentId: item.student_id,
+      attendance: item.attendance
+    }));
+
+    return {
+      dates: allDates,
+      students: studentsData
+    };
+  }, [table]);
+
+  useEffect(() => {
+    if (fetchAttendance && fetchAttendance.attendance_json)
+      setTable(fetchAttendance.attendance_json);
+    else
+      setTable(undefined);
+  }, [fetchAttendance]);
+
+  const toggleAttendance = (studentId: string, date: string, currentValue: boolean) => {
+    if (!selectedGroup || !selectedSbj) return;
+
+    toggleMutation.mutate({
+      group_name: selectedGroup,
+      subject_name: selectedSbj.lesson_name,
+      subject_type: selectedSbj.lesson_type,
+      date: date,
+      zach: studentId,
+      status: !currentValue,
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-full bg-background text-foreground flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-12">
+      <div className="flex-shrink-0 flex items-center justify-between pt-12 py-4">
         <div>
           <h1 className="text-2xl font-bold">{t.attendance}</h1>
+          <p className="text-muted-foreground md:hidden">{userName}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="px-4 mb-6 space-y-4">
+      <div className="flex-shrink-0 mb-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">{t.group}</label>
@@ -230,11 +126,6 @@ export default function TeacherAttendance() {
               value={selectedGroup}
               onChange={(e) => {
                 setSelectedGroup(e.target.value);
-                setSelectedSubjectName(undefined);
-                setSelectedSubjectType(undefined);
-                setAttendanceData([])
-                setDates([])
-                setError("")
               }}
               className="bg-background border-border text-foreground"
             >
@@ -250,16 +141,11 @@ export default function TeacherAttendance() {
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">{t.subject}</label>
             <Select
-              value={selectedSubjectName}
+              value={JSON.stringify(selectedSbj)}
               onChange={(e) => {
                 console.log(e.target.value);
                 const sbj = JSON.parse(e.target.value);
-                console.log(sbj)
-                setSelectedSubjectName(sbj.lesson_name);
-                setSelectedSubjectType(sbj.lesson_type);
-                setAttendanceData([])
-                setDates([])
-                setError("")
+                setSelectedSbj(sbj);
               }}
               disabled={!selectedGroup}
               className="bg-background border-border text-foreground disabled:opacity-50"
@@ -272,100 +158,81 @@ export default function TeacherAttendance() {
               ))}
             </Select>
           </div>
-          {/* <div>
-            <label className="block text-sm font-medium text-foreground mb-2">{t.subject}</label>
-            <Select
-              value={selectedSubjectType}
-              onChange={(e) => {
-                setSelectedSubjectType(e.target.value)
-                setAttendanceData([])
-                setDates([])
-                setError("")
-              }}
-              disabled={!selectedGroup}
-              className="bg-background border-border text-foreground disabled:opacity-50"
-            >
-              <option value="">{t.selectSubject}</option>
-              {subjects.map((item, index) => (
-                <option key={index} value={item.lesson_name}>
-                  {item.lesson_name}
-                </option>
-              ))}
-            </Select>
-          </div> */}
         </div>
-
-        {error && (
-          <div className="p-3 bg-destructive/10 text-destructive rounded-md">
-            {error}
-          </div>
-        )}
       </div>
 
       {/* Таблица посещаемости */}
-      {loading && (
-        <div className="px-4 py-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Загрузка данных...</p>
-        </div>
-      )}
-
-      {!loading && attendanceData.length > 0 && (
-        <div className="px-4 pb-24 overflow-x-auto">
-          <div className="bg-card rounded-lg border border-border">
-            <div className="p-4 border-b border-border">
+      {table && table.length > 0 && (
+        <div className="h-full pb-4 overflow-hidden">
+          <div className="bg-card rounded-lg border border-border h-full flex flex-col overflow-hidden">
+            {/* Заголовок таблицы - фиксированный */}
+            <div className="flex-shrink-0 p-4 border-b border-border">
               <h3 className="font-semibold">Группа: {selectedGroup}</h3>
-              <p className="text-sm text-muted-foreground">Предмет: {selectedSubject}</p>
+              <p className="text-sm text-muted-foreground">
+                Предмет: {selectedSbj?.lesson_name} ({selectedSbj?.lesson_type})
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Контейнер с прокруткой */}
+            <div className="flex-1 overflow-auto">
               <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="px-2 py-2 text-left font-medium text-foreground sticky left-0 bg-card z-10 min-w-[80px] border-r border-border">
-                      Студент
+                <thead className="sticky top-0 bg-card z-20">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-medium text-foreground sticky left-0 bg-card z-30 min-w-[80px] relative">
+                      <div className="px-2 py-2 absolute inset-0 border-border border-r border-b flex items-center">
+                        Студент
+                      </div>
                     </th>
                     {dates.map(date => (
-                      <th key={date} className="px-1 py-2 text-center font-medium text-foreground min-w-[40px] border-r border-border last:border-r-0">
-                        {new Date(date).toLocaleDateString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit'
-                        })}
+                      <th
+                        key={date}
+                        className="px-1 py-2 text-center font-medium text-foreground min-w-[60px] relative h-10 *:border-r last:*:border-r-0"
+                      >
+                        <div className="px-2 py-2 absolute inset-0 border-border border-r border-b flex items-center w-full justify-center">
+                          {new Date(date).toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit'
+                          })}
+                        </div>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {attendanceData.map((student) => (
-                    <tr key={student.studentId} className="border-b border-border hover:bg-muted/50">
-                      <td className="px-2 py-2 font-medium sticky left-0 bg-card z-10 border-r border-border">
-                        {student.studentId}
+                  {students.map((student) => (
+                    <tr
+                      key={student.studentId}
+                      className="border-b border-border hover:bg-muted/50 last:border-b-0"
+                    >
+                      <td className="relative font-medium sticky left-0 bg-card z-10">
+                        <div className="px-2 py-2 absolute inset-0 border-border border-r flex items-center">
+                          {student.studentId}
+                        </div>
                       </td>
                       {dates.map(date => {
-                        const record = student.records.get(date)
+                        const isPresent = student.attendance[date as keyof typeof student.attendance];
                         return (
-                          <td key={date} className="px-1 py-2 text-center border-r border-border last:border-r-0">
-                            {record ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={`h-6 w-6 rounded ${record.turnout
-                                  ? 'bg-green-500 hover:bg-green-600 text-white'
-                                  : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
-                                  }`}
-                                onClick={() => updateAttendance(record.id, !record.turnout)}
-                              >
-                                {record.turnout ? (
-                                  <Check className="h-3 w-3" />
-                                ) : (
-                                  <span className="text-xs">-</span>
-                                )}
-                              </Button>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
+                          <td
+                            key={date}
+                            className="px-1 py-2 text-center border-r border-border last:border-r-0"
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-6 w-6 rounded ${isPresent
+                                ? 'bg-green-500 hover:bg-green-600 text-white'
+                                : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
+                                }`}
+                              onClick={() => toggleAttendance(student.studentId.toString(), date, Boolean(isPresent))}
+                            >
+                              {isPresent ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <span className="text-xs">-</span>
+                              )}
+                            </Button>
                           </td>
-                        )
+                        );
                       })}
                     </tr>
                   ))}
@@ -375,19 +242,12 @@ export default function TeacherAttendance() {
           </div>
         </div>
       )}
-
-      {/* {!loading && selectedGroup && selectedSubject && attendanceData.length === 0 && !error && (
-        <div className="px-4 py-8 text-center">
-          <p className="text-muted-foreground">Нет данных о посещаемости для выбранной группы и предмета</p>
-          <Button
-            onClick={fetchAttendanceData}
-            variant="outline"
-            className="mt-4"
-          >
-            Попробовать снова
-          </Button>
+      {
+        !table &&
+        <div className="size-full flex justify-center items-center text-xl font-semibold text-foreground/40">
+          {t.choice}
         </div>
-      )} */}
+      }
     </div>
-  )
+  );
 }

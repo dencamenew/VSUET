@@ -58,6 +58,7 @@ export const translations = {
     present: "Присутствует",
     absent: "Отсутствует",
     late: "Опоздал",
+    choice: "Выберите предмет",
 
     // Profile
     accountInfo: "Информация об аккаунте",
@@ -138,6 +139,7 @@ export const translations = {
     present: "Present",
     absent: "Absent",
     late: "Late",
+    choice: "Select subject",
 
     // Profile
     accountInfo: "Account Information",
