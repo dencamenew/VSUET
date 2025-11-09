@@ -61,7 +61,7 @@ async def init_redis():
     
     # запуск фоновой задачи, если она ещё не запущена
     if _token_update_task is None:
-        _token_update_task = asyncio.create_task(qr_service.update_tokens_loop(interval=1000)) #вот тут ставится интервал
+        _token_update_task = asyncio.create_task(qr_service.update_tokens_loop(interval=10)) #вот тут ставится интервал
     
     return redis_client
 
