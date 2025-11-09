@@ -54,11 +54,22 @@ async def close_qr_session(
 ):
     qr_service = QRService(redis, db)
     if qr_service is None:
-        return {"error": "Сервис QR не инициализирован"}
-
-    result = await qr_service.close_qr_session(session_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Сервис QR не инициализирован"
+        )
+    
+    result = await qr_service.close_qr_session(max_id, session_id)
 
     if "error" in result:
+        # Проверяем, является ли ошибка повторной попыткой закрытия
+        if "уже закрыта" in result["error"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, # Плохой запрос / Невозможное действие
+                detail=result["error"]
+            )
+        
+        # Если сессия не найдена
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=result["error"]

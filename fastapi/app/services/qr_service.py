@@ -6,6 +6,7 @@ from uuid import uuid4
 from redis.asyncio import Redis
 from fastapi import status
 from sqlalchemy.orm import Session
+from app.services.attendance_service import AttendanceService
 from app.repositories.user_repository import UserRepository
 
 
@@ -15,6 +16,7 @@ class QRService:
         self._token_update_task: asyncio.Task | None = None
         self.db = db
         self.user_repository = UserRepository(db)
+        self.attendance_service = AttendanceService(db)
 
 
     async def generate_qr_session(
@@ -55,15 +57,51 @@ class QRService:
         }
 
 
-    async def close_qr_session(self, session_id: str) -> Dict[str, Any]:
+    async def close_qr_session(self, max_id: str, session_id: str) -> Dict[str, Any]:
         """Закрытие сессии: выставление active_status = 0"""
         session_key = f"session:{session_id}"
 
         exists = await self.redis.exists(session_key)
         if not exists:
             return {"error": "Сессия не найдена"}
+        
+        
+        active_status = await self.redis.hget(session_key, "active_status")
+        if active_status and int(active_status) == 0:
+            return {"error": f"Сессия {session_id} уже закрыта"}
+        
 
         await self.redis.hset(session_key, "active_status", 0)
+
+        #Добавляем посещаемость в psql
+        data = await self.redis.hgetall(session_key)
+
+        group_name = data.get("group_name")
+        subject_name = data.get("subject_name")
+        subject_type = data.get("subject_type")
+        date_str = data.get("date")
+
+        zach_list_json = data.get("students", "[]")
+        zach_list = json.loads(zach_list_json)
+
+        for zach in zach_list:
+            result = await asyncio.to_thread(
+                self.attendance_service.mark_to_one,
+                max_id,
+                group_name,
+                subject_name,
+                subject_type,
+                date_str,
+                zach,
+                True
+            )
+            
+            # Проверяем результат на ошибку, возвращенную репозиторием
+            if result.get("status") == "error":
+                print(f"!!! ОШИБКА записи посещаемости для {zach}: {result.get('detail')}")
+                # Если здесь возникает ошибка, цикл продолжит работу для других студентов,
+                # но ошибка будет залогирована.
+                
         return {"message": f"Сессия {session_id} успешно закрыта", "session_id": session_id}
 
 
