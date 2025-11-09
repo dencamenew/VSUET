@@ -49,17 +49,5 @@ services:
         condition: service_healthy
     volumes:
       - ./fastapi:/app
-
-  nextapp:
-    container_name: nextapp
-    build:
-      context: ./nextapp 
-      dockerfile: Dockerfile 
-    ports:
-      - "3000:3000" 
-    volumes:
-      - ./nextapp:/app
-    depends_on:
-      - fastapi
 volumes:
   postgres_data:
