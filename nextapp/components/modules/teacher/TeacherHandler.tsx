@@ -5,10 +5,11 @@ import Navigation from "@/components/navigation/Navigation"
 import Schedule from "../Schedule"
 import TeacherRating from "./TeacherRating"
 import TeacherAttendance from "./TeacherAttendance"
+import { useNavigation } from "@/hooks/useNavigation"
 
 export function TeacherHandler() {
     const { lang, setLang } = useLanguage();
-    const [currentPage, setCurrentPage] = useState<"schedule" | "rating" | "attendance">("schedule");
+    const { currentModule, setCurrentModule } = useNavigation();
 
     const user = useMe();
     if (!user) return null;
@@ -18,28 +19,30 @@ export function TeacherHandler() {
     return (
         <div className="h-screen w-screen bg-background flex overflow-hidden md:flex-row flex-col-reverse">
             <Navigation
-                onNavigate={setCurrentPage}
+                onNavigate={setCurrentModule}
                 language={lang}
                 setLang={setLang}
-                currentPage={currentPage}
+                currentPage={currentModule}
             />
-            <div className="flex-1 flex flex-col overflow-y-auto px-6">
-                {currentPage === "schedule" && (
+            <div className="flex-1 flex flex-col px-6 h-full overflow-hidden">
+                {currentModule === "schedule" && (
                     <Schedule
                         userName={teacherName}
                     // onNavigate={setCurrentPage}
                     />
                 )}
-                {currentPage === "rating" && (
+                {currentModule === "rating" && (
                     <TeacherRating
                         teacherName={teacherName}
-                        onNavigate={setCurrentPage}
+                        onNavigate={setCurrentModule}
                         onShowProfile={() => setShowProfile(true)}
                         language={lang}
                     />
                 )}
-                {currentPage === "attendance" && (
-                    <TeacherAttendance />
+                {currentModule === "attendance" && (
+                    <TeacherAttendance
+                        userName={teacherName}
+                    />
                 )}
             </div>
         </div>

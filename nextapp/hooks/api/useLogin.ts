@@ -34,13 +34,5 @@ export function useLogin(
         },
     });
 
-    useLayoutEffect(() => {
-        const localToken = localStorage.getItem("token");
-
-        if (localToken) {
-            setToken(localToken);
-        } else {
-            handleAuth.mutate();
-        }
-    }, []);
+    return handleAuth;
 };

@@ -21,7 +21,7 @@ export function StudentHandler() {
                 setLang={setLang}
                 currentPage={currentPage}
             />
-            <div className="flex-1 flex flex-col overflow-y-auto px-6">
+            <div className="flex-1 flex flex-col px-6">
                 {currentPage === "schedule" && (
                     <Schedule
                         userName={studentName}
