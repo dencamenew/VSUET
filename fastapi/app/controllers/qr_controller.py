@@ -99,6 +99,21 @@ async def scan_qr(
     }
 
 
+@qr_router.get("/session-students", summary="Список студентов отметившихся с помощью QR")
+async def get_session_students(
+    session_id: str,
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis)
+):
+    qr_service = QRService(redis, db)
+
+    result = await qr_service.get_session_students(session_id)
+
+    if "error" in result:
+        raise HTTPException(status_code=result.get("status_code", 404), detail=result["error"])
+
+    return result
+
 
 
 

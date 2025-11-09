@@ -101,6 +101,24 @@ class QRService:
             "token": token,
             "status_code": status.HTTP_200_OK
         }
+    
+
+    async def get_session_students(self, session_id: str) -> Dict[str, Any]:
+        """Возвращает список студентов для сессии по session_id"""
+        session_key = f"session:{session_id}"
+
+        exists = await self.redis.exists(session_key)
+        if not exists:
+            return {"error": "Сессия не найдена", "status_code": 404}
+
+        students_json = await self.redis.hget(session_key, "students")
+        students = json.loads(students_json) if students_json else []
+
+        return {
+            "session_id": session_id,
+            "students": students,
+            "status_code": 200
+        }
 
 
     
