@@ -31,7 +31,8 @@ class AuthService:
         
         # 2. Генерация JWT токена
         access_token = create_access_token(
-            max_id=user.max_id
+            max_id=user.max_id,
+            role=user.role
         )
 
         # 3. Формирование конечного ответа
