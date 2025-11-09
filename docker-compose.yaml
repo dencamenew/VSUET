@@ -49,7 +49,7 @@ services:
         condition: service_healthy
     volumes:
       - ./fastapi:/app
-  
+
   nextapp:
     container_name: nextapp
     build:
@@ -61,7 +61,5 @@ services:
       - ./nextapp:/app
     depends_on:
       - fastapi
-
-      
 volumes:
   postgres_data:
