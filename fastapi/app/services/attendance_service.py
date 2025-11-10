@@ -70,14 +70,15 @@ class AttendanceService:
 
 
 
-    def mark_to_many(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, date: str, zach_list: List[str]):
+    def mark_to_many(self, teacher_first_name: str, teacher_last_name: str, group_name: str, subject_name: str, subject_type: str, date: str, zach_list: List[str]):
         result = self.attendance_repository.mark_attendance_to_many(
             teacher_first_name=teacher_first_name,
             teacher_last_name=teacher_last_name,
             subject_name=subject_name,
             date_str=date,
             zach_list=zach_list,
-            group_name=group_name
+            group_name=group_name,
+            subject_type=subject_type
         )
 
         if "error" in result:

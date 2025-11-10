@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from app.config.database import get_db, get_redis
 from app.services.qr_service import QRService
-from app.utils.jwt import get_current_user_id
+from app.utils.jwt import get_current_user_id, require_role
 
 
 
@@ -26,7 +26,7 @@ async def generate_qr_session(
     date: str,
     lesson_start_time: str,
     db: Session = Depends(get_db),
-    max_id: str = Depends(get_current_user_id),
+    user=Depends(require_role("teacher")),
     redis: Redis = Depends(get_redis)
 ):
     qr_service = QRService(redis, db)
@@ -49,16 +49,28 @@ async def generate_qr_session(
 async def close_qr_session(
     session_id: str,
     db: Session = Depends(get_db),
-    max_id: str = Depends(get_current_user_id),
+    user=Depends(require_role("teacher")),
     redis: Redis = Depends(get_redis)
-):
+):  
+    max_id = user["max_id"]
     qr_service = QRService(redis, db)
     if qr_service is None:
-        return {"error": "Сервис QR не инициализирован"}
-
-    result = await qr_service.close_qr_session(session_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Сервис QR не инициализирован"
+        )
+    
+    result = await qr_service.close_qr_session(max_id, session_id)
 
     if "error" in result:
+        # Проверяем, является ли ошибка повторной попыткой закрытия
+        if "уже закрыта" in result["error"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, # Плохой запрос / Невозможное действие
+                detail=result["error"]
+            )
+        
+        # Если сессия не найдена
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=result["error"]
@@ -103,7 +115,8 @@ async def scan_qr(
 async def get_session_students(
     session_id: str,
     db: Session = Depends(get_db),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
+    user=Depends(require_role("teacher"))
 ):
     qr_service = QRService(redis, db)
 

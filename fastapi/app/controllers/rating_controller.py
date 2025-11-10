@@ -4,7 +4,7 @@ from typing import Dict, Any
 from app.config.database import get_db
 from app.services.rating_service import RatingService
 from app.models.pydantic_models.pydantic_models import RatingUpdateRequest
-from app.utils.jwt import get_current_user_id
+from app.utils.jwt import get_current_user_id, require_role
 
 
 class RatingController:
@@ -71,8 +71,9 @@ class RatingController:
         group_name: str,
         subject_name: str,
         db: Session = Depends(get_db),
-        current_user_id: str = Depends(get_current_user_id)
+        user=Depends(require_role("teacher"))
     ) -> Dict[str, Any]:
+        current_user_id = user["max_id"]
         """Получить ведомость рейтинга группы по предмету"""
         try:
             rating_service = RatingService(db)
@@ -96,8 +97,9 @@ class RatingController:
         self,
         request: RatingUpdateRequest,
         db: Session = Depends(get_db),
-        current_user_id: str = Depends(get_current_user_id)
+        user=Depends(require_role("teacher"))
     ) -> Dict[str, Any]:
+        current_user_id = user["max_id"]
         """Обновить оценку студента (учитывая практику и курсовую работу)"""
         try:
             rating_service = RatingService(db)
