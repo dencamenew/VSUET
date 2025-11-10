@@ -63,6 +63,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
+  mongodb:
+    image: mongo:7.0
+    container_name: mongo-gridfs
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  file_loader:
+    build: .
+    depends_on:
+      - mongodb
+    volumes:
+      - ./library_files:/app/library_files
+    command: python load_files.py
 
 volumes:
   postgres_data:
+  mongo_data:
