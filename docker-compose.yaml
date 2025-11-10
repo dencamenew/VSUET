@@ -51,7 +51,6 @@ services:
           condition: service_healthy
       volumes:
         - ./fastapi:/app
-
   redis:
     container_name: redis
     image: redis:7.0
