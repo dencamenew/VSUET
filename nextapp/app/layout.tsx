@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Client } from "./client"
+import Script from "next/script"
 
 export const metadata: Metadata = {
   title: "Student Schedule App",
@@ -21,6 +22,10 @@ export default function RootLayout({
         <Client>
           {children}
         </Client>
+        <Script
+          src="https://st.max.ru/js/max-web-app.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )
