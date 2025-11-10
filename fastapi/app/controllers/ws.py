@@ -16,20 +16,6 @@ async def session_ws(websocket: WebSocket, session_id: str, redis: Redis = Depen
     channel = None
 
     try:
-        # Проверка jwt в ws реализуется иначе чем в http протоколе:
-        token = websocket.headers.get("Authorization")
-        if token is None:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-
-        
-        try:
-            user = require_role("teacher")(token.split(" ")[1])
-        except Exception as e:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-        
-        
         # Проверка активного Redis клиента
         if redis is None:
             await websocket.send_json({"error": "Redis не инициализирован"})
