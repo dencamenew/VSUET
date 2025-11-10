@@ -61,6 +61,8 @@ class AttendanceRepository(BaseRepository[Attendance]):
 
 
 
+   
+
     """меняет статус по зачетке для одного студента."""
     def mark_attendance_to_one(
         self,
@@ -84,6 +86,9 @@ class AttendanceRepository(BaseRepository[Attendance]):
             .first()
         )
 
+        # !!! КРИТИЧЕСКАЯ ПРОВЕРКА: Если ведомость не найдена, возвращаем ошибку.
+        if attendance_record is None:
+            return {"error": f"Ведомость не найдена для: Группа ID={group_id}, Преподаватель ID={teacher_info_id}, Предмет='{subject_name}' ({subject_type})"}
         
         # 4. Загружаем существующую посещаемость
         attendance_data = attendance_record.attendance_json or []
@@ -113,6 +118,7 @@ class AttendanceRepository(BaseRepository[Attendance]):
         teacher_last_name: str,
         group_name: str,
         subject_name: str,
+        subject_type: str,
         date_str: str,
         zach_list: List[str]
     ) -> dict:
@@ -143,7 +149,8 @@ class AttendanceRepository(BaseRepository[Attendance]):
             .filter(
                 Attendance.teacher_id == teacher_info.id,
                 Attendance.group_id == group.id,
-                Attendance.subject_name == subject_name
+                Attendance.subject_name == subject_name,
+                Attendance.subject_type == subject_type 
             )
             .first()
         )

@@ -1,49 +1,25 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { User, Moon, Sun, LogOut, X, Globe } from "lucide-react"
+import { User, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { translations, type Language } from "@/lib/translations"
-import { useSession } from '@/hooks/useSession'
 import { useRole } from "@/components/security/useRole"
+import { useLanguage } from "@/hooks/useLanguage"
+import { AppSettings } from "../navigation/AppSettings"
 
-interface TeacherProfilePageProps {
-  userName: string
-  onLogout: () => void
-  onClose: () => void
-  onLanguageChange: (language: "ru" | "en") => void
-  language: Language,
-  isDarkMode: boolean,
-  toggleTheme: () => void,
-  toggleLanguage: () => void
-}
-
-interface LogoutResponse {
-  message: string
-  sessionInvalidated?: boolean
-  error?: string
-  code?: string
-}
 
 export default function UserProfile({
   userName,
-  onLogout,
   onClose,
-  onLanguageChange,
-  language,
-  toggleTheme,
-  isDarkMode,
-  toggleLanguage
-}: TeacherProfilePageProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState("");
-  const { sessionId, clearSession } = useSession();
+}: {
+  userName: string,
+  onClose: () => void
+}
+) {
   const { role } = useRole();
-  const t = translations[language] || translations.en
-
-  const URL = process.env.NEXT_PUBLIC_API_URL
-
+  const { lang } = useLanguage();
+  const t = translations[lang] || translations.en
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -51,41 +27,41 @@ export default function UserProfile({
     }
   }
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    setLogoutError("")
+  // const handleLogout = async () => {
+  //   setIsLoggingOut(true)
+  //   setLogoutError("")
 
-    try {
-      const response = await fetch(`${URL}/auth/logout`, {
-        method: "POST",
-        headers: {
-          'X-Session-Id': sessionId || '',
-          "Content-Type": "application/json",
-        },
-      })
+  //   try {
+  //     const response = await fetch(`${URL}/auth/logout`, {
+  //       method: "POST",
+  //       headers: {
+  //         'X-Session-Id': sessionId || '',
+  //         "Content-Type": "application/json",
+  //       },
+  //     })
 
-      const data: LogoutResponse = await response.json()
+  //     const data: LogoutResponse = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`)
-      }
+  //     if (!response.ok) {
+  //       throw new Error(data.error || `HTTP error! status: ${response.status}`)
+  //     }
 
-      if (data.sessionInvalidated || data.message === "Logout successful") {
-        clearSession()
-        onLogout()
-      } else if (data.message === "No active session found") {
-        clearSession()
-        onLogout()
-      } else {
-        setLogoutError(data.message || t.logoutError || "Logout failed")
-      }
-    } catch (err) {
-      setLogoutError(err instanceof Error ? err.message : t.connectionError || "Connection error")
-      console.error("Logout error:", err)
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }
+  //     if (data.sessionInvalidated || data.message === "Logout successful") {
+  //       clearSession()
+  //       onLogout()
+  //     } else if (data.message === "No active session found") {
+  //       clearSession()
+  //       onLogout()
+  //     } else {
+  //       setLogoutError(data.message || t.logoutError || "Logout failed")
+  //     }
+  //   } catch (err) {
+  //     setLogoutError(err instanceof Error ? err.message : t.connectionError || "Connection error")
+  //     console.error("Logout error:", err)
+  //   } finally {
+  //     setIsLoggingOut(false)
+  //   }
+  // }
 
   return (
 
@@ -109,77 +85,14 @@ export default function UserProfile({
       {/* Account Info */}
       <div className="space-y-6 mb-8">
         {/* Settings */}
-        <div className="bg-muted/30 rounded-xl p-4 border border-border">
+        <div className="bg-muted rounded-xl p-4">
           <h3 className="text-foreground font-medium mb-3">{t.settings}</h3>
-          <div className="space-y-4">
-            {/* Theme Settings */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                {isDarkMode ? (
-                  <Moon className="w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <Sun className="w-5 h-5 text-yellow-500" />
-                )}
-                <span className="text-muted-foreground">{isDarkMode ? t.darkTheme : t.lightTheme}</span>
-              </div>
-              <div className="relative">
-                <button
-                  onClick={toggleTheme}
-                  className={`relative inline-flex h-8 w-18 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shadow-soft ${isDarkMode ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm ${isDarkMode ? "translate-x-10" : "translate-x-1"
-                      }`}
-                  />
-                  <Sun
-                    className={`absolute left-2 w-4 transition-colors ${!isDarkMode ? "text-yellow-500" : "text-muted-foreground/70"
-                      }`}
-                  />
-                  <Moon
-                    className={`absolute right-2 w-4 h-4 transition-colors ${isDarkMode ? "text-white" : "text-muted-foreground/70"
-                      }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-muted-foreground" />
-                <span className="text-muted-foreground">{t.language}</span>
-              </div>
-              <div className="relative">
-                <button
-                  onClick={toggleLanguage}
-                  className={`relative inline-flex h-8 w-18 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shadow-soft ${language === "en" ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm ${language === "en" ? "translate-x-10" : "translate-x-1"
-                      }`}
-                  />
-                  <span
-                    className={`absolute left-2 text-xs font-semibold transition-colors ${language === "ru" ? "text-white" : "text-muted-foreground/70"
-                      }`}
-                  >
-                    RU
-                  </span>
-                  <span
-                    className={`absolute right-2 text-xs font-semibold transition-colors ${language === "en" ? "text-white" : "text-muted-foreground/70"
-                      }`}
-                  >
-                    EN
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <AppSettings />
         </div>
       </div>
 
       {/* Logout Button */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         {logoutError && (
           <p className="text-destructive text-sm text-center">{logoutError}</p>
         )}
@@ -201,7 +114,7 @@ export default function UserProfile({
             </>
           )}
         </Button>
-      </div>
+      </div> */}
     </>
   )
 }

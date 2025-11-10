@@ -161,23 +161,6 @@ export default function CalendarSlider({
     }
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > SWIPE_THRESHOLD) {
-      scrollRight()
-    }
-    if (touchStart - touchEnd < -SWIPE_THRESHOLD) {
-      scrollLeft()
-    }
-  }
-
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({
@@ -245,9 +228,6 @@ export default function CalendarSlider({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           className="overflow-x-auto pb-2 scrollbar-hide"
           style={{
             scrollbarWidth: 'none',

@@ -5,7 +5,7 @@ from app.dto.requests import MarkAttendanceToManyRequest, MarkAttendanceToOneReq
 from app.config.database import get_db
 from app.services.attendance_service import AttendanceService
 from app.repositories.teacher_info_repository import TeacherInfoRepository
-from app.utils.jwt import get_current_user_id
+from app.utils.jwt import get_current_user_id, require_role
 
 
 attendance_router = APIRouter(prefix="/api/attendance", tags=["attendance"])
@@ -38,8 +38,9 @@ def get_teacher_attendances(
     subject_type: str,
     subject_name: str,
     db: Session = Depends(get_db),
-    max_id: str = Depends(get_current_user_id)
+    user=Depends(require_role("teacher"))
 ):
+    max_id = user["max_id"]
     service = AttendanceService(db)
     result = service.get_teacher_attendance(max_id, group_name, subject_type, subject_name)
 
@@ -60,9 +61,11 @@ def mark_to_one(
                 zach: str,
                 status: bool,
                 db: Session = Depends(get_db),
-                max_id: str = Depends(get_current_user_id)
+                user=Depends(require_role("teacher"))
                 ):
     service = AttendanceService(db)
+
+    max_id = user["max_id"]
 
     result = service.mark_to_one(
         max_id=max_id,

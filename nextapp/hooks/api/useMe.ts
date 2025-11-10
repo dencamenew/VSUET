@@ -13,8 +13,12 @@ export interface IUser {
     role: TRoles;
     id: number;
 
+    // student
+    group_name?: string;
+    zach_number?: string;
+
     // teacher
-    groups_sbj: {
+    groups_sbj?: {
         [key: string]: {
             lesson_type: ILessonSlot["class_type"],
             lesson_name: string

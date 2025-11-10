@@ -9,6 +9,11 @@ from app.controllers.timetable_controller import timetable_router
 from app.controllers.user_controller import user_router
 from app.controllers.student_info_controller import student_info_router
 from app.controllers.groups_controller import groups_router
+from app.controllers.qr_controller import qr_router
+from app.controllers.ws import ws_router
+
+
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -24,7 +29,7 @@ app = FastAPI(
 # Add CORS middleware with comprehensive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://vsuet-xcmz.vercel.app"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -39,7 +44,8 @@ app.include_router(timetable_router)
 app.include_router(user_router)
 app.include_router(student_info_router)
 app.include_router(groups_router)
-
+app.include_router(qr_router)
+app.include_router(ws_router)
 
 @app.get("/")
 async def root():

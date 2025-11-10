@@ -51,6 +51,7 @@ export const translations = {
     grade: "Оценка",
     saveGrades: "Сохранить оценки",
     gradesSaved: "Оценки сохранены",
+    selectGroupAndSubject: "Выберите группу и предмет",
 
     // Attendance
     saveAttendance: "Сохранить посещаемость",
@@ -58,6 +59,7 @@ export const translations = {
     present: "Присутствует",
     absent: "Отсутствует",
     late: "Опоздал",
+    choice: "Выберите предмет",
 
     // Profile
     accountInfo: "Информация об аккаунте",
@@ -124,13 +126,13 @@ export const translations = {
     selectFaculty: "Select faculty",
     selectGroup: "Select group",
     selectSubject: "Select subject",
-    student: "Student",
     checkpoint: "Checkpoint",
     finalGrade: "Final Grade",
     practicalWork: "Practical Work",
     grade: "Grade",
     saveGrades: "Save Grades",
     gradesSaved: "Grades saved",
+    selectGroupAndSubject: "Select group and subject",
 
     // Attendance
     saveAttendance: "Save Attendance",
@@ -138,6 +140,7 @@ export const translations = {
     present: "Present",
     absent: "Absent",
     late: "Late",
+    choice: "Select subject",
 
     // Profile
     accountInfo: "Account Information",

@@ -6,10 +6,12 @@ import AuthModule from "@/components/modules/Auth"
 import { useRole } from "@/components/security/useRole"
 import { TeacherHandler } from "@/components/modules/teacher/TeacherHandler"
 import { StudentHandler } from "@/components/modules/student/StudentHandler"
+import { useAppSettings } from "@/components/navigation/AppSettings"
 
 // const URL = "https://teacherbackend.cloudpub.ru/api"
 
 function App() {
+  useAppSettings();
   const { isAuth } = useAuth();
   const { role } = useRole();
 
