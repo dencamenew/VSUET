@@ -9,9 +9,9 @@ import { ICheckpoints, useRatingTeacher, useRatingTeacherMark } from "@/hooks/ap
 import { cn } from "@/lib/utils"
 
 export default function TeacherRating({
-  userName,
+  userPlaceholder,
 }: {
-  userName: string
+  userPlaceholder: string
 }) {
   const { lang } = useLanguage();
   const t = translations[lang] || translations.en;
@@ -34,7 +34,7 @@ export default function TeacherRating({
 
   const subjects = useMemo(() => {
     if (!user || !selectedGroup) return [];
-    return user.groups_sbj[selectedGroup] || [];
+    return user.groups_sbj ? user.groups_sbj[selectedGroup] : [];
   }, [groups, user, selectedGroup]);
 
   const ratingData = useRatingTeacher(selectedGroup, selectedSbj?.lesson_name);
@@ -194,7 +194,7 @@ export default function TeacherRating({
       <div className="flex-shrink-0 flex items-center justify-between py-4 pt-12 px-6">
         <div>
           <h1 className="text-2xl font-bold">{t.rating}</h1>
-          <p className="text-muted-foreground md:hidden">{userName}</p>
+          <p className="text-muted-foreground md:hidden">{userPlaceholder}</p>
         </div>
       </div>
 

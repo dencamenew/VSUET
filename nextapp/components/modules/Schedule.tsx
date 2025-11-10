@@ -17,7 +17,6 @@ import {
   QrCode
 } from "lucide-react"
 import { QRCodeSVG } from 'qrcode.react'
-import { useSession } from '@/hooks/useSession'
 import { Language, translations } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
 import BottomNavigation from "@/components/navigation/Navigation"
@@ -629,9 +628,13 @@ interface CommentRequest {
 //   )
 // }
 
-export default function Schedule({
-  userName,
-}: TeacherSchedulePageProps) {
+export default function Schedule(
+  {
+    userPlaceholder,
+  }: {
+    userPlaceholder: string
+  }
+) {
   const { lang } = useLanguage();
   const t = translations[lang] || translations.en;
 
@@ -1076,10 +1079,10 @@ export default function Schedule({
   return (
     <div className="bg-background text-foreground w-full flex-1 h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between py-4 pt-12 px-6">
+      <div className="py-4 pt-12 px-6">
         <div>
           <h1 className="text-2xl font-bold">{t.schedule}</h1>
-          <p className="text-muted-foreground md:hidden">{userName}</p>
+          <p className="text-muted-foreground md:hidden">{userPlaceholder}</p>
         </div>
       </div>
 
@@ -1105,11 +1108,11 @@ export default function Schedule({
             <h2 className="font-semibold">{t[currentDate.weekType]}</h2>
           }
         </div>
-          <ScheduleList
-            currentDate={currentDate.dateKey}
-            currentSchedule={currentSchedule}
-            language={lang}
-          />
+        <ScheduleList
+          currentDate={currentDate.dateKey}
+          currentSchedule={currentSchedule}
+          language={lang}
+        />
       </div>
       {/* Modals */}
       {/* <CommentModal

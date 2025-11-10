@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToken } from "../useAuth";
 import { useFetch } from "./useFetch";
 
-// region Teacher
-
 export interface ICheckpoints {
     kt1: number;
     kt2: number;
@@ -51,6 +49,50 @@ export const TEXT_GRADES = {
     EXCELLENT: "Отлично",
 } as const;
 
+
+interface ISubjectWithCheckpoints extends ICheckpoints {
+    type: string;
+}
+
+interface ISubjectWithGrade {
+    type: string;
+    grade: string;
+}
+
+export type ISubjectRating = ISubjectWithCheckpoints | ISubjectWithGrade;
+
+export interface IRatingStudent {
+    ratings: Record<string, ISubjectRating>;
+    requested_by: string;
+}
+
+export function useRatingStudent(
+    studentCard: string | undefined,
+) {
+    const fetch = useFetch();
+    const { token } = useToken();
+
+    const { data } = useQuery({
+        queryKey: ["rating/student", studentCard],
+        enabled: !!token && !!studentCard,
+        queryFn: async (): Promise<IRatingStudent> => {
+            const response = await fetch(
+                `/rating/student/${studentCard}`,
+                {
+                    method: "GET",
+                }
+            );
+
+            return await response.json();
+        },
+    });
+
+    return data;
+}
+
+
+// region Teacher
+
 export function useRatingTeacherMark() {
     const queryClient = useQueryClient();
     const fetch = useFetch();
@@ -65,7 +107,6 @@ export function useRatingTeacherMark() {
         }) => {
             const { group_name, ...requestBody } = params;
 
-            console.log(requestBody)
             const response = await fetch(
                 "/rating/mark",
                 {
@@ -103,7 +144,6 @@ export function useRatingTeacher(
         queryFn: async (): Promise<IRatingTeacher> => {
             const encodedGroup = (groupName!);
             const encodedName = (subjectName!);
-            console.log(encodedGroup, encodedName)
 
             const response = await fetch(
                 `/rating/vedomost/${groupName}&${subjectName}`,
