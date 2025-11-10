@@ -4,7 +4,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # psql settings
-    database_url: str = "postgresql://admin:admin@localhost:5432/db"
+    database_url: str = "postgresql://admin:admin@postgres:5432/db"
     
 
     # Server settings
@@ -18,10 +18,11 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: str | None = None
     
+    # mongodb settings
+    mongodb_host: str = "mongo-gridfs" 
+    mongodb_port: int = 27017
+    
     
 
 
 settings = Settings()
-
-
-
