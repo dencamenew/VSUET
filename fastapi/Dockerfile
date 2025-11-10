@@ -5,9 +5,13 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libcairo2-dev \
+    pkg-config \
+    python3-dev \
+    build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+ RUN pip install --upgrade pip
 
 # Copy requirements first for better caching
 COPY requirements.txt .
