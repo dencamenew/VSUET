@@ -3,9 +3,169 @@
 import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { ILessonSlot, LessonTime } from "@/hooks/api/useTimetable"
 import { Language, translations } from "@/lib/translations"
-import { nanoid } from 'nanoid'
 import { SideFade } from './particles/SideFade'
+import { useRole } from '../security/useRole'
+import { Modal } from '../modals/Modal'
+import { Button } from './button'
+import { Check, MessageSquareWarning, QrCode } from 'lucide-react'
+import { useQRStudentScan, useQRTeacherSession } from '@/hooks/api/websocket/useQR'
+import { QRCodeSVG } from 'qrcode.react'
+import { Loading } from './loading'
+import { useEffect, useRef, useState } from 'react';
+import jsQR from 'jsqr';
 
+const cardVariants: Variants = {
+    hidden: {
+        opacity: 0,
+        scale: 0.85,
+        filter: "blur(4px)",
+    },
+    visible: () => ({
+        opacity: 1,
+        scale: 1,
+        filter: "blur(0px)",
+        zIndex: 50,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 28,
+            mass: 0.4,
+
+            opacity: {
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                mass: 0.6,
+            },
+
+            scale: {
+                type: "spring",
+                stiffness: 160,
+                damping: 26,
+                mass: 1.1,
+            },
+
+            filter: {
+                type: "spring",
+                stiffness: 180,
+                damping: 18,
+                mass: 0.8,
+            }
+        }
+    }),
+    exit: () => ({
+        opacity: 0,
+        scale: 0.7,
+        filter: "blur(8px)",
+        zIndex: 40,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 28,
+            mass: 0.4,
+        }
+    })
+}
+
+export function QRScanner({ onScan, isScanning }: { onScan: (data: string) => void, isScanning: boolean }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const [hasScanned, setHasScanned] = useState(false);
+
+    useEffect(() => {
+        let animationId: number;
+        let mounted = true;
+
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                streamRef.current = stream;
+
+                if (videoRef.current && mounted) {
+                    videoRef.current.srcObject = stream;
+                    videoRef.current.play();
+                }
+            } catch (err) {
+                console.error('Camera error:', err);
+            }
+        };
+
+        const scanQR = () => {
+            if (!mounted || hasScanned || isScanning) return;
+
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (code && !hasScanned) {
+                    // console.log('QR detected:', code.data);
+                    setHasScanned(true);
+                    onScan(code.data);
+                    return;
+                }
+            }
+
+            animationId = requestAnimationFrame(scanQR);
+        };
+
+        startCamera().then(() => {
+            if (mounted) {
+                scanQR();
+            }
+        });
+
+        return () => {
+            mounted = false;
+            cancelAnimationFrame(animationId);
+
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [onScan, hasScanned, isScanning]);
+
+    useEffect(() => {
+        if (!isScanning) {
+            setHasScanned(false);
+        }
+    }, [isScanning]);
+
+    return (
+        <div className="relative w-[300px] h-[300px] rounded-lg overflow-hidden bg-muted">
+            <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                muted
+            />
+            <canvas ref={canvasRef} className="hidden" />
+
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="relative w-64 h-64">
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white" />
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white" />
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white" />
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Остальной код ScheduleList БЕЗ ИЗМЕНЕНИЙ - только замени QRScanner
 export function ScheduleList(
     {
         currentDate,
@@ -17,7 +177,41 @@ export function ScheduleList(
         language: Language
     }
 ) {
-    const t = translations[language] || translations.en
+    const { role } = useRole();
+    const [isOpen, setIsOpen] = useState(false);
+    const t = translations[language] || translations.en;
+
+    const {
+        data,
+        isConnected,
+        isActive,
+        isCreating,
+        error,
+        sessionId,
+        qrUrl,
+        createSession,
+        closeSession
+    } = useQRTeacherSession();
+
+    const {
+        scan,
+        isScanning,
+        isSuccess,
+        isError,
+        error: scanError,
+        reset: resetScan
+    } = useQRStudentScan();
+
+    useEffect(() => {
+        if (isSuccess && role === "student") {
+            const timeout = setTimeout(() => {
+                setIsOpen(false);
+                setTimeout(() => resetScan(), 300);
+            }, 2000);
+
+            return () => clearTimeout(timeout);
+        }
+    }, [isSuccess, role, resetScan]);
 
     const getCardStyles = (type: ILessonSlot['class_type']) => {
         switch (type) {
@@ -32,7 +226,7 @@ export function ScheduleList(
             default:
                 return "bg-card border border-border border-l-4 border-l-purple-500 shadow-sm hover:shadow-md"
         }
-    }
+    };
 
     const getTypeStyles = (type: ILessonSlot['class_type']) => {
         switch (type) {
@@ -47,7 +241,7 @@ export function ScheduleList(
             default:
                 return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
         }
-    }
+    };
 
     const getTypeLabel = (type: ILessonSlot['class_type']) => {
         switch (type) {
@@ -62,65 +256,194 @@ export function ScheduleList(
             default:
                 return t.other
         }
+    };
+
+    const entries = currentSchedule ?
+        Object.entries(currentSchedule)
+            .filter(([_, item]) => item && Object.values(item).length)
+        :
+        [];
+
+    const toggleModal = (time: string, sbj: ILessonSlot) => {
+        if (role === "student") {
+            resetScan();
+        }
+
+        setIsOpen(true);
+
+        if (role === "teacher" && currentDate) {
+            const startTime = time.split('-')[0].replace('.', ':');
+
+            createSession({
+                group_name: sbj.group,
+                subject_name: sbj.name,
+                subject_type: sbj.class_type,
+                date: currentDate,
+                lesson_start_time: startTime,
+            });
+        }
     }
 
-    const cardVariants: Variants = {
-        hidden: {
-            opacity: 0,
-            scale: 0.85,
-            filter: "blur(4px)",
-        },
-        visible: () => ({
-            opacity: 1,
-            scale: 1,
-            filter: "blur(0px)",
-            zIndex: 50,
-            transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 28,
-                mass: 0.4,
+    const handleQRScan = (result: string) => {
+        console.log('🔍 QR scanned:', result);
+        scan(result);
+    };
 
-                opacity: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25,
-                    mass: 0.6,
-                },
-
-                scale: {
-                    type: "spring",
-                    stiffness: 160,
-                    damping: 26,
-                    mass: 1.1,
-                },
-
-                filter: {
-                    type: "spring",
-                    stiffness: 180,
-                    damping: 18,
-                    mass: 0.8,
-                }
-            }
-        }),
-        exit: () => ({
-            opacity: 0,
-            scale: 0.7,
-            filter: "blur(8px)",
-            zIndex: 40,
-            transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 28,
-                mass: 0.4,
-            }
-        })
-    }
-
-    const entries = currentSchedule ? Object.entries(currentSchedule).filter(([_, item]) => item && Object.values(item).length) : []
+    const handleCloseSession = async () => {
+        if (role === "student") {
+            resetScan();
+            setIsOpen(false);
+            return;
+        }
+        await closeSession();
+        setIsOpen(false);
+    };
 
     return (
         <div className='size-full relative overflow-hidden'>
+            <Modal
+                isOpen={isOpen}
+                onClose={handleCloseSession}
+            >
+                <div style={{ maxWidth: 300 }}>
+                    <h2 className="text-2xl font-bold mb-4 pr-10">
+                        {role === "teacher" ? "QR-код для посещаемости" : "Отметить посещение"}
+                    </h2>
+
+                    {error && (
+                        <p className="text-red-500 mb-4">{String(error)}</p>
+                    )}
+
+                    {role === "teacher" && (
+                        <>
+                            {qrUrl ? (
+                                <div className="flex flex-col items-center gap-4">
+                                    <div
+                                        style={{ width: 300, height: 300 }}
+                                        className="p-4 bg-white rounded-lg border flex justify-center items-center"
+                                    >
+                                        <QRCodeSVG
+                                            value={qrUrl}
+                                            size={256}
+                                            level="H"
+                                        />
+                                    </div>
+
+                                    <p className="text-sm text-muted-foreground text-center">
+                                        Студенты могут отсканировать этот код
+                                    </p>
+
+                                    {data?.students && data.students.length > 0 && (
+                                        <div className="w-full mt-4">
+                                            <h3 className="font-semibold mb-2">
+                                                Отметились ({data.students.length}):
+                                            </h3>
+                                            <div className="max-h-40 overflow-y-auto space-y-1">
+                                                {data.students.map((student, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="text-sm p-2 bg-muted rounded flex justify-between"
+                                                    >
+                                                        <span>{student.name}</span>
+                                                        <span className="text-muted-foreground">
+                                                            {student.zach_number}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        onClick={handleCloseSession}
+                                        variant="destructive"
+                                        className="w-full mt-4"
+                                    >
+                                        Завершить сессию
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center flex-col gap-4">
+                                    <div
+                                        style={{ width: 300, height: 300 }}
+                                        className="p-4 bg-white rounded-lg border flex justify-center items-center"
+                                    >
+                                        <div className='size-12'>
+                                            <Loading />
+                                        </div>
+                                    </div>
+                                    <Button
+                                        disabled
+                                        variant="destructive"
+                                        className="w-full mt-4 bg-muted-foreground"
+                                    >
+                                        Ожидание...
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {role === "student" && (
+                        <div className="flex flex-col items-center gap-4">
+                            {!isSuccess && !isError && (
+                                <>
+                                    <QRScanner onScan={handleQRScan} isScanning={isScanning} />
+                                    <p className="text-sm text-muted-foreground text-center">
+                                        Наведите камеру на QR-код
+                                    </p>
+                                    {isScanning && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="size-4"><Loading /></div>
+                                            <p className="text-blue-500">Обработка...</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {isSuccess && (
+                                <div className="flex flex-col items-center gap-4">
+                                    <div
+                                        style={{ width: 300, height: 300 }}
+                                        className="rounded-lg border flex items-center justify-center bg-green-50 text-green-600 flex-col"
+                                    >
+                                        <Check className='size-10' />
+                                        <p className="text-xl font-semibold text-center mt-2">
+                                            Посещение отмечено!
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isError && scanError && (
+                                <div className="flex flex-col items-center gap-4">
+                                    <div
+                                        style={{ width: 300, height: 300 }}
+                                        className="rounded-lg border flex items-center justify-center bg-red-50"
+                                    >
+                                        <div className="text-center p-4 text-red-600 flex flex-col items-center">
+                                            <MessageSquareWarning className='size-10' />
+                                            <p className="text-xl font-semibold mb-2 mt-4">
+                                                Ошибка
+                                            </p>
+                                            <p className="text-sm text-red-500">
+                                                {String(scanError)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={resetScan}
+                                        className="w-full"
+                                    >
+                                        Попробовать снова
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </Modal>
+
             <div className='absolute px-4 z-60 w-full'>
                 <SideFade
                     width="100%"
@@ -128,6 +451,7 @@ export function ScheduleList(
                     className="bg-gradient-to-b from-background to-transparent left-0 top-0 relative z-60"
                 />
             </div>
+
             <div className="flex flex-col gap-3 items-center h-full w-full overflow-y-auto px-6 py-6 z-30">
                 <AnimatePresence mode="popLayout">
                     {entries.length > 0 ? (
@@ -157,7 +481,15 @@ export function ScheduleList(
 
                                 <div className="flex justify-between items-center mt-4">
                                     <div className="flex items-center space-x-2">
-                                        {/* Комментарии и QR здесь */}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => toggleModal(time, item)}
+                                            className="text-muted-foreground hover:text-foreground rounded-md w-fit px-4 gap-2"
+                                        >
+                                            <QrCode className='size-5' />
+                                            {role === "teacher" ? t.qrMarkTeacher : t.qrMarkStudent}
+                                        </Button>
                                     </div>
                                 </div>
                             </motion.div>

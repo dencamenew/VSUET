@@ -11,8 +11,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative">
         <select
           className={cn(
-            "cursor-pointer flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 pr-10 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none",
-            // Добавь это для обрезки текста
+            "cursor-pointer flex h-9 w-full items-center justify-between rounded-md transition-colors border hover:border-foreground/50 border-input bg-transparent px-3 pr-10 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 appearance-none",
             "truncate",
             className
           )}

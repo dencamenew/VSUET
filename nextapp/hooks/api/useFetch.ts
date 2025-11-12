@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { useToken } from "../useAuth";
 
 export function useAPI() {
-    // return "https://teacherbackend.cloudpub.ru/api";
     return 'http://localhost:8080/api';
 };
 

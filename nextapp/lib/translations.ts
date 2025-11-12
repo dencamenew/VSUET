@@ -37,6 +37,8 @@ export const translations = {
     commentAdded: "Комментарий добавлен",
     back: "Назад",
     send: "Отправить",
+    qrMarkStudent: "Отметиться с помощью QR",
+    qrMarkTeacher: "Отметить с помощью QR-сессии",
 
     // Rating
     faculty: "Факультет",
@@ -60,6 +62,20 @@ export const translations = {
     absent: "Отсутствует",
     late: "Опоздал",
     choice: "Выберите предмет",
+
+    // Statements
+    statements: {
+      title: "Ведомости",
+      description: "Здесь вы можете скачать ведомости в формате PDF"
+    },
+
+    navigation: {
+      schedule: "Расписание",
+      rating: "Оценки",
+      attendance: "Посещаемость",
+      statements: "Ведомости",
+      profile: "Профиль",
+    },
 
     // Profile
     accountInfo: "Информация об аккаунте",
@@ -118,6 +134,8 @@ export const translations = {
     commentAdded: "Comment added",
     back: "Back",
     send: "Send",
+    qrMarkStudent: "Mark with QR",
+    qrMarkTeacher: "Mark with QR session",
 
     // Rating
     faculty: "Faculty",
@@ -141,6 +159,21 @@ export const translations = {
     absent: "Absent",
     late: "Late",
     choice: "Select subject",
+
+    // Statements
+
+    statements: {
+      title: "Statements",
+      description: "Here you can download the statements in PDF format"
+    },
+
+    navigation: {
+      schedule: "Schedule",
+      rating: "Grades",
+      attendance: "Attendance",
+      statements: "Statements",
+      profile: "Profile",
+    },
 
     // Profile
     accountInfo: "Account Information",

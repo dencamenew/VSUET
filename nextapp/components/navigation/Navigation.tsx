@@ -1,8 +1,7 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Calendar, User, GraduationCap, Users, Settings, Moon, Sun, Globe } from "lucide-react"
-import { translations, type Language } from "@/lib/translations"
+import { Calendar, User, GraduationCap, Users, Settings, Table } from "lucide-react"
+import { translations } from "@/lib/translations"
 import { TRoles, useMe } from "@/hooks/api/useMe"
 import { Drawer } from "../modals/Drawer"
 import { useEffect, useRef, useState, useMemo } from "react"
@@ -30,6 +29,7 @@ const NAV_CONFIG: Record<Exclude<TRoles, undefined>, readonly { module: string; 
     { module: "schedule", icon: Calendar, titleKey: "schedule" },
     { module: "attendance", icon: Users, titleKey: "attendance" },
     { module: "rating", icon: GraduationCap, titleKey: "rating" },
+    { module: "statements", icon: Table, titleKey: "statements" },
   ],
   admin: [],
 } as const;
@@ -73,7 +73,7 @@ export default function Navigation({
   onNavigate,
   currentModule,
 }: BottomNavigationProps) {
-  const { lang, setLang } = useLanguage();
+  const { lang } = useLanguage();
   const user = useMe();
   const { role } = useRole();
   const t = translations[lang] || translations.en;
@@ -229,7 +229,7 @@ export default function Navigation({
                 )}
               >
                 <Icon className="w-5 h-5" />
-                <span>{t[btn.titleKey as keyof typeof t]}</span>
+                <span>{t.navigation[btn.titleKey as keyof typeof t.navigation]}</span>
               </button>
             );
           })}

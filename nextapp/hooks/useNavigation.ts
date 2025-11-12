@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRole } from "@/components/security/useRole";
 
-type TeacherNav = "schedule" | "rating" | "attendance";
+type TeacherNav = "schedule" | "rating" | "attendance" | "statements";
 type StudentNav = "schedule" | "rating";
 export type Nav = TeacherNav | StudentNav;
 
@@ -11,7 +11,7 @@ const DEFAULT_PAGES: Record<string, Nav> = {
 };
 
 const VALID_PAGES: Record<string, Nav[]> = {
-  teacher: ["schedule", "attendance", "rating"],
+  teacher: ["schedule", "attendance", "rating", "statements"],
   student: ["schedule", "rating"],
 };
 

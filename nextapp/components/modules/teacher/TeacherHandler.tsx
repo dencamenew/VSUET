@@ -7,6 +7,7 @@ import TeacherAttendance from "./TeacherAttendance"
 import { useNavigation } from "@/hooks/useNavigation"
 import { motion, AnimatePresence } from 'framer-motion';
 import { MODULES_MOTIONS } from "@/lib/motions"
+import { TeacherStatements } from "./TeacherStatements"
 
 
 export function TeacherHandler() {
@@ -21,6 +22,7 @@ export function TeacherHandler() {
         schedule: <Schedule userPlaceholder={teacherName} />,
         rating: <TeacherRating userPlaceholder={teacherName} />,
         attendance: <TeacherAttendance userPlaceholder={teacherName} />,
+        statements: <TeacherStatements userPlaceholder={teacherName} />
     };
 
     return (

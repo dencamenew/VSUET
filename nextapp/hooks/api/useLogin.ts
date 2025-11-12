@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import { useLayoutEffect } from "react";
 import { useToken } from "../useAuth";
 import { useFetch } from "./useFetch";
 
@@ -21,10 +20,6 @@ export function useLogin(
                     max_id: maxId,
                 }),
             });
-
-            if (!response.ok) {
-                throw new Error("Ошибка запроса");
-            }
 
             return response.json();
         },
