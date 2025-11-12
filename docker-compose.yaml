@@ -80,15 +80,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-
-
   tunnel:
     image: node:alpine
     container_name: tunnel
     command: >
       sh -c "
       npm install -g localtunnel &&
-      lt --port 8080 --subdomain fast-api-maxminiapp"
+      lt --port 8080 --subdomain fast-api-maxminiapp1"
     network_mode: host
     depends_on:
       - fastapi
