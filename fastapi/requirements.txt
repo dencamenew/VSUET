@@ -1,13 +1,27 @@
+# FastAPI и сервер
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+
+# ORM и база данных
 sqlalchemy==2.0.23
+asyncpg==0.29.0
 psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Pydantic и настройки
 pydantic==2.5.0
 pydantic-settings==2.1.0
+
+# Аутентификация и шифрование
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+
+# Работа с формами и файлами
 python-multipart==0.0.6
-alembic==1.13.1
-asyncpg==0.29.0
+reportlab==4.0.0
+
+# Redis
 redis==7.0.1
-reportlab==4.0.0 
+
+# MongoDB асинхронный драйвер и GridFS
+motor==3.7.1

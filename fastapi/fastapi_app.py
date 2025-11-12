@@ -12,6 +12,7 @@ from app.controllers.groups_controller import groups_router
 from app.controllers.qr_controller import qr_router
 from app.controllers.ws import ws_router
 from app.controllers.vedomosti_controller import vedomosti_router
+from app.controllers.library_controller import library_router
 
 
 # Create database tables
@@ -47,6 +48,7 @@ app.include_router(groups_router)
 app.include_router(qr_router)
 app.include_router(ws_router)
 app.include_router(vedomosti_router)
+app.include_router(library_router)
 
 
 @app.get("/")
