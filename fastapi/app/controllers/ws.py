@@ -2,17 +2,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status, Depends
 from redis.asyncio import Redis
 import asyncio
 import traceback
-
-from app.utils.jwt import require_role
 from app.config.database import get_redis  # функция Depends, возвращающая Redis
-
-ws_router = APIRouter(prefix="/ws/api", tags=["ws"])
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status, Depends
 from redis.asyncio import Redis
 import asyncio
 import traceback
-
 from app.config.database import get_redis
 
 ws_router = APIRouter(prefix="/ws/api", tags=["ws"])
