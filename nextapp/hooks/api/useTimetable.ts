@@ -25,7 +25,7 @@ export function useTimetable() {
     queryKey: ["timetable", token],
     enabled: !!token,
     queryFn: async (): Promise<ITimetable> => {
-      const response = await fetch("/my/timetable", {
+      const response = await fetch("/my/timetable/", {
         method: "GET",
       });
 
