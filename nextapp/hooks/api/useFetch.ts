@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useToken } from "../useAuth";
 
 export function useAPIws() {
-    return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080';
+    return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws/api';
     // return 'ws://localhost:8080/ws/api';
 }
 
