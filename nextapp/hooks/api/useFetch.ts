@@ -2,13 +2,13 @@ import { useCallback } from "react";
 import { useToken } from "../useAuth";
 
 export function useAPIws() {
-    return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws/api';
-    // return 'ws://localhost:8080/ws/api';
+    // return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws/api';
+    return 'ws://localhost:8080/ws/api';
 }
 
 export function useAPI() {
-    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api';
-    // return 'http://localhost:8080/api';
+    // return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api';
+    return 'http://localhost:8080/api';
 };
 
 export function useFetch() {
