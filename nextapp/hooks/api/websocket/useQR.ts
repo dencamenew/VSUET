@@ -54,10 +54,10 @@ export function useQRStudentScan() {
       return response.json();
     },
     onSuccess: (data) => {
-      console.log('✅ Attendance marked successfully:', data);
+      console.log('Attendance marked successfully:', data);
     },
     onError: (error) => {
-      console.error('❌ Failed to mark attendance:', error);
+      console.error('Failed to mark attendance:', error);
     },
   });
 
@@ -78,7 +78,7 @@ export function useQRTeacherSession() {
 
   // WebSocket подключение к сессии
   const wsResult = useWebSocket<QRSessionData>(
-    sessionId ? `/ws/api/session/${sessionId}` : null,
+    sessionId ? `/session/${sessionId}` : null,
     undefined,
     {
       autoReconnect: false,
@@ -109,7 +109,7 @@ export function useQRTeacherSession() {
       return response.json();
     },
     onSuccess: (data) => {
-      console.log('Session created:', data.session_id);
+      // console.log('Session created:', data.session_id);
       setSessionId(data.session_id);
     },
     onError: (error) => {

@@ -6,6 +6,7 @@ import { useNavigation } from "@/hooks/useNavigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { StudentRating } from "./StudentRating";
 import { MODULES_MOTIONS } from "@/lib/motions";
+import { StudentLibrary } from "./StudentLibrary";
 
 export function StudentHandler() {
     const { currentModule, setCurrentModule } = useNavigation();
@@ -20,6 +21,7 @@ export function StudentHandler() {
     const modules = {
         schedule: <Schedule userPlaceholder={studentInfo} />,
         rating: <StudentRating userPlaceholder={studentInfo} />,
+        library: <StudentLibrary userPlaceholder={studentInfo} />
     };
 
     return (

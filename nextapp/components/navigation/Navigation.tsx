@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, User, GraduationCap, Users, Settings, Table } from "lucide-react"
+import { Calendar, User, GraduationCap, Users, Settings, Table, BookOpen } from "lucide-react"
 import { translations } from "@/lib/translations"
 import { TRoles, useMe } from "@/hooks/api/useMe"
 import { Drawer } from "../modals/Drawer"
@@ -24,6 +24,7 @@ const NAV_CONFIG: Record<Exclude<TRoles, undefined>, readonly { module: string; 
   student: [
     { module: "schedule", icon: Calendar, titleKey: "schedule" },
     { module: "rating", icon: GraduationCap, titleKey: "rating" },
+    { module: "library", icon: BookOpen, titleKey: "library" },
   ],
   teacher: [
     { module: "schedule", icon: Calendar, titleKey: "schedule" },

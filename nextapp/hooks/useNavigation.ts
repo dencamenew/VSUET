@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRole } from "@/components/security/useRole";
 
 type TeacherNav = "schedule" | "rating" | "attendance" | "statements";
-type StudentNav = "schedule" | "rating";
+type StudentNav = "schedule" | "rating" | "library";
 export type Nav = TeacherNav | StudentNav;
 
 const DEFAULT_PAGES: Record<string, Nav> = {
@@ -12,7 +12,7 @@ const DEFAULT_PAGES: Record<string, Nav> = {
 
 const VALID_PAGES: Record<string, Nav[]> = {
   teacher: ["schedule", "attendance", "rating", "statements"],
-  student: ["schedule", "rating"],
+  student: ["schedule", "rating", "library"],
 };
 
 export function useNavigation() {

@@ -1,6 +1,7 @@
 // hooks/api/useWebSocketAPI.ts
 import { useToken } from '@/hooks/useAuth';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useAPIws } from '../useFetch';
 
 interface WebSocketOptions {
   autoReconnect?: boolean;
@@ -25,16 +26,15 @@ export function useWebSocket<T>(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { token } = useToken();
+  const wsUrl = useAPIws();
 
   const connect = useCallback(() => {
     if (!endpoint) return;
-
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080';
     
     // Добавляем параметры к URL
     let url = `${wsUrl}${endpoint}`;
     if (params) {
-        console.log(params)
+        // console.log(params)
       const queryParams = new URLSearchParams(params);
       url += `?${queryParams}`;
     }
@@ -44,7 +44,7 @@ export function useWebSocket<T>(
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+    //   console.log('WebSocket connected');
       setIsConnected(true);
       setError(null);
       
@@ -70,12 +70,12 @@ export function useWebSocket<T>(
     };
 
     ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    //   console.log('WebSocket disconnected');
       setIsConnected(false);
       
       if (autoReconnect) {
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Reconnecting...');
+        //   console.log('Reconnecting...');
           connect();
         }, reconnectInterval);
       }
