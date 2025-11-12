@@ -3,11 +3,14 @@
 import { useLogin } from "@/hooks/api/useLogin"
 import { Loading } from "../ui/loading";
 import { useLayoutEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
-const MAX_ID = process.env.NEXT_PUBLIC_TARGET_MAX_ID || "1";
+const TARGET_MAX_ID = process.env.NEXT_PUBLIC_TARGET_MAX_ID || "1";
 
 export default function AuthModule() {
-  const auth = useLogin(MAX_ID);
+  const searchParams = useSearchParams();
+  const customMaxId = searchParams.get('custom_max_id')
+  const auth = useLogin(customMaxId ||TARGET_MAX_ID);
 
   useLayoutEffect(() => {
     auth.mutate();
