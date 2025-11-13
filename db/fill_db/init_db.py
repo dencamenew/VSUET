@@ -667,7 +667,7 @@ for i, student_id in enumerate(student_ids):
         # Используем постоянные имя и фамилию для студента с MAX_id = 2
         cur.execute(
             "INSERT INTO users (first_name, last_name, role, student_info_id, MAX_id, passwd) VALUES (%s, %s, %s, %s, %s, %s);",
-            (constant_student_first_name, constant_student_last_name, "student", student_id, "2", student_password)
+            (constant_student_first_name, constant_student_last_name, "student", student_id, "34456282", student_password)
         )
     else:
         # Для остальных студентов используем случайные русские имена и фамилии
