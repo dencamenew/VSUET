@@ -503,6 +503,12 @@ export function ScheduleList(
                                         <p className="text-sm text-muted-foreground">
                                             {time} • {item.auditorium}
                                         </p>
+                                        {
+                                            item.teacher &&
+                                            <p className="text-sm text-muted-foreground">
+                                                {item.teacher}
+                                            </p>
+                                        }
                                         <p className="text-sm text-muted-foreground">{item.group}</p>
                                     </div>
                                     <span
