@@ -66,7 +66,7 @@ CREATE TABLE users (
     teacher_info_id BIGINT REFERENCES teacher_info(id),
     student_info_id BIGINT REFERENCES student_info(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    passwd VARCHAR(255) NOT NULL
+    passwd VARCHAR(255)
 );
 
 -- ------------------------
