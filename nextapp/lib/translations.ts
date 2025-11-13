@@ -69,12 +69,18 @@ export const translations = {
       description: "Здесь вы можете скачать ведомости в формате PDF"
     },
 
+    library: {
+      title: "Библиотека",
+      author: "Автор",
+    },
+
     navigation: {
       schedule: "Расписание",
       rating: "Оценки",
       attendance: "Посещаемость",
       statements: "Ведомости",
       profile: "Профиль",
+      library: "Библиотека",
     },
 
     // Profile
@@ -167,11 +173,17 @@ export const translations = {
       description: "Here you can download the statements in PDF format"
     },
 
+    library: {
+      title: "Library",
+      author: "Author",
+    },
+
     navigation: {
       schedule: "Schedule",
       rating: "Grades",
       attendance: "Attendance",
       statements: "Statements",
+      library: "Library",
       profile: "Profile",
     },
 

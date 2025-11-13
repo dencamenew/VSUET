@@ -70,7 +70,7 @@ export function Modal(
                             </div>
 
                             {/* Content */}
-                            <div className="size-full max-h-[92vh] overflow-y-auto p-6 pt-4">
+                            <div className="size-full max-h-[92vh] overflow-y-auto overflow-y-auto p-6 pt-4">
                                 {children}
                             </div>
                         </div>

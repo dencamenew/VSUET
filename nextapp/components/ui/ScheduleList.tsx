@@ -8,11 +8,12 @@ import { useRole } from '../security/useRole'
 import { Modal } from '../modals/Modal'
 import { Button } from './button'
 import { Check, MessageSquareWarning, QrCode } from 'lucide-react'
-import { useQRStudentScan, useQRTeacherSession } from '@/hooks/api/websocket/useQR'
+import { useQRStudentScan, useQRTeacherList, useQRTeacherSession } from '@/hooks/api/websocket/useQR'
 import { QRCodeSVG } from 'qrcode.react'
 import { Loading } from './loading'
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
+import { useStudentInfo } from '@/hooks/api/useStudentInfo'
 
 const cardVariants: Variants = {
     hidden: {
@@ -165,7 +166,27 @@ export function QRScanner({ onScan, isScanning }: { onScan: (data: string) => vo
     );
 }
 
-// Остальной код ScheduleList БЕЗ ИЗМЕНЕНИЙ - только замени QRScanner
+function StudentCard(
+    {
+        zach_number
+    }: {
+        zach_number: string | undefined
+    }
+) {
+    const data = useStudentInfo(zach_number);
+
+    if (!data) return null;
+
+    return (
+        <div
+            className="text-sm text-white p-2 bg-green-600/90 rounded flex justify-between"
+        >
+            <span>{data.first_name} {data.last_name}</span>
+            <span>{zach_number}</span>
+        </div>
+    )
+}
+
 export function ScheduleList(
     {
         currentDate,
@@ -193,6 +214,8 @@ export function ScheduleList(
         closeSession
     } = useQRTeacherSession();
 
+    const studentsList = useQRTeacherList(sessionId);
+
     const {
         scan,
         isScanning,
@@ -202,6 +225,7 @@ export function ScheduleList(
         reset: resetScan
     } = useQRStudentScan();
 
+    // Автозакрытие при успехе
     useEffect(() => {
         if (isSuccess && role === "student") {
             const timeout = setTimeout(() => {
@@ -285,18 +309,26 @@ export function ScheduleList(
     }
 
     const handleQRScan = (result: string) => {
-        console.log('🔍 QR scanned:', result);
+        // console.log('QR scanned:', result);
         scan(result);
     };
 
     const handleCloseSession = async () => {
+        // Для студента просто закрываем и сбрасываем
         if (role === "student") {
             resetScan();
             setIsOpen(false);
             return;
         }
-        await closeSession();
-        setIsOpen(false);
+
+        // Для преподавателя закрываем сессию если она активна
+        if (role === "teacher") {
+            // Закрываем сессию только если она была создана
+            if (sessionId || isConnected || isActive) {
+                await closeSession();
+            }
+            setIsOpen(false);
+        }
     };
 
     return (
@@ -332,23 +364,14 @@ export function ScheduleList(
                                     <p className="text-sm text-muted-foreground text-center">
                                         Студенты могут отсканировать этот код
                                     </p>
-
-                                    {data?.students && data.students.length > 0 && (
+                                    {studentsList?.students && studentsList.students.length > 0 && (
                                         <div className="w-full mt-4">
                                             <h3 className="font-semibold mb-2">
-                                                Отметились ({data.students.length}):
+                                                Отметились ({studentsList.students.length}):
                                             </h3>
-                                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                                {data.students.map((student, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="text-sm p-2 bg-muted rounded flex justify-between"
-                                                    >
-                                                        <span>{student.name}</span>
-                                                        <span className="text-muted-foreground">
-                                                            {student.zach_number}
-                                                        </span>
-                                                    </div>
+                                            <div className="max-h-40 overflow-y-auto bg-muted p-2 rounded-md scrollbar-xs">
+                                                {studentsList.students.map((student, idx) => (
+                                                    <StudentCard key={idx} zach_number={student} />
                                                 ))}
                                             </div>
                                         </div>
@@ -372,12 +395,15 @@ export function ScheduleList(
                                             <Loading />
                                         </div>
                                     </div>
+                                    <p className="text-sm text-muted-foreground text-center">
+                                        {isCreating ? "Создание сессии..." : "Ожидание подключения..."}
+                                    </p>
                                     <Button
-                                        disabled
-                                        variant="destructive"
-                                        className="w-full mt-4 bg-muted-foreground"
+                                        onClick={handleCloseSession}
+                                        variant="outline"
+                                        className="w-full mt-4"
                                     >
-                                        Ожидание...
+                                        Отменить
                                     </Button>
                                 </div>
                             )}
@@ -398,6 +424,13 @@ export function ScheduleList(
                                             <p className="text-blue-500">Обработка...</p>
                                         </div>
                                     )}
+                                    <Button
+                                        onClick={handleCloseSession}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        Отменить
+                                    </Button>
                                 </>
                             )}
 
@@ -452,7 +485,7 @@ export function ScheduleList(
                 />
             </div>
 
-            <div className="flex flex-col gap-3 items-center h-full w-full overflow-y-auto px-6 py-6 z-30">
+            <div className="flex flex-col gap-3 items-center h-full w-full overflow-y-auto px-6 py-6 z-30 scrollbar-xs">
                 <AnimatePresence mode="popLayout">
                     {entries.length > 0 ? (
                         entries.map(([time, item], index) => (

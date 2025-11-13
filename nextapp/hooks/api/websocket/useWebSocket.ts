@@ -39,7 +39,7 @@ export function useWebSocket<T>(
       url += `?${queryParams}`;
     }
 
-    console.log('Connecting to:', url);
+    // console.log('Connecting to:', url);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 

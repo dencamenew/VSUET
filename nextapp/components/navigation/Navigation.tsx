@@ -187,24 +187,34 @@ export default function Navigation({
     }
   }, [activeIndex, mobileButtonRects, mobileIndicatorX, mobileIndicatorW]);
 
+  const userName = useMemo(() => {
+    if (!user) return "";
+    return user.first_name + " " + user.last_name;
+  }, [user]);
+
   if (!user) return null;
-  const userName = user.first_name + " " + user.last_name;
 
   const handleLogout = () => { }
 
   return (
     <>
       {/* Десктоп */}
-      <div className="hidden md:flex md:flex-col w-74 bg-background border-r border-border p-4 gap-2 h-screen justify-between pt-14 pb-4">
+      <div className="hidden md:flex md:flex-col w-80 bg-background border-r border-border p-4 gap-2 h-screen justify-between pt-14 pb-4">
         <div className="flex flex-col gap-2 relative" ref={containerRef}>
           <div className="pb-10">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
-                <User className="w-6 h-6 text-primary" />
+              <div className="size-14 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
+                <User className="size-7 text-primary" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">{userName}</h2>
                 {role && <p className="text-muted-foreground text-sm">{t[role]}</p>}
+                {
+                  role === "student" &&
+                  <p className="text-xs text-muted-foreground">
+                    {user.group_name} • {user.zach_number}
+                  </p>
+                }
               </div>
             </div>
           </div>

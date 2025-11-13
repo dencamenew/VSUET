@@ -35,20 +35,20 @@ export function TeacherStatements(
     }, [user, selectedGroup]);
 
     // Мутации для скачивания
-    const downloadAttendance = useDownloadAttendance();
+    // const downloadAttendance = useDownloadAttendance();
     const downloadRating = useDownloadRating();
     const downloadAverage = useDownloadAverage();
 
     // Обработчики кнопок
-    const handleDownloadAttendance = () => {
-        if (!selectedGroup || !selectedSbj) return;
+    // const handleDownloadAttendance = () => {
+    //     if (!selectedGroup || !selectedSbj) return;
 
-        downloadAttendance.mutate({
-            groupName: selectedGroup,
-            subjectType: selectedSbj.lesson_type,
-            subjectName: selectedSbj.lesson_name,
-        });
-    };
+    //     downloadAttendance.mutate({
+    //         groupName: selectedGroup,
+    //         subjectType: selectedSbj.lesson_type,
+    //         subjectName: selectedSbj.lesson_name,
+    //     });
+    // };
 
     const handleDownloadRating = () => {
         if (!selectedGroup || !selectedSbj) return;
@@ -68,7 +68,7 @@ export function TeacherStatements(
     };
 
     // Условия для disabled кнопок
-    const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending;
+    // const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending;
     const canDownloadRating = selectedGroup && selectedSbj && !downloadRating.isPending;
     const canDownloadAverage = selectedGroup && !downloadAverage.isPending;
 
@@ -85,7 +85,7 @@ export function TeacherStatements(
                 </div>
             </div>
 
-            <div className="h-full overflow-y-auto pt-6 px-6">
+            <div className="h-full overflow-y-auto pt-6 px-6 scrollbar-xs">
                 <div className="rounded-xl bg-muted p-6 space-y-6">
                     {/* Селекторы */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -129,7 +129,7 @@ export function TeacherStatements(
                                         key={idx}
                                         value={`${subject.lesson_name}_${subject.lesson_type}`}
                                     >
-                                        {subject.lesson_name} ({subject.lesson_type})
+                                        {subject.lesson_name}
                                     </option>
                                 ))}
                             </Select>
@@ -141,15 +141,6 @@ export function TeacherStatements(
                         <h3 className="text-sm font-medium">Скачать ведомости</h3>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             {/* Посещаемость */}
-                            <Button
-                                onClick={handleDownloadAttendance}
-                                disabled={!canDownloadAttendance}
-                                variant="default"
-                                className="w-full"
-                            >
-                                <Download className="w-4 h-4 mr-2" />
-                                {downloadAttendance.isPending ? 'Скачивание...' : 'Посещаемость'}
-                            </Button>
 
                             {/* Рейтинг */}
                             <Button
@@ -175,11 +166,11 @@ export function TeacherStatements(
                         </div>
 
                         {/* Сообщения об ошибках */}
-                        {downloadAttendance.isError && (
+                        {/* {downloadAttendance.isError && (
                             <p className="text-sm text-red-500">
                                 Ошибка скачивания посещаемости
                             </p>
-                        )}
+                        )} */}
                         {downloadRating.isError && (
                             <p className="text-sm text-red-500">
                                 Ошибка скачивания рейтинга

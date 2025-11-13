@@ -152,7 +152,7 @@ export function StudentRating({
                     />
                 </div>
 
-                <div className="h-full px-6 space-y-4 py-6 overflow-y-auto">
+                <div className="h-full px-6 space-y-4 py-6 overflow-y-auto scrollbar-xs">
                     {processRatings.length === 0 ? (
                         <div className="flex items-center justify-center h-64">
                             <p className="text-muted-foreground text-lg">
