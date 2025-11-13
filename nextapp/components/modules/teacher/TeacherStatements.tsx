@@ -35,20 +35,20 @@ export function TeacherStatements(
     }, [user, selectedGroup]);
 
     // Мутации для скачивания
-    // const downloadAttendance = useDownloadAttendance();
+    const downloadAttendance = useDownloadAttendance();
     const downloadRating = useDownloadRating();
     const downloadAverage = useDownloadAverage();
 
     // Обработчики кнопок
-    // const handleDownloadAttendance = () => {
-    //     if (!selectedGroup || !selectedSbj) return;
+    const handleDownloadAttendance = () => {
+        if (!selectedGroup || !selectedSbj) return;
 
-    //     downloadAttendance.mutate({
-    //         groupName: selectedGroup,
-    //         subjectType: selectedSbj.lesson_type,
-    //         subjectName: selectedSbj.lesson_name,
-    //     });
-    // };
+        downloadAttendance.mutate({
+            groupName: selectedGroup,
+            subjectType: selectedSbj.lesson_type,
+            subjectName: selectedSbj.lesson_name,
+        });
+    };
 
     const handleDownloadRating = () => {
         if (!selectedGroup || !selectedSbj) return;
@@ -67,8 +67,11 @@ export function TeacherStatements(
         });
     };
 
+    console.log(selectedSbj)
+
     // Условия для disabled кнопок
-    // const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending;
+    const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending &&
+        selectedSbj?.lesson_type !== "курсовая работа" && selectedSbj?.lesson_type !== "практика";
     const canDownloadRating = selectedGroup && selectedSbj && !downloadRating.isPending;
     const canDownloadAverage = selectedGroup && !downloadAverage.isPending;
 
@@ -141,6 +144,15 @@ export function TeacherStatements(
                         <h3 className="text-sm font-medium">Скачать ведомости</h3>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             {/* Посещаемость */}
+                            <Button
+                                onClick={handleDownloadAttendance}
+                                disabled={!canDownloadAttendance}
+                                variant="default"
+                                className="w-full"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                {downloadRating.isPending ? 'Скачивание...' : 'Посещаемость'}
+                            </Button>
 
                             {/* Рейтинг */}
                             <Button
@@ -166,11 +178,11 @@ export function TeacherStatements(
                         </div>
 
                         {/* Сообщения об ошибках */}
-                        {/* {downloadAttendance.isError && (
+                        {downloadAttendance.isError && (
                             <p className="text-sm text-red-500">
                                 Ошибка скачивания посещаемости
                             </p>
-                        )} */}
+                        )}
                         {downloadRating.isError && (
                             <p className="text-sm text-red-500">
                                 Ошибка скачивания рейтинга
