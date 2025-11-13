@@ -30,7 +30,7 @@ app = FastAPI(
 # Add CORS middleware with comprehensive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://vsuet-xcmz.vercel.app", "https://fast-api-maxminiapp1.loca.lt"],
+    allow_origins=["http://localhost:3000", "https://vsuet-xcmz.vercel.app", "https://fast-api-maxminiapp.loca.lt"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
