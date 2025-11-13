@@ -5,12 +5,14 @@
 
 ## Структура проекта
 
+```text
 .
 ├── bot
 ├── db
 ├── docker-compose.yaml
 ├── fastapi
 ├── nextapp
+```
 
 ## Описание сервисов
 
