@@ -29,6 +29,13 @@ export function useMaxWebApp() {
         console.log(window.WebApp);
         setWebApp(window.WebApp);
         console.log(initData);
+        console.log(window.WebApp.initData);
+        console.log(window.WebApp.initData);
+        console.log(window.WebApp.initDataManager);
+        console.log(window.WebApp.initDataManager.rawInitData);
+        console.log(window.WebApp.initDataManager.rawPlatformData);
+
+
         setInitData(window.WebApp.initDataUnsafe);
         console.log(startParam);
         setStartParam(window.WebApp.initDataUnsafe?.start_param || null);
