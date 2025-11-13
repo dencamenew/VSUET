@@ -45,11 +45,12 @@ export function useMaxWebApp() {
                 setWebApp(window.WebApp);
 
                 const rawInitData = window.WebApp.initDataManager?.rawInitData;
-                console.log('Raw init data:', rawInitData);
+                // console.log('Raw init data:', rawInitData);
                 setRawData(rawInitData);
 
                 if (rawInitData) {
                     const params = new URLSearchParams(rawInitData);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const parsed: Record<string, any> = {};
 
                     for (const [key, value] of params.entries()) {
@@ -60,7 +61,7 @@ export function useMaxWebApp() {
                         }
                     }
 
-                    console.log('Parsed raw data:', parsed);
+                    // console.log('Parsed raw data:', parsed);
                     setParsedRawData(parsed as ParsedInitData);
                 }
 

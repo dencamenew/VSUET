@@ -3,18 +3,18 @@
 import { useLogin } from "@/hooks/api/useLogin"
 import { Loading } from "../ui/loading";
 import { Suspense, useLayoutEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMaxWebApp } from "@/hooks/api/useMaxWeb";
 
-const TARGET_MAX_ID = process.env.NEXT_PUBLIC_TARGET_MAX_ID || "1";
+// const TARGET_MAX_ID = process.env.NEXT_PUBLIC_TARGET_MAX_ID || "1";
 
 function AuthContent() {
-  const searchParams = useSearchParams();
-  const customMaxId = searchParams.get('custom_max_id')
-  const auth = useLogin(customMaxId || TARGET_MAX_ID);
+  const { parsedRawData } = useMaxWebApp();
+  const auth = useLogin();
 
   useLayoutEffect(() => {
-    auth.mutate();
-  }, []);
+    if (!parsedRawData || !parsedRawData.user || !parsedRawData.user.id) return;
+    auth.mutate(parsedRawData.user.id.toString());
+  }, [parsedRawData]);
 
   return (
     <div className="h-screen w-screen flex items-center justify-center flex-col">

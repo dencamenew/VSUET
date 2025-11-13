@@ -2,16 +2,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useToken } from "../useAuth";
 import { useFetch } from "./useFetch";
 
-// TODO: сделать перехват айди с мессенджера макс
-
-export function useLogin(
-    maxId: string,
-) {
+export function useLogin() {
     const { setToken } = useToken();
     const fetch = useFetch();
 
     const handleAuth = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (maxId: string | undefined | null,) => {
             const response = await fetch("/auth/login_max_id", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
