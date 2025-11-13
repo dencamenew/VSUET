@@ -39,22 +39,20 @@ async def echo(event: MessageCreated):
             '/login - Выбор тестового пользователя\n'
         )
     )
+    print(event.bot.me.username)
     
     
 @dp.message_created(Command('login'))
 async def login(event: MessageCreated):
+    print(event.from_user.user_id)
     # Создаём клавиатуру с двумя OpenAppButton
     buttons = [
         [
             OpenAppButton(
-                text="Открыть как преподаватель",
-                web_app="custom_max_id=2",
+                text="Войти в приложение.",
+                web_app=str(event.from_user.user_id),
                 contact_id=event.bot.me.user_id  
-            ),
-            LinkButton(
-                text="Открыть как студент",
-                url="https://max.ru/t173_hakaton_bot/?custom_max_id=2"
-            ),
+            )
         ]
     ]
 
