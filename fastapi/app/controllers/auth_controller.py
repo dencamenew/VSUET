@@ -42,7 +42,7 @@ async def login_by_max_id_token_only(
         )
 
 @auth_router.post(
-    "/login_name_password", 
+    "/login_user", 
     response_model=NamePasswordAuthResponse,
     responses={
         401: {"model": ErrorResponse, "description": "Invalid credentials"},

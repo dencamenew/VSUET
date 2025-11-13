@@ -225,4 +225,3 @@ class NamePasswordAuthRequest(BaseModel):
 
 class NamePasswordAuthResponse(BaseModel):
     role: str
-    max_id: Optional[str] = None
