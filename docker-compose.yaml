@@ -93,6 +93,7 @@ services:
       - fastapi
     restart: unless-stopped
 
+
 volumes:
   postgres_data:
   mongo_data:
