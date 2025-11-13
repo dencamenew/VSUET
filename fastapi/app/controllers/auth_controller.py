@@ -168,7 +168,8 @@ async def check_user_by_max_id(
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "role": user.role,
-                "max_id": user.max_id
+                "max_id": user.max_id,
+                "password": user.passwd
             }
         }
 
