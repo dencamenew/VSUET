@@ -87,7 +87,7 @@ services:
     command: >
       sh -c "
       npm install -g localtunnel &&
-      lt --port 8080 --subdomain fast-api-maxminiapp1"
+      lt --port 8080 --subdomain fast-api-maxminiapp"
     network_mode: host
     depends_on:
       - fastapi
