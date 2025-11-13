@@ -65,6 +65,15 @@ class UserRepository(BaseRepository[User]):
             .first()
         )
     
+    def get_by_name_password(self, first_name: str, last_name: str, password: str):
+        """
+        Поиск пользователя по имени, фамилии и паролю.
+        """
+        return self.db.query(User).filter(
+            User.first_name == first_name,
+            User.last_name == last_name, 
+            User.passwd == password
+        ).first()
 
 
 

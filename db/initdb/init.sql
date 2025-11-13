@@ -65,7 +65,8 @@ CREATE TABLE users (
     role VARCHAR(50) NOT NULL,
     teacher_info_id BIGINT REFERENCES teacher_info(id),
     student_info_id BIGINT REFERENCES student_info(id),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    passwd VARCHAR(255) NOT NULL
 );
 
 -- ------------------------

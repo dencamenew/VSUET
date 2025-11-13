@@ -217,3 +217,12 @@ class TeacherTimetable(BaseModel):
     timetable: TimetableDto
 
     model_config = ConfigDict(from_attributes=True)
+
+class NamePasswordAuthRequest(BaseModel):
+    first_name: str
+    last_name: str
+    password: str
+
+class NamePasswordAuthResponse(BaseModel):
+    role: str
+    max_id: Optional[str] = None
