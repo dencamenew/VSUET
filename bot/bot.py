@@ -4,6 +4,7 @@ import aiohttp
 
 from maxapi import Bot, Dispatcher, F
 from maxapi.types import MessageCreated, Command
+from maxapi.types import BotCommand
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,7 +21,18 @@ AUTH_URL = "https://fast-api-maxminiapp.loca.lt/api/auth/login_user"
 REGISTER_URL = "https://fast-api-maxminiapp.loca.lt/api/auth/register"
 
 
+# ---------------------- /start ----------------------
 
+@dp.message_created(Command("start"))
+async def start(event: MessageCreated):
+    await event.message.answer(
+        "👋 Добро пожаловать на цифровую образовательную платформу!\n\n"
+        "🔐 Чтобы войти в аккаунт — используйте команду /auth\n"
+        "🚪 Чтобы выйти — /logout\n\n"
+    )
+
+
+# ---------------------- /auth ----------------------
 
 @dp.message_created(Command("auth"))
 async def start_auth(event: MessageCreated):
@@ -58,7 +70,7 @@ async def start_auth(event: MessageCreated):
     await event.message.answer("Введите вашу фамилию:")
 
 
-
+# ---------------------- /logout ----------------------
 
 @dp.message_created(Command("logout"))
 async def logout(event: MessageCreated):
@@ -66,7 +78,7 @@ async def logout(event: MessageCreated):
 
     try:
         async with aiohttp.ClientSession() as session:
-            #Получаем пользователя из базы по max_id
+            # Получаем пользователя из базы по max_id
             async with session.post(
                 CHECK_URL,
                 headers={"accept": "application/json", "Content-Type": "application/json"},
@@ -83,15 +95,13 @@ async def logout(event: MessageCreated):
                     await event.message.answer("⚠️ Пользователь не найден в базе.")
                     return
 
-                #Формируем payload для logout
                 logout_payload = {
                     "first_name": user["first_name"],
                     "last_name": user["last_name"],
-                    "password": user["password"],  # берём из базы
+                    "password": user["password"],
                     "max_id": "-"
                 }
 
-                #Отправляем PUT на /register
                 async with session.put(
                     REGISTER_URL,
                     headers={"accept": "application/json", "Content-Type": "application/json"},
@@ -105,12 +115,11 @@ async def logout(event: MessageCreated):
 
     except Exception as e:
         logging.error(f"Ошибка logout: {e}")
-        await event.message.answer(f"⚠️ Ошибка сервера при выходе.{e}")
+        await event.message.answer(f"⚠️ Ошибка сервера при выходе. {e}")
 
 
+# ------------------ Шаги аутентификации ------------------
 
-
-#     Шаги аутентификации
 @dp.message_created(F.message.body.text)
 async def handle_auth(event: MessageCreated):
     user_id = event.from_user.user_id
@@ -159,10 +168,8 @@ async def handle_auth(event: MessageCreated):
                     role = data.get("role")
 
                     await event.message.answer(
-                        f"✅ Аутентификация успешна!\n"
-                        f"👤 {auth_payload['last_name']} {auth_payload['first_name']}\n"
-                        f"🔑 Роль: {role}\n"
-                        f"⏳ Сохраняю ваш MAX_ID..."
+                        f"✅ Успешный вход в аккаунт!\n"
+                        f"🚀 Можете заходить в приложение"
                     )
 
                     # Сохраняем max_id в базе
@@ -191,8 +198,19 @@ async def handle_auth(event: MessageCreated):
         user_states.pop(user_id, None)
         return
 
+
+# ------------------ MAIN ------------------
+
+
 async def main():
+    await bot.set_my_commands(
+        BotCommand(name="start", description="Информация о боте"),
+        BotCommand(name="auth", description="Войти в аккаунт"),
+        BotCommand(name="logout", description="Выйти из аккаунта"),
+    )
+
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
