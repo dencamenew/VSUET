@@ -202,6 +202,11 @@ export function ScheduleList(
     const [isOpen, setIsOpen] = useState(false);
     const t = translations[language] || translations.en;
 
+    const tq = translations[language].scheduleQR;
+    const tt = translations[language].scheduleQR.teacher;
+    const ts = translations[language].scheduleQR.student;
+
+
     const {
         data,
         isConnected,
@@ -339,7 +344,7 @@ export function ScheduleList(
             >
                 <div style={{ maxWidth: 300 }}>
                     <h2 className="text-2xl font-bold mb-4 pr-10">
-                        {role === "teacher" ? "QR-код для посещаемости" : "Отметить посещение"}
+                        {role === "teacher" ? tt.title : ts.title}
                     </h2>
 
                     {error && (
@@ -362,12 +367,12 @@ export function ScheduleList(
                                     </div>
 
                                     <p className="text-sm text-muted-foreground text-center">
-                                        Студенты могут отсканировать этот код
+                                        {tt.description}
                                     </p>
                                     {studentsList?.students && studentsList.students.length > 0 && (
                                         <div className="w-full mt-4">
                                             <h3 className="font-semibold mb-2">
-                                                Отметились ({studentsList.students.length}):
+                                                {tt.marks} ({studentsList.students.length}):
                                             </h3>
                                             <div className="max-h-40 overflow-y-auto bg-muted p-2 rounded-md scrollbar-xs">
                                                 {studentsList.students.map((student, idx) => (
@@ -382,7 +387,7 @@ export function ScheduleList(
                                         variant="destructive"
                                         className="w-full mt-4"
                                     >
-                                        Завершить сессию
+                                        {tt.close}
                                     </Button>
                                 </div>
                             ) : (
@@ -403,7 +408,7 @@ export function ScheduleList(
                                         variant="outline"
                                         className="w-full mt-4"
                                     >
-                                        Отменить
+                                        {tt.cancel}
                                     </Button>
                                 </div>
                             )}
@@ -416,12 +421,12 @@ export function ScheduleList(
                                 <>
                                     <QRScanner onScan={handleQRScan} isScanning={isScanning} />
                                     <p className="text-sm text-muted-foreground text-center">
-                                        Наведите камеру на QR-код
+                                        {ts.description}
                                     </p>
                                     {isScanning && (
                                         <div className="flex items-center gap-2">
                                             <div className="size-4"><Loading /></div>
-                                            <p className="text-blue-500">Обработка...</p>
+                                            <p className="text-blue-500">{ts.processing}</p>
                                         </div>
                                     )}
                                     <Button
@@ -429,7 +434,7 @@ export function ScheduleList(
                                         variant="outline"
                                         className="w-full"
                                     >
-                                        Отменить
+                                        {ts.cancel}
                                     </Button>
                                 </>
                             )}
@@ -442,7 +447,7 @@ export function ScheduleList(
                                     >
                                         <Check className='size-10' />
                                         <p className="text-xl font-semibold text-center mt-2">
-                                            Посещение отмечено!
+                                            {ts.done}
                                         </p>
                                     </div>
                                 </div>
@@ -457,7 +462,7 @@ export function ScheduleList(
                                         <div className="text-center p-4 text-red-600 flex flex-col items-center">
                                             <MessageSquareWarning className='size-10' />
                                             <p className="text-xl font-semibold mb-2 mt-4">
-                                                Ошибка
+                                                {tq.error}
                                             </p>
                                             <p className="text-sm text-red-500">
                                                 {String(scanError)}
@@ -468,7 +473,7 @@ export function ScheduleList(
                                         onClick={resetScan}
                                         className="w-full"
                                     >
-                                        Попробовать снова
+                                        {tq.try}
                                     </Button>
                                 </div>
                             )}

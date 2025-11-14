@@ -268,7 +268,7 @@ export default function Navigation({
               data-mobile-nav-button
               onClick={() => onNavigate(btn.module as Nav)}
               className={cn(
-                "relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
+                "cursor-pointer relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
                 currentModule === btn.module ? "text-primary-foreground" : "text-muted-foreground"
               )}
             >
@@ -280,7 +280,7 @@ export default function Navigation({
         <button
           data-profile-button
           onClick={() => setShowProfile(true)}
-          className="relative z-10 flex-1 h-10 flex items-center justify-center rounded-md text-muted-foreground"
+          className="cursor-pointer relative z-10 flex-1 h-10 flex items-center justify-center rounded-md text-muted-foreground"
         >
           <User className="w-5 h-5" />
         </button>

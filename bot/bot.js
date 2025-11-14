@@ -17,15 +17,15 @@ bot.command('start', async (ctx) => {
   
   const keyboard = Keyboard.inlineKeyboard([
     [
-      Keyboard.button.link(
+      Keyboard.button.openApp(
         '👨‍🏫 Войти как преподаватель',
-        `${MINI_APP_URL}?custom_max_id=${userId}&role=teacher`
+        `${MINI_APP_URL}?custom_max_id=${userId}`
       )
     ],
     [
-      Keyboard.button.link(
+      Keyboard.button.openApp(
         '🎓 Войти как студент',
-        `${MINI_APP_URL}?custom_max_id=${userId}&role=student`
+        `${MINI_APP_URL}?custom_max_id=${userId}`
       )
     ]
   ]);

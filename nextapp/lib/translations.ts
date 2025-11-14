@@ -39,6 +39,24 @@ export const translations = {
     send: "Отправить",
     qrMarkStudent: "Отметиться с помощью QR",
     qrMarkTeacher: "Отметить с помощью QR-сессии",
+    scheduleQR: {
+      teacher: {
+        title: "QR-код для посещаемости",
+        description: "Студенты могут отсканировать этот код",
+        marks: "Отметились",
+        close: "Завершить сессию",
+        cancel: "Отменить"
+      },
+      student: {
+        title: "Отметить посещение",
+        description: "Наведите камеру на QR-код",
+        processing: "Обработка...",
+        cancel: "Отменить",
+        done: "Посещение отмечено"
+      },
+      error: "Ошибка",
+      try: "Попробовать снова"
+    },
 
     // Rating
     faculty: "Факультет",
@@ -54,6 +72,9 @@ export const translations = {
     saveGrades: "Сохранить оценки",
     gradesSaved: "Оценки сохранены",
     selectGroupAndSubject: "Выберите группу и предмет",
+    isTextGradingOn: "Выберите оценку из списка. Изменения сохраняются автоматически.",
+    isTextGradingOff: "Нажмите на оценку для изменения. Изменения сохраняются автоматически.",
+    average: "Средний балл",
 
     // Attendance
     saveAttendance: "Сохранить посещаемость",
@@ -62,11 +83,21 @@ export const translations = {
     absent: "Отсутствует",
     late: "Опоздал",
     choice: "Выберите предмет",
+    presence: "Присутствовал",
+    absence: "Отсутствовал",
+    status: "Статус",
+    searchSubject: "Поиск дисциплины",
+    date: "Дата",
+    notFound: "Дисциплины не найдены",
+    notData: "Нет данных о дисциплинах",
 
     // Statements
     statements: {
       title: "Ведомости",
-      description: "Здесь вы можете скачать ведомости в формате PDF"
+      description: "Здесь вы можете скачать ведомости в формате PDF",
+      downlaodTitle: "Скачать ведомости",
+      processing: "Скачивание...",
+      downloadError: "Ошибка при скачивании",
     },
 
     library: {
@@ -142,6 +173,24 @@ export const translations = {
     send: "Send",
     qrMarkStudent: "Mark with QR",
     qrMarkTeacher: "Mark with QR session",
+    scheduleQR: {
+      teacher: {
+        title: "Attendance QR Code",
+        description: "Students can scan this code",
+        marks: "Checked in",
+        close: "End session",
+        cancel: "Cancel"
+      },
+      student: {
+        title: "Mark attendance",
+        description: "Point camera at the QR code",
+        processing: "Processing...",
+        cancel: "Cancel",
+        done: "Attendance is marked"
+      },
+      error: "Error",
+      try: "Try again"
+    },
 
     // Rating
     faculty: "Faculty",
@@ -157,6 +206,9 @@ export const translations = {
     saveGrades: "Save Grades",
     gradesSaved: "Grades saved",
     selectGroupAndSubject: "Select group and subject",
+    isTextGradingOn: "Select a rating from the list. Changes are saved automatically.",
+    isTextGradingOff: "Click on the rating to change it. Changes are saved automatically.",
+    average: "Average",
 
     // Attendance
     saveAttendance: "Save Attendance",
@@ -165,13 +217,24 @@ export const translations = {
     absent: "Absent",
     late: "Late",
     choice: "Select subject",
+    presence: "Presence",
+    absence: "Absence",
+    status: "Status",
+    searchSubject: "Search subject",
+    date: "Date",
+    notFound: "Disciplines not found",
+    notData: "There is no data on disciplines",
 
     // Statements
 
     statements: {
       title: "Statements",
-      description: "Here you can download the statements in PDF format"
+      description: "Here you can download the statements in PDF format",
+      downlaodTitle: "Download statements",
+      processing: "Download...",
+      downloadError: "Download error",
     },
+
 
     library: {
       title: "Library",

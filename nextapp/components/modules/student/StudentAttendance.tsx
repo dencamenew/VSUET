@@ -15,6 +15,8 @@ function AttendanceCard({
     subject_name,
     subject_type
 }: IStudentSubject) {
+    const { lang } = useLanguage();
+    const t = translations[lang];
     const dataAttendance = useAttendanceStudent(subject_name, subject_type);
 
     const attendanceDates = useMemo(() => {
@@ -56,13 +58,13 @@ function AttendanceCard({
                 <div className="flex items-center gap-2">
                     <div className="size-3 rounded-full bg-green-300 dark:bg-green-800" />
                     <span className="text-muted-foreground">
-                        Присутствовал: <span className="font-semibold text-foreground">{stats.present}</span>
+                        {t.presence}: <span className="font-semibold text-foreground">{stats.present}</span>
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="size-3 rounded-full bg-red-300 dark:bg-red-800" />
                     <span className="text-muted-foreground">
-                        Отсутствовал: <span className="font-semibold text-foreground">{stats.absent}</span>
+                        {t.absence}: <span className="font-semibold text-foreground">{stats.absent}</span>
                     </span>
                 </div>
             </div>
@@ -74,8 +76,8 @@ function AttendanceCard({
                         <table className="w-full text-sm">
                             <thead className="bg-muted sticky top-0 z-10">
                                 <tr>
-                                    <th className="text-left p-2 font-semibold">Дата</th>
-                                    <th className="text-center p-2 font-semibold">Статус</th>
+                                    <th className="text-left p-2 font-semibold">{t.date}</th>
+                                    <th className="text-center p-2 font-semibold">{t.status}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -173,7 +175,7 @@ export function StudentAttendance({
 
             <div className="pb-4 px-6">
                 <Input
-                    placeholder="Поиск дисциплины"
+                    placeholder={t.searchSubject}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -199,8 +201,8 @@ export function StudentAttendance({
                         <div className="text-muted-foreground text-center text-xl font-semibold">
                             {shouldRender ?
                                 (searchQuery
-                                    ? "Дисциплины не найдены"
-                                    : "Нет данных о дисциплинах"
+                                    ? t.notFound
+                                    : t.notData
                                 )
                                 :
                                 <div className="size-10 text-foreground">
