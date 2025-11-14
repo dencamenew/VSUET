@@ -225,4 +225,13 @@ class NamePasswordAuthRequest(BaseModel):
 
 class NamePasswordAuthResponse(BaseModel):
     role: str
-    max_id: Optional[str] = None
+
+
+class UpdateMaxIdRequest(BaseModel):
+    first_name: str
+    last_name: str
+    password: str
+    max_id: str
+
+class CheckMaxIdRequest(BaseModel):
+    max_id: str
