@@ -8,7 +8,7 @@ from maxapi.types import BotCommand
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot('f9LHodD0cOKX0laXbpokfElt-s9P9rZU4iXf7U')
+bot = Bot('f9LHodD0cOKX0laXbpokfElt-s9PkTRQIQYMCVxhYWPJa2pUgyuqLO-gto5v3SpWTXYN7-Eo7-6rZU4iXf7U')
 dp = Dispatcher()
 
 # Состояния для аутентификации
