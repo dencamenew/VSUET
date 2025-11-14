@@ -8,7 +8,7 @@ from maxapi.types import BotCommand
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot('f9LHodD0cOKX0laXbpokfElt-s9PkTRQIQYMCVxhYWPJa2pUgyuqLO-gto5v3SpWTXYN7-Eo7-6rZU4iXf7U')
+bot = Bot('f9LHodD0cOKX0laXbpokfElt-s9P9rZU4iXf7U')
 dp = Dispatcher()
 
 # Состояния для аутентификации
@@ -40,7 +40,6 @@ async def start_auth(event: MessageCreated):
 
     try:
         async with aiohttp.ClientSession() as session:
-            # Проверяем есть ли max_id в базе
             async with session.post(
                 CHECK_URL,
                 headers={"accept": "application/json", "Content-Type": "application/json"},
@@ -78,7 +77,6 @@ async def logout(event: MessageCreated):
 
     try:
         async with aiohttp.ClientSession() as session:
-            # Получаем пользователя из базы по max_id
             async with session.post(
                 CHECK_URL,
                 headers={"accept": "application/json", "Content-Type": "application/json"},
@@ -110,6 +108,9 @@ async def logout(event: MessageCreated):
 
                     if put_response.status == 200:
                         await event.message.answer("🚪 Вы успешно вышли из аккаунта.")
+                        # Очищаем состояния при выходе
+                        user_states.pop(user_id, None)
+                        user_data.pop(user_id, None)
                     else:
                         await event.message.answer(f"⚠️ Не удалось выполнить выход. Код: {put_response.status}")
 
@@ -125,6 +126,11 @@ async def handle_auth(event: MessageCreated):
     user_id = event.from_user.user_id
     text = event.message.body.text.strip()
 
+    # Игнорируем команды
+    if text.startswith('/'):
+        return
+
+    # Проверяем, находится ли пользователь в процессе аутентификации
     if user_id not in user_states:
         return
 
@@ -195,12 +201,13 @@ async def handle_auth(event: MessageCreated):
             logging.error(f"Ошибка аутентификации: {e}")
             await event.message.answer("⚠️ Ошибка сервера. Попробуйте позже.")
 
+        # Очищаем состояния после завершения аутентификации
         user_states.pop(user_id, None)
+        user_data.pop(user_id, None)
         return
 
 
 # ------------------ MAIN ------------------
-
 
 async def main():
     await bot.set_my_commands(
