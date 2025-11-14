@@ -99,6 +99,7 @@ services:
       dockerfile: Dockerfile
     container_name: max_bot
 
+
 volumes:
   postgres_data:
   mongo_data:
