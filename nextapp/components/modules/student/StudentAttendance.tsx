@@ -129,12 +129,8 @@ export function StudentAttendance({
     const t = translations[lang];
     const user = useMe();
 
-
     const [searchQuery, setSearchQuery] = useState("");
-
-
     const dataSubjects = useStudentInfoSubjects(user?.zach_number);
-
 
     const subjects = useMemo(() => {
         if (dataSubjects && user && user.zach_number) {
@@ -146,7 +142,6 @@ export function StudentAttendance({
 
     const filteredSubjects = useMemo(() => {
         if (!searchQuery.trim()) return subjects;
-
 
         const query = searchQuery.toLowerCase();
         return subjects.filter(subject =>

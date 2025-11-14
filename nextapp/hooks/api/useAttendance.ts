@@ -19,7 +19,7 @@ export function useAttendanceStudent(subjectName: string | undefined, subjectTyp
     const { token } = useToken();
 
     const { data } = useQuery<IAttendanceStudent>({
-        queryKey: ["attendance/student"],
+        queryKey: ["attendance/student", subjectName, subjectType],
         enabled: !!token && !!subjectName && !!subjectType,
         queryFn: async () => {
             const response = await fetch(
