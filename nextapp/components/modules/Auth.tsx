@@ -14,7 +14,7 @@ function AuthContent() {
   useLayoutEffect(() => {
     if (!parsedRawData || !parsedRawData.user || !parsedRawData.user.id) return;
     auth.mutate(parsedRawData.user.id.toString());
-  }, []);
+  }, [parsedRawData]);
 
   return (
     <div className="h-screen w-screen flex items-center justify-center flex-col">
