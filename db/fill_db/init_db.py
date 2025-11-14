@@ -23,17 +23,36 @@ cur.execute("INSERT INTO groups (group_name) VALUES (%s) RETURNING id;", (group_
 group_id = cur.fetchone()[0]
 
 # ---------- 2. Создаем студентов ----------
+# ---------- 2. Создаем студентов ----------
 students_count = 15
 student_ids = []
 start_zach_number = 247160  # первый номер зачётки
 
+# Списки русских имен и фамилий для студентов
+russian_first_names = [
+    "Александр", "Алексей", "Андрей", "Артем", "Борис", 
+    "Вадим", "Василий", "Виктор", "Владимир", "Дмитрий",
+    "Евгений", "Иван", "Игорь", "Кирилл", "Максим"
+]
+
+russian_last_names = [
+    "Иванов", "Петров", "Сидоров", "Кузнецов", "Попов",
+    "Васильев", "Смирнов", "Новиков", "Федоров", "Морозов",
+    "Волков", "Алексеев", "Лебедев", "Семенов", "Егоров"
+]
+
+# Простые постоянные пароли
+student_password = "petrov123"  # единый пароль для всех студентов
+maslov_password = "maslov123"    # пароль для Маслова
+
 for i in range(students_count):
-    zach_number = str(start_zach_number + i)  # последовательные номера
+    zach_number = str(start_zach_number + i)
     cur.execute(
         "INSERT INTO student_info (zach_number, group_id) VALUES (%s, %s) RETURNING id;",
         (zach_number, group_id)
     )
     student_ids.append(cur.fetchone()[0])
+
 # ---------- 3. JSON расписания группы ----------
 group_timetable_json = {
     "Числитель": {
@@ -570,6 +589,9 @@ for teacher_name, timetable in teachers_data.items():
       "lesson_name": "Технологии и методы программирования",
       "lesson_type": "практические занятия"
     },{
+      "lesson_name": "Технологии и методы программирования",
+      "lesson_type": "лекция"
+    },{
       "lesson_name": "Учебная практика",
       "lesson_type": "практика"
     },
@@ -629,32 +651,35 @@ for teacher_name, timetable in teachers_data.items():
     first_name, last_name = teacher_name.split()
     if teacher_name == "Маслов А.А.":
         cur.execute(
-            "INSERT INTO users (first_name, last_name, role, teacher_info_id, MAX_id) VALUES (%s, %s, %s, %s, %s);",
-            (first_name, last_name, "teacher", teacher_info_id, "1")
+            "INSERT INTO users (first_name, last_name, role, teacher_info_id, MAX_id, passwd) VALUES (%s, %s, %s, %s, %s, %s);",
+            ("Александр", "Маслов", "teacher", teacher_info_id, "1", maslov_password)
         )
     else:
         cur.execute(
-            "INSERT INTO users (first_name, last_name, role, teacher_info_id) VALUES (%s, %s, %s, %s);",
-            (first_name, last_name, "teacher", teacher_info_id)
+            "INSERT INTO users (first_name, last_name, role, teacher_info_id, passwd) VALUES (%s, %s, %s, %s, %s);",
+            (first_name, last_name, "teacher", teacher_info_id, "password123")
         )
 
 # ---------- 7. Создаем пользователей-студентов ----------
-random_student_id = random.choice(student_ids)
+# Постоянные данные для студента с MAX_id = 2
+constant_student_first_name = "Иван"
+constant_student_last_name = "Петров"
 
-for student_id in student_ids:
-    first_name = fake.first_name()
-    last_name = fake.last_name()
-    if student_id == random_student_id:
+for i, student_id in enumerate(student_ids):
+    if student_id == student_ids[1]:  # Второй студент (индекс 1) получает MAX_id = 2
+        # Используем постоянные имя и фамилию для студента с MAX_id = 2
         cur.execute(
-            "INSERT INTO users (first_name, last_name, role, student_info_id, MAX_id) VALUES (%s, %s, %s, %s, %s);",
-            (first_name, last_name, "student", student_id, "2")
+            "INSERT INTO users (first_name, last_name, role, student_info_id, MAX_id, passwd) VALUES (%s, %s, %s, %s, %s, %s);",
+            (constant_student_first_name, constant_student_last_name, "student", student_id, "34456282", student_password)
         )
     else:
+        # Для остальных студентов используем случайные русские имена и фамилии
+        first_name = russian_first_names[i]
+        last_name = russian_last_names[i]
         cur.execute(
-            "INSERT INTO users (first_name, last_name, role, student_info_id) VALUES (%s, %s, %s, %s);",
-            (first_name, last_name, "student", student_id)
+            "INSERT INTO users (first_name, last_name, role, student_info_id, passwd) VALUES (%s, %s, %s, %s, %s);",
+            (first_name, last_name, "student", student_id, student_password)
         )
-
 
 # ---------- Attendance с учётом типа недели и типа занятия ----------
 from datetime import date, timedelta

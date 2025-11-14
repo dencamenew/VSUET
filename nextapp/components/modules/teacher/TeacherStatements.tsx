@@ -15,6 +15,7 @@ export function TeacherStatements(
     }
 ) {
     const { lang } = useLanguage();
+    const tt = translations[lang];
     const t = translations[lang].statements;
 
     const [selectedGroup, setSelectedGroup] = useState<string>("");
@@ -68,7 +69,8 @@ export function TeacherStatements(
     };
 
     // Условия для disabled кнопок
-    const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending;
+    const canDownloadAttendance = selectedGroup && selectedSbj && !downloadAttendance.isPending &&
+        selectedSbj?.lesson_type !== "курсовая работа" && selectedSbj?.lesson_type !== "практика";
     const canDownloadRating = selectedGroup && selectedSbj && !downloadRating.isPending;
     const canDownloadAverage = selectedGroup && !downloadAverage.isPending;
 
@@ -85,13 +87,13 @@ export function TeacherStatements(
                 </div>
             </div>
 
-            <div className="h-full overflow-y-auto pt-6 px-6">
+            <div className="h-full overflow-y-auto pt-6 px-6 scrollbar-xs">
                 <div className="rounded-xl bg-muted p-6 space-y-6">
                     {/* Селекторы */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Селектор группы */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Группа</label>
+                            <label className="text-sm font-medium">{tt.group}</label>
                             <Select
                                 className="bg-background"
                                 value={selectedGroup}
@@ -100,7 +102,7 @@ export function TeacherStatements(
                                     setSelectedSbj(undefined);
                                 }}
                             >
-                                <option value="">Выберите группу</option>
+                                <option value="">{tt.selectGroup}</option>
                                 {groups.map((group) => (
                                     <option key={group} value={group}>
                                         {group}
@@ -111,7 +113,7 @@ export function TeacherStatements(
 
                         {/* Селектор предмета */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Предмет</label>
+                            <label className="text-sm font-medium">{tt.subject}</label>
                             <Select
                                 className="bg-background"
                                 value={selectedSbj ? `${selectedSbj.lesson_name}_${selectedSbj.lesson_type}` : ""}
@@ -123,13 +125,13 @@ export function TeacherStatements(
                                 }}
                                 disabled={!selectedGroup}
                             >
-                                <option value="">Выберите предмет</option>
+                                <option value="">{tt.selectSubject}</option>
                                 {subjects.map((subject, idx) => (
                                     <option
                                         key={idx}
                                         value={`${subject.lesson_name}_${subject.lesson_type}`}
                                     >
-                                        {subject.lesson_name} ({subject.lesson_type})
+                                        {subject.lesson_name}
                                     </option>
                                 ))}
                             </Select>
@@ -138,7 +140,7 @@ export function TeacherStatements(
 
                     {/* Кнопки скачивания */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-medium">Скачать ведомости</h3>
+                        <h3 className="text-sm font-medium">{t.downlaodTitle}</h3>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             {/* Посещаемость */}
                             <Button
@@ -148,7 +150,7 @@ export function TeacherStatements(
                                 className="w-full"
                             >
                                 <Download className="w-4 h-4 mr-2" />
-                                {downloadAttendance.isPending ? 'Скачивание...' : 'Посещаемость'}
+                                {downloadAttendance.isPending ? t.processing : tt.attendance}
                             </Button>
 
                             {/* Рейтинг */}
@@ -159,7 +161,7 @@ export function TeacherStatements(
                                 className="w-full"
                             >
                                 <Download className="w-4 h-4 mr-2" />
-                                {downloadRating.isPending ? 'Скачивание...' : 'Рейтинг'}
+                                {downloadRating.isPending ? t.processing : tt.rating}
                             </Button>
 
                             {/* Средний балл */}
@@ -170,24 +172,14 @@ export function TeacherStatements(
                                 className="w-full"
                             >
                                 <Download className="w-4 h-4 mr-2" />
-                                {downloadAverage.isPending ? 'Скачивание...' : 'Средний балл'}
+                                {downloadAverage.isPending ? t.processing : tt.average}
                             </Button>
                         </div>
 
                         {/* Сообщения об ошибках */}
-                        {downloadAttendance.isError && (
+                        {(downloadAttendance.isError || downloadRating.isError || downloadAverage.isError)  && (
                             <p className="text-sm text-red-500">
-                                Ошибка скачивания посещаемости
-                            </p>
-                        )}
-                        {downloadRating.isError && (
-                            <p className="text-sm text-red-500">
-                                Ошибка скачивания рейтинга
-                            </p>
-                        )}
-                        {downloadAverage.isError && (
-                            <p className="text-sm text-red-500">
-                                Ошибка скачивания среднего балла
+                                {t.downloadError}
                             </p>
                         )}
                     </div>

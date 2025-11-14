@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRole } from "@/components/security/useRole";
 
 type TeacherNav = "schedule" | "rating" | "attendance" | "statements";
-type StudentNav = "schedule" | "rating" | "library";
+type StudentNav = "schedule" | "rating" | "attendance" | "library";
 export type Nav = TeacherNav | StudentNav;
 
 const DEFAULT_PAGES: Record<string, Nav> = {
@@ -12,19 +12,19 @@ const DEFAULT_PAGES: Record<string, Nav> = {
 
 const VALID_PAGES: Record<string, Nav[]> = {
   teacher: ["schedule", "attendance", "rating", "statements"],
-  student: ["schedule", "rating", "library"],
+  student: ["schedule", "attendance", "rating", "library"],
 };
 
 export function useNavigation() {
   const { role } = useRole();
-  
+
   const getInitialModule = (): Nav => {
     const stored = localStorage.getItem("currentModule") as Nav;
-    
+
     if (role && stored && VALID_PAGES[role]?.includes(stored)) {
       return stored;
     }
-    
+
     return role ? DEFAULT_PAGES[role] : "schedule";
   };
 

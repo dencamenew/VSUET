@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: db
     volumes:
-      - ./db/initdb:/docker-entrypoint-initdb.d
+      - ./db/postgres/initdb:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
@@ -20,13 +20,13 @@ services:
   fill_db:
     container_name: fill_db
     build:
-      context: ./fill_db
+      context: ./db/fill_db
       dockerfile: Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./fill_db:/app
+      - ./db/fill_db:/app
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -72,25 +72,33 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-      - ./GridFS/books:/books
-      - ./GridFS/init_gridfs.sh:/docker-entrypoint-initdb.d/init_gridfs.sh
+      - ./db/GridFS/books:/books
+      - ./db//GridFS/init_gridfs.sh:/docker-entrypoint-initdb.d/init_gridfs.sh
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
+
   tunnel:
     image: node:alpine
     container_name: tunnel
     command: >
       sh -c "
       npm install -g localtunnel &&
-      lt --port 8080 --subdomain fast-api-maxminiapp1"
+      lt --port 8080 --subdomain fast-api-maxminiapp"
     network_mode: host
     depends_on:
       - fastapi
     restart: unless-stopped
+
+  max_bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: max_bot
+
 
 volumes:
   postgres_data:

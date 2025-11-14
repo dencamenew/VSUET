@@ -7,6 +7,7 @@ export interface ILessonSlot {
   group: string;
   auditorium: string;
   class_type: "лекция" | "практические занятия" | "лабораторная работа" | "семинар";
+  teacher?: string;
 }
 
 export type LessonTime = "08.00-09.35" | "09.45-11.20" | "11.50-13.25" | "13.35-15.10" | "15.20-16.55" | "17.05-18.40" | "18.50-20.25";
@@ -25,7 +26,7 @@ export function useTimetable() {
     queryKey: ["timetable", token],
     enabled: !!token,
     queryFn: async (): Promise<ITimetable> => {
-      const response = await fetch("/my/timetable", {
+      const response = await fetch("/my/timetable/", {
         method: "GET",
       });
 

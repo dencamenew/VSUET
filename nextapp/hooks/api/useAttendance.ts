@@ -2,6 +2,40 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFetch } from "./useFetch";
 import { useToken } from "../useAuth";
 
+// region Student
+
+export interface IAttendanceStudent {
+    attendance: {
+        subject_name: string,
+        subject_type: string,
+        attendance: {
+            [key: string]: boolean
+        }[]
+    }
+}
+
+export function useAttendanceStudent(subjectName: string | undefined, subjectType: string | undefined) {
+    const fetch = useFetch();
+    const { token } = useToken();
+
+    const { data } = useQuery<IAttendanceStudent>({
+        queryKey: ["attendance/student", subjectName, subjectType],
+        enabled: !!token && !!subjectName && !!subjectType,
+        queryFn: async () => {
+            const response = await fetch(
+                `/attendance/student/${subjectName}/${subjectType}`,
+                {
+                    method: "GET",
+                }
+            )
+
+            return response.json();
+        }
+    })
+
+    return data;
+}
+
 // region Teacher
 
 export interface IAttendanceRow {

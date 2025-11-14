@@ -7,6 +7,7 @@ import { translations, type Language } from "@/lib/translations"
 import { useRole } from "@/components/security/useRole"
 import { useLanguage } from "@/hooks/useLanguage"
 import { AppSettings } from "../navigation/AppSettings"
+import { useMe } from "@/hooks/api/useMe"
 
 
 export default function UserProfile({
@@ -19,7 +20,8 @@ export default function UserProfile({
 ) {
   const { role } = useRole();
   const { lang } = useLanguage();
-  const t = translations[lang] || translations.en
+  const t = translations[lang] || translations.en;
+  const user = useMe();
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -68,13 +70,19 @@ export default function UserProfile({
     <>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted mt-1">
             <User className="w-6 h-6 text-primary" />
           </div>
           <div>
             <h2 className="text-xl font-semibold text-foreground">{userName}</h2>
             {role && <p className="text-muted-foreground text-sm">{t[role]}</p>}
+            {
+              user && role === "student" &&
+              <p className="text-xs text-muted-foreground">
+                {user.group_name} • {user.zach_number}
+              </p>
+            }
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-foreground">

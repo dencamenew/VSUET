@@ -5,6 +5,11 @@ import { ILessonSlot } from "./useTimetable";
 
 export type TRoles = "teacher" | "student" | "admin" | undefined;
 
+export interface ISubject {
+    lesson_type: ILessonSlot["class_type"],
+    lesson_name: string
+}
+
 export interface IUser {
     details: {};
     first_name: string;
@@ -19,10 +24,7 @@ export interface IUser {
 
     // teacher
     groups_sbj?: {
-        [key: string]: {
-            lesson_type: ILessonSlot["class_type"],
-            lesson_name: string
-        }[]
+        [key: string]: ISubject[]
     }
 };
 

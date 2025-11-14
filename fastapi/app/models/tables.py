@@ -83,6 +83,7 @@ class User(Base):
     # Relationships
     teacher_info = relationship("TeacherInfo", back_populates="users")
     student_info = relationship("StudentInfo", back_populates="users")
+    passwd = Column(String(255))
 
 
 class Attendance(Base):

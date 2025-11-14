@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, User, GraduationCap, Users, Settings, Table, BookOpen } from "lucide-react"
+import { Calendar, User, GraduationCap, Users, Settings, Table, BookOpen, ListTodo } from "lucide-react"
 import { translations } from "@/lib/translations"
 import { TRoles, useMe } from "@/hooks/api/useMe"
 import { Drawer } from "../modals/Drawer"
@@ -24,6 +24,7 @@ const NAV_CONFIG: Record<Exclude<TRoles, undefined>, readonly { module: string; 
   student: [
     { module: "schedule", icon: Calendar, titleKey: "schedule" },
     { module: "rating", icon: GraduationCap, titleKey: "rating" },
+    { module: "attendance", icon: ListTodo, titleKey: "attendance" },
     { module: "library", icon: BookOpen, titleKey: "library" },
   ],
   teacher: [
@@ -187,24 +188,34 @@ export default function Navigation({
     }
   }, [activeIndex, mobileButtonRects, mobileIndicatorX, mobileIndicatorW]);
 
+  const userName = useMemo(() => {
+    if (!user) return "";
+    return user.first_name + " " + user.last_name;
+  }, [user]);
+
   if (!user) return null;
-  const userName = user.first_name + " " + user.last_name;
 
   const handleLogout = () => { }
 
   return (
     <>
       {/* Десктоп */}
-      <div className="hidden md:flex md:flex-col w-74 bg-background border-r border-border p-4 gap-2 h-screen justify-between pt-14 pb-4">
+      <div className="hidden md:flex md:flex-col w-80 bg-background border-r border-border p-4 gap-2 h-screen justify-between pt-14 pb-4">
         <div className="flex flex-col gap-2 relative" ref={containerRef}>
           <div className="pb-10">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
-                <User className="w-6 h-6 text-primary" />
+              <div className="size-14 gradient-primary rounded-full flex items-center justify-center shadow-soft bg-muted">
+                <User className="size-7 text-primary" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">{userName}</h2>
                 {role && <p className="text-muted-foreground text-sm">{t[role]}</p>}
+                {
+                  role === "student" &&
+                  <p className="text-xs text-muted-foreground">
+                    {user.group_name} • {user.zach_number}
+                  </p>
+                }
               </div>
             </div>
           </div>
@@ -257,7 +268,7 @@ export default function Navigation({
               data-mobile-nav-button
               onClick={() => onNavigate(btn.module as Nav)}
               className={cn(
-                "relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
+                "cursor-pointer relative z-10 flex-1 h-10 flex items-center justify-center rounded-md transition-colors",
                 currentModule === btn.module ? "text-primary-foreground" : "text-muted-foreground"
               )}
             >
@@ -269,7 +280,7 @@ export default function Navigation({
         <button
           data-profile-button
           onClick={() => setShowProfile(true)}
-          className="relative z-10 flex-1 h-10 flex items-center justify-center rounded-md text-muted-foreground"
+          className="cursor-pointer relative z-10 flex-1 h-10 flex items-center justify-center rounded-md text-muted-foreground"
         >
           <User className="w-5 h-5" />
         </button>

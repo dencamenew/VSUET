@@ -102,7 +102,7 @@ export default function TeacherRating({
 
   const handleTextGradeChange = async (studentId: string, value: string) => {
     const cellKey = `${studentId}-grade`;
-    
+
     setGrades((prev) => ({
       ...prev,
       [studentId]: { grade: value },
@@ -144,7 +144,7 @@ export default function TeacherRating({
 
     const currentGrade = grades[studentId];
     const newValue = currentGrade && 'kt1' in currentGrade ? currentGrade[checkpoint] : undefined;
-    
+
     const student = ratingData?.ratings.find(r => r.student_id === studentId);
     const originalValue = student && 'rating' in student ? student.rating[checkpoint] : undefined;
 
@@ -183,8 +183,8 @@ export default function TeacherRating({
   const checkpoints: (keyof ICheckpoints)[] = ["kt1", "kt2", "kt3", "kt4", "kt5"];
   const textGradeOptions = ["Неудовлетворительно", "Удовлетворительно", "Хорошо", "Отлично"];
 
-  const selectedSbjValue = useMemo(() => 
-    selectedSbj ? JSON.stringify(selectedSbj) : "", 
+  const selectedSbjValue = useMemo(() =>
+    selectedSbj ? JSON.stringify(selectedSbj) : "",
     [selectedSbj]
   );
 
@@ -234,7 +234,7 @@ export default function TeacherRating({
               <option value="">{t.selectSubject}</option>
               {subjects.map((item, index) => (
                 <option key={index} value={JSON.stringify(item)}>
-                  {item.lesson_name}
+                  {item.lesson_name} ({item.lesson_type})
                 </option>
               ))}
             </Select>
@@ -251,9 +251,11 @@ export default function TeacherRating({
                 {ratingData.subject_name} - {ratingData.group_name}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                {isTextGrading
-                  ? "Выберите оценку из списка. Изменения сохраняются автоматически"
-                  : "Нажмите на оценку для изменения. Изменения сохраняются автоматически"}
+                {
+                  isTextGrading
+                    ? t.isTextGradingOn
+                    : t.isTextGradingOff
+                }
               </p>
             </div>
 

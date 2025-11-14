@@ -1,4 +1,4 @@
-import { atom, useAtom, useSetAtom } from "jotai";
+import { atom, useAtom } from "jotai";
 import { useEffect, useLayoutEffect, useState } from "react";
 
 const tokenAtom = atom<string | undefined>(undefined);

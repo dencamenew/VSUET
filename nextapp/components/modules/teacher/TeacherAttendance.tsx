@@ -59,7 +59,11 @@ export default function TeacherAttendance(
 
   const subjects = useMemo(() => {
     if (!user || !selectedGroup) return [];
-    return user.groups_sbj ? user.groups_sbj[selectedGroup] : [];
+
+    return user.groups_sbj ? user.groups_sbj[selectedGroup]
+      .filter(item => item.lesson_name !== "Учебная практика" && item.lesson_name !== "Сетевые технологии")
+      :
+      [];
   }, [groups, user, selectedGroup]);
 
   const fetchAttendance = useAttendanceTeacher(
@@ -152,7 +156,7 @@ export default function TeacherAttendance(
               <option value="">{t.selectSubject}</option>
               {subjects.map((item, index) => (
                 <option key={index} value={JSON.stringify(item)}>
-                  {item.lesson_name}
+                  {item.lesson_name} ({item.lesson_type})
                 </option>
               ))}
             </Select>
@@ -166,9 +170,9 @@ export default function TeacherAttendance(
           <div className="bg-card rounded-lg border border-border h-full flex flex-col overflow-hidden">
             {/* Заголовок таблицы - фиксированный */}
             <div className="flex-shrink-0 p-4 border-b border-border">
-              <h3 className="font-semibold">Группа: {selectedGroup}</h3>
+              <h3 className="font-semibold">{t.group}: {selectedGroup}</h3>
               <p className="text-sm text-muted-foreground">
-                Предмет: {selectedSbj?.lesson_name} ({selectedSbj?.lesson_type})
+                {t.subject}: {selectedSbj?.lesson_name} ({selectedSbj?.lesson_type})
               </p>
             </div>
 
@@ -179,7 +183,7 @@ export default function TeacherAttendance(
                   <tr>
                     <th className="px-2 py-2 text-left font-medium text-foreground sticky left-0 bg-card z-30 min-w-[80px] relative">
                       <div className="px-2 py-2 absolute inset-0 border-border border-r border-b flex items-center">
-                        Студент
+                        {t.student}
                       </div>
                     </th>
                     {dates.map(date => (

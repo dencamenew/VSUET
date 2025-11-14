@@ -7,7 +7,7 @@ import { Client } from "./client"
 import Script from "next/script"
 
 export const metadata: Metadata = {
-  title: "Student Schedule App",
+  title: "ВГУИТ",
   description: "Telegram Mini App для расписания студентов",
 }
 

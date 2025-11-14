@@ -76,3 +76,27 @@ class AuthService:
             
             
         return user_info
+    
+    def login_by_name_password(self, first_name: str, last_name: str, password: str) -> Dict[str, Any]:
+        """
+        Аутентификация пользователя по имени, фамилии и паролю.
+        Возвращает информацию о пользователе включая роль и MAX_id.
+        """
+        
+        # 1. Поиск пользователя по имени, фамилии и паролю
+        user = self.user_repository.get_by_name_password(
+            first_name=first_name,
+            last_name=last_name, 
+            password=password
+        )
+        
+        if not user:
+            raise InvalidCredentialsException("Неверное имя, фамилия или пароль")
+        
+        # 2. Формирование ответа
+        user_info = {
+            "role": user.role,
+            "max_id": user.max_id
+        }
+        
+        return user_info
