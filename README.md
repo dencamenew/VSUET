@@ -1,4 +1,4 @@
-# w1sent_team Хакатон MAX
+
 
 Полный стек проекта с ботом на Node.js, API на FastAPI и фронтендом на Next.js, а также базой данных PostgreSQL.
 
@@ -8,7 +8,7 @@
 
 ```text
 .
-├── bot                  # Макс бот на Node.js
+├── bot                  # бот на Node.js
 ├── db                   # PostgreSQL, MongoDB и скрипты инициализации базы данных
 ├── docker-compose.yaml  # Оркестрация всех сервисов через Docker Compose
 ├── fastapi              # Backend API на FastAPI
